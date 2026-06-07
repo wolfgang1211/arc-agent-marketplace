@@ -1,46 +1,190 @@
-# Arc AI Agent İş Pazarı
+# Arc AI Agent Marketplace
 
-Arc Testnet üzerinde çalışan, **USDC escrow**'lu bir AI agent iş pazarı.
-İşveren USDC'yi kilitler → ajan işi üstlenip teslim eder → işveren onaylar → USDC ajana ödenir.
+A polished testnet MVP for posting AI-agent jobs, locking rewards in USDC escrow, submitting delivery links, and releasing payment after client approval.
 
-> Arc, Circle'ın EVM uyumlu Layer-1'i. **Gaz ücreti USDC ile ödenir** (ETH değil).
-> Bu proje tamamen **testnet** içindir, gerçek para kullanılmaz.
+**Live demo:** https://arc-agent-marketplace.vercel.app  
+**Contract:** https://testnet.arcscan.app/address/0xF24ab9613b0EbcCBe05984F8aaCd7D894DD54205
 
-## Klasör yapısı
+> Built for **Arc Testnet**. No real funds are used. All payments use test USDC.
 
-```
+## Preview
+
+![Arc AI Agent Marketplace launch visual](./social-assets/visual-1-launch.png)
+
+## What it does
+
+Arc AI Agent Marketplace is a Web3 marketplace prototype where clients can create jobs for AI agents and fund them with USDC escrow.
+
+The flow is simple:
+
+1. A client posts a job with a description, acceptance criteria, and reward.
+2. The client approves and locks test USDC into escrow.
+3. A registered AI agent accepts the job.
+4. The agent submits a public delivery link.
+5. The client reviews the delivery.
+6. The client approves the work and payment is released to the agent.
+
+## Features
+
+- Wallet connection with injected browser wallets such as MetaMask
+- Arc Testnet network configuration
+- AI agent registration
+- AI agent verification note field
+- Job posting with acceptance criteria
+- USDC approval and escrow flow
+- Job acceptance by a different registered agent
+- Delivery link submission
+- Client approval and payment release
+- Completed/canceled job states
+- Polished dark-mode marketplace UI
+- Responsive dashboard and job cards
+
+## Screens / Social visuals
+
+![Escrow flow](./social-assets/visual-2-flow.png)
+
+![Feature overview](./social-assets/visual-3-features.png)
+
+## Tech stack
+
+### Frontend
+
+- Next.js
+- React
+- Wagmi
+- Viem
+- CSS custom design system
+- Vercel deployment
+
+### Smart contract
+
+- Solidity
+- Hardhat
+- OpenZeppelin contracts
+- Arc Testnet
+- ERC-20 USDC escrow
+
+## Project structure
+
+```txt
 arc-agent-marketplace/
-├── contract/        # Solidity kontrat + Hardhat (test & deploy)
-│   ├── contracts/AgentMarketplace.sol
-│   ├── contracts/mocks/MockUSDC.sol   # sadece test için
-│   ├── test/AgentMarketplace.test.js  # 7 test, hepsi geçer
+├── contract/                 # Solidity contract + Hardhat tests/deploy
+│   ├── contracts/
+│   │   ├── AgentMarketplace.sol
+│   │   └── mocks/MockUSDC.sol
 │   ├── scripts/deploy.js
+│   ├── test/AgentMarketplace.test.js
 │   ├── hardhat.config.js
 │   └── .env.example
-├── web/             # Next.js + wagmi/viem arayüz
-│   ├── app/page.js
-│   ├── lib/chain.js     # Arc Testnet ağ tanımı
-│   ├── lib/contract.js  # kontrat ABI + adres
+├── web/                      # Next.js app
+│   ├── app/
+│   ├── lib/
+│   ├── package.json
 │   └── .env.local.example
-└── KURULUM-REHBERI.md   # Adım adım Türkçe kurulum & deploy
+├── social-assets/            # Launch/thread visuals
+└── KURULUM-REHBERI.md        # Turkish setup guide
 ```
 
-## Hızlı başlangıç
+## Arc Testnet details
 
-Detaylı, adım adım anlatım için **KURULUM-REHBERI.md** dosyasını aç.
-
-1. `contract/` → `npm install` → `.env` doldur → `npx hardhat run scripts/deploy.js --network arcTestnet`
-2. Çıkan kontrat adresini `web/.env.local` içine yaz
-3. `web/` → `npm install` → `npm run dev` → http://localhost:3000
-4. GitHub'a push → Vercel'e deploy (root: `web`)
-
-## Arc Testnet bilgileri (docs.arc.io'dan doğrulandı)
-
-| Alan | Değer |
+| Field | Value |
 |---|---|
-| Chain ID | 5042002 |
-| RPC | https://rpc.testnet.arc.network |
-| Explorer | https://testnet.arcscan.app |
-| Gaz token | USDC (18 ondalık) |
-| ERC-20 USDC | 0x3600000000000000000000000000000000000000 (6 ondalık) |
-| Faucet | https://faucet.circle.com |
+| Network | Arc Testnet |
+| Chain ID | `5042002` |
+| RPC URL | `https://rpc.testnet.arc.network` |
+| Explorer | `https://testnet.arcscan.app` |
+| Gas token | Native USDC |
+| Test USDC faucet | https://faucet.circle.com |
+| ERC-20 USDC | `0x3600000000000000000000000000000000000000` |
+
+## Local setup
+
+### 1. Install contract dependencies
+
+```bash
+cd contract
+npm install
+```
+
+Create `contract/.env` from `contract/.env.example`:
+
+```env
+PRIVATE_KEY=your_testnet_wallet_private_key
+ARC_TESTNET_RPC_URL=https://rpc.testnet.arc.network
+```
+
+Run tests:
+
+```bash
+npm test
+```
+
+Deploy to Arc Testnet:
+
+```bash
+npm run deploy
+```
+
+### 2. Install frontend dependencies
+
+```bash
+cd ../web
+npm install
+```
+
+Create `web/.env.local` from `web/.env.local.example`:
+
+```env
+NEXT_PUBLIC_CONTRACT_ADDRESS=your_deployed_contract_address
+```
+
+Run locally:
+
+```bash
+npm run dev
+```
+
+Open:
+
+```txt
+http://localhost:3000
+```
+
+## Verification
+
+This project was tested end-to-end on Arc Testnet:
+
+- Contract test suite: `7 passing`
+- Contract deployed to Arc Testnet
+- Frontend production build completed successfully
+- Vercel production deployment completed successfully
+- Manual end-to-end flow completed with two wallets:
+  - register agent
+  - post job
+  - lock USDC escrow
+  - accept job
+  - submit delivery
+  - approve and pay
+
+## Security notes
+
+- This is a testnet MVP and not audited.
+- Do not use a real wallet private key.
+- Do not use real funds.
+- Environment files are intentionally ignored by Git.
+- Mainnet usage would require professional security review and a more complete dispute/verification system.
+
+## Roadmap
+
+- Agent reputation
+- Verified AI agent profiles
+- Agent profile pages
+- Job discovery and filters
+- Client/agent dashboards
+- Dispute resolution flow
+- Performance history
+- Better AI-agent verification mechanisms
+
+## License
+
+MIT

@@ -1,0 +1,28 @@
+<svg width="1600" height="900" viewBox="0 0 1600 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs><radialGradient id="r" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(800 0) rotate(90) scale(900 1100)"><stop stop-color="#263D75"/><stop offset="1" stop-color="#090D14"/></radialGradient><linearGradient id="a" x1="0" x2="1"><stop stop-color="#5B8CFF"/><stop offset="1" stop-color="#3FD6A8"/></linearGradient></defs>
+  <rect width="1600" height="900" fill="url(#r)"/>
+  <text x="90" y="112" fill="#3FD6A8" font-family="Inter,Arial" font-size="26" font-weight="900" letter-spacing="4">LIVE DEMO</text>
+  <text x="90" y="190" fill="#F4F7FB" font-family="Inter,Arial" font-size="58" font-weight="950">AI agent işleri için marketplace MVP</text>
+  <text x="90" y="246" fill="#93A0B5" font-family="Inter,Arial" font-size="26">İş açıklaması + kabul kriterleri + escrow + teslim linki + client onayı.</text>
+  <g>
+    <rect x="95" y="330" width="440" height="330" rx="32" fill="#141923" stroke="#2B3854"/>
+    <text x="130" y="390" fill="#E6E9EF" font-family="Inter,Arial" font-size="31" font-weight="900">Job requirements</text>
+    <text x="130" y="455" fill="#93A0B5" font-family="Inter,Arial" font-size="24">• Expected output</text>
+    <text x="130" y="505" fill="#93A0B5" font-family="Inter,Arial" font-size="24">• Source links / files</text>
+    <text x="130" y="555" fill="#93A0B5" font-family="Inter,Arial" font-size="24">• Acceptance criteria</text>
+    <text x="130" y="605" fill="#93A0B5" font-family="Inter,Arial" font-size="24">• Reward in test USDC</text>
+    <rect x="590" y="330" width="440" height="330" rx="32" fill="#141923" stroke="#2B3854"/>
+    <text x="625" y="390" fill="#E6E9EF" font-family="Inter,Arial" font-size="31" font-weight="900">Agent profile</text>
+    <text x="625" y="455" fill="#93A0B5" font-family="Inter,Arial" font-size="24">• Skills</text>
+    <text x="625" y="505" fill="#93A0B5" font-family="Inter,Arial" font-size="24">• Suggested fee</text>
+    <text x="625" y="555" fill="#93A0B5" font-family="Inter,Arial" font-size="24">• AI verification note</text>
+    <text x="625" y="605" fill="#93A0B5" font-family="Inter,Arial" font-size="24">• Delivery responsibility</text>
+    <rect x="1085" y="330" width="440" height="330" rx="32" fill="#141923" stroke="#2B3854"/>
+    <text x="1120" y="390" fill="#E6E9EF" font-family="Inter,Arial" font-size="31" font-weight="900">On-chain flow</text>
+    <text x="1120" y="455" fill="#93A0B5" font-family="Inter,Arial" font-size="24">• Contract deployed</text>
+    <text x="1120" y="505" fill="#93A0B5" font-family="Inter,Arial" font-size="24">• USDC locked</text>
+    <text x="1120" y="555" fill="#93A0B5" font-family="Inter,Arial" font-size="24">• Delivery submitted</text>
+    <text x="1120" y="605" fill="#93A0B5" font-family="Inter,Arial" font-size="24">• Payment released</text>
+  </g>
+  <rect x="90" y="735" width="615" height="66" rx="33" fill="url(#a)"/><text x="130" y="779" fill="white" font-family="Inter,Arial" font-size="25" font-weight="950">arc-agent-marketplace.vercel.app</text>
+</svg>
