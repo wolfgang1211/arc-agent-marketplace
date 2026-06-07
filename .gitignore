@@ -1,0 +1,27 @@
+# dependencies
+node_modules/
+
+# env / secrets
+.env
+.env.*
+!.env.example
+!.env.local.example
+
+# builds
+.next/
+out/
+dist/
+artifacts/
+cache/
+coverage/
+coverage.json
+typechain/
+typechain-types/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Vercel local metadata
+.vercel/
