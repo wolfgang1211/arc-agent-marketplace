@@ -40,7 +40,7 @@ async function fullJob(usdc, market, addr, client, agent) {
   await usdc.mint(client.address, REWARD);
   const id = (await market.jobCount()) + 1n;
   await usdc.connect(client).approve(addr, REWARD);
-  await market.connect(client).postJob("is", REWARD);
+  await market.connect(client)["postJob(string,uint256,string)"]("is", REWARD, "general");
   await market.connect(agent).acceptJob(id);
   await market.connect(agent).submitDeliverable(id, "ipfs://x");
   await market.connect(client).approveAndPay(id);
@@ -52,7 +52,7 @@ async function warp(s) {
   await ethers.provider.send("evm_mine", []);
 }
 
-describe("AÇIK BULGULAR (5. tur)", function () {
+describe("AÇIK BULGULAR (5. tur) — ölçüm ve değişmez", function () {
 
   it("REGRESYON: bloklu dış adres approveAndPay ödeme yolunu durduramıyor", async function () {
     // Arc'ta USDC blocklist'i var. Reputation fee kontratta tutulduğu için
@@ -71,7 +71,7 @@ describe("AÇIK BULGULAR (5. tur)", function () {
     await usdc.mint(client2.address, REWARD);
     const id = (await market.jobCount()) + 1n;
     await usdc.connect(client2).approve(addr, REWARD);
-    await market.connect(client2).postJob("is2", REWARD);
+    await market.connect(client2)["postJob(string,uint256,string)"]("is2", REWARD, "general");
     await market.connect(agent).acceptJob(id);
     await market.connect(agent).submitDeliverable(id, "ipfs://x");
 
@@ -99,13 +99,13 @@ describe("AÇIK BULGULAR (5. tur)", function () {
     await usdc.mint(c2.address, REWARD);
     const live = (await market.jobCount()) + 1n;
     await usdc.connect(c2).approve(addr, REWARD);
-    await market.connect(c2).postJob("acik", REWARD);
+    await market.connect(c2)["postJob(string,uint256,string)"]("acik", REWARD, "general");
     await market.connect(a1).acceptJob(live);
     // a2: bırakılmış iş → slash
     await usdc.mint(c3.address, REWARD);
     const dead = (await market.jobCount()) + 1n;
     await usdc.connect(c3).approve(addr, REWARD);
-    await market.connect(c3).postJob("olu", REWARD);
+    await market.connect(c3)["postJob(string,uint256,string)"]("olu", REWARD, "general");
     await market.connect(a2).acceptJob(dead);
     await warp(31 * DAY);
     await market.claimTimeout(dead);
@@ -140,33 +140,5 @@ describe("AÇIK BULGULAR (5. tur)", function () {
     expect(burned).to.equal(perPoint * 4n);
     const rep = await market.getAgentReputation(farmer.address);
     expect(rep[0]).to.equal(4n);
-  });
-
-  it("🟡 ücret ödülün yüzdesi — sicil puanının fiyatı iş büyüklüğüyle oynanabiliyor", async function () {
-    // Ücret job.reward'ın %1'i. Farmer minimum ödüllü iş açarak puan
-    // başına maliyeti tabana indirebilir: MIN_JOB_REWARD * %1.
-    const { usdc, market, addr, signers } = await build("MockUSDC");
-    const farmer = signers[1];
-    await reg(usdc, market, addr, farmer);
-    const min = await market.MIN_JOB_REWARD();
-    const bps = await market.REPUTATION_FEE_BPS();
-
-    const before = await market.reputationFeeSinkBalance();
-    for (const c of signers.slice(2, 6)) {
-      await usdc.mint(c.address, min);
-      const id = (await market.jobCount()) + 1n;
-      await usdc.connect(c).approve(addr, min);
-      await market.connect(c).postJob("kucuk", min);
-      await market.connect(farmer).acceptJob(id);
-      await market.connect(farmer).submitDeliverable(id, "ipfs://x");
-      await market.connect(c).approveAndPay(id);
-    }
-    const burned = await market.reputationFeeSinkBalance() - before;
-    const rep = await market.getAgentReputation(farmer.address);
-
-    expect(rep[0]).to.equal(4n);
-    // 4 puan için yanan toplam: 4 * (1 USDC * %1) = 0.04 USDC
-    expect(burned).to.equal((min * bps) / 10000n * 4n);
-    expect(burned).to.be.lessThan(100_000n); // 0.1 USDC'den az
   });
 });

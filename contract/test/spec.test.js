@@ -314,6 +314,113 @@ describe("SPEC 3 — Sybil maliyeti: itibarın MARJİNAL fiyatı sıfır olamaz"
 });
 
 // ---------------------------------------------------------------------------
+describe("SPEC 6 — Sicil ücreti tabanı: iki sabit tutarlı olmalı", function () {
+  /**
+   * Karar (26 Ağustos): fee = max(reward * %1, FLAT)
+   *   MIN_JOB_REWARD = 5 USDC
+   *   FLAT           = 0.5 USDC
+   *
+   * Bu iki sabit BAĞLI. Sicil ücretinin tabanı iş ödülünün tabanının
+   * üstüne çıkamaz — çıkarsa minimum işte ajanın eline sıfır geçer.
+   * Buradaki testler oranı değil, sabitlerin İLİŞKİSİNİ sabitliyor;
+   * ileride biri değişirse diğeri de değişmek zorunda kalsın diye.
+   */
+
+  async function flatFee(market) {
+    for (const name of ["FLAT_REPUTATION_FEE", "MIN_REPUTATION_FEE", "FLAT_FEE"]) {
+      if (typeof market[name] === "function") return await market[name]();
+    }
+    throw new Error(
+      "EKSİK: sabit ücret tabanı sabiti kontratta yok " +
+      "(FLAT_REPUTATION_FEE bekleniyor). Bu spec o sabit eklenene kadar kırmızı."
+    );
+  }
+
+  it("taban ücret, minimum iş ödülünden KÜÇÜK olmalı", async function () {
+    const { market } = await deploy();
+    const min = await market.MIN_JOB_REWARD();
+    const flat = await flatFee(market);
+    expect(flat, `taban ücret (${flat}) minimum ödülden (${min}) küçük değil`)
+      .to.be.lessThan(min);
+  });
+
+  it("minimum işte ajanın eline geçen tutar sıfırdan büyük kalmalı", async function () {
+    const { usdc, market, signers, addr } = await deploy();
+    const [client, agent] = signers;
+    await registerAgent(usdc, market, addr, agent);
+    const min = await market.MIN_JOB_REWARD();
+
+    await usdc.mint(client.address, min);
+    await usdc.connect(client).approve(addr, min);
+    await market.connect(client).postJob("min is", min);
+    await market.connect(agent).acceptJob(1);
+    await market.connect(agent).submitDeliverable(1, "ipfs://x");
+
+    const before = await usdc.balanceOf(agent.address);
+    await market.connect(client).approveAndPay(1);
+    const payout = await usdc.balanceOf(agent.address) - before;
+
+    expect(payout, "minimum işte ajanın eline sıfır geçiyor").to.be.greaterThan(0n);
+  });
+
+  it("ücret = max(ödül * %1, taban) — her ölçekte", async function () {
+    const { usdc, market, signers, addr } = await deploy();
+    const [client, agent] = signers;
+    await registerAgent(usdc, market, addr, agent);
+    const bps = await market.REPUTATION_FEE_BPS();
+    const flat = await flatFee(market);
+    const min = await market.MIN_JOB_REWARD();
+
+    // Taban bağlayıcı olan ve olmayan iki ölçek.
+    for (const [i, reward] of [min, min * 100n].entries()) {
+      const proportional = (reward * bps) / 10000n;
+      const expected = proportional > flat ? proportional : flat;
+
+      await usdc.mint(signers[2 + i].address, reward);
+      const id = (await market.jobCount()) + 1n;
+      await usdc.connect(signers[2 + i]).approve(addr, reward);
+      await market.connect(signers[2 + i]).postJob("is", reward);
+      await market.connect(agent).acceptJob(id);
+      await market.connect(agent).submitDeliverable(id, "ipfs://x");
+
+      const sinkBefore = await market.reputationFeeSinkBalance();
+      await market.connect(signers[2 + i]).approveAndPay(id);
+      const charged = await market.reputationFeeSinkBalance() - sinkBefore;
+
+      expect(charged, `${reward} birimlik işte ücret yanlış`).to.equal(expected);
+    }
+  });
+
+  it("sicil puanının taban fiyatı, sabit tabanın altına inemez", async function () {
+    // Farmer minimum ödüllü işlerle sicil topluyor. Puan başına maliyet
+    // sabit tabana eşit olmalı — orantılı ücretin altına düşmemeli.
+    const { usdc, market, signers, addr } = await deploy();
+    const farmer = signers[1];
+    await registerAgent(usdc, market, addr, farmer);
+    const min = await market.MIN_JOB_REWARD();
+    const flat = await flatFee(market);
+
+    const before = await market.reputationFeeSinkBalance();
+    const clients = signers.slice(2, 6);
+    for (const c of clients) {
+      await usdc.mint(c.address, min);
+      const id = (await market.jobCount()) + 1n;
+      await usdc.connect(c).approve(addr, min);
+      await market.connect(c).postJob("kucuk", min);
+      await market.connect(farmer).acceptJob(id);
+      await market.connect(farmer).submitDeliverable(id, "ipfs://x");
+      await market.connect(c).approveAndPay(id);
+    }
+    const burned = await market.reputationFeeSinkBalance() - before;
+    const points = await repPoints(market, farmer.address);
+
+    expect(points).to.equal(BigInt(clients.length));
+    expect(burned / points, "puan başına maliyet tabanın altında")
+      .to.be.greaterThanOrEqual(flat);
+  });
+});
+
+// ---------------------------------------------------------------------------
 describe("SPEC 4 — Stake mekanizması adil olmalı", function () {
   // 2. turda eklenen stake için. Depozito almak meşru, ama:
   //  - dürüst ajan parasını geri alabilmeli
@@ -427,6 +534,51 @@ describe("SPEC 5 — Kimlik ve sayaç hijyeni", function () {
     requireFn(market, "getReputationByCategory");
     const score = await market.getReputationByCategory(agent.address, "smart-contract-audit");
     expect(score, "sicil kategoriler arası taşınıyor").to.equal(0n);
+  });
+
+  it("kategori İŞTEN gelmeli, ajanın kendi etiketinden değil", async function () {
+    // Kategori sicili şu an agents[agent].skill'den türetiliyor — yani ajan
+    // hangi kategoride sicil biriktireceğine kendisi karar veriyor. Kendini
+    // "smart-contract-audit" ilan edip 1 USDC'lik önemsiz işlerden audit
+    // sicili toplayabiliyor. Kategoriyi işi AÇAN taraf belirlemeli.
+    //
+    // NOT: "etiket değişince sicil taşınmasın" testi bunu yakalamıyor —
+    // o testi geçmek için kategoriyi onay anındaki etikete bağlamak yetiyor.
+    // Asıl özellik: kategori ajanın beyanı olmamalı.
+    const { usdc, market, signers, addr } = await deploy();
+    const agent = signers[1];
+    const client = signers[2];
+
+    let min = 1n;
+    try { min = await market.MIN_JOB_REWARD(); } catch {}
+    await registerAgent(usdc, market, addr, agent, "smart-contract-audit");
+
+    // postJob kategori kabul etmeli. Overload varsa (2 ve 3 argümanlı)
+    // getFunction belirsizlik hatası verir — tüm fragment'lara bakıyoruz.
+    const postJobFrags = market.interface.fragments.filter(
+      f => f.type === "function" && f.name === "postJob"
+    );
+    const hasCategory = postJobFrags.some(f =>
+      f.inputs.some(i => /category/i.test(i.name))
+    );
+    expect(
+      hasCategory,
+      "postJob kategori parametresi almıyor — kategoriyi ajan beyan ediyor"
+    ).to.equal(true);
+
+    // Ve sicil işin kategorisinde birikmeli.
+    await usdc.mint(client.address, min);
+    await usdc.connect(client).approve(addr, min);
+    await market.connect(client)["postJob(string,uint256,string)"]("basit", min, "ceviri");
+    await market.connect(agent).acceptJob(1);
+    await market.connect(agent).submitDeliverable(1, "ipfs://x");
+    await market.connect(client).approveAndPay(1);
+
+    expect(
+      await market.getReputationByCategory(agent.address, "smart-contract-audit"),
+      "ajanın kendi etiketinde sicil birikti"
+    ).to.equal(0n);
+    expect(await market.getReputationByCategory(agent.address, "ceviri")).to.be.greaterThan(0n);
   });
 
   it("getAllJobs() sayfalanabilir olmalı", async function () {

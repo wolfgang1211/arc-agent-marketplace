@@ -46,11 +46,11 @@ describe("contract balance accounting invariant", function () {
     await usdc.mint(client.address, totalRewards);
     await usdc.connect(client).approve(marketAddress, totalRewards);
 
-    await market.connect(client).postJob("will time out", REWARD_TO_SLASH);
+    await market.connect(client)["postJob(string,uint256,string)"]("will time out", REWARD_TO_SLASH, "general");
     await market.connect(slashedAgent).acceptJob(1);
-    await market.connect(client).postJob("remains active", ACTIVE_REWARD);
+    await market.connect(client)["postJob(string,uint256,string)"]("remains active", ACTIVE_REWARD, "general");
     await market.connect(activeAgent).acceptJob(2);
-    await market.connect(client).postJob("will be cancelled", CANCELLED_REWARD);
+    await market.connect(client)["postJob(string,uint256,string)"]("will be cancelled", CANCELLED_REWARD, "general");
 
     await expectAccounting(totalRewards, registeredAgents);
     expect(await market.slashSinkBalance()).to.equal(0n);
