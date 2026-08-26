@@ -15,10 +15,12 @@ contract AgentMarketplace is ReentrancyGuard {
     /// @notice ERC-20 USDC token used for job rewards (Arc Testnet: 0x3600...0000).
     IERC20 public immutable usdc;
     uint256 public constant AGENT_STAKE = 100_000000; // 100 USDC
-    // One USDC keeps reputation farming materially more expensive than gas
-    // while remaining accessible for legitimate testnet jobs.
-    uint256 public constant MIN_JOB_REWARD = 1_000000; // 1 USDC
+    // Five USDC preserves a practical small-job tier while making each new
+    // distinct-client reputation point materially expensive to farm.
+    uint256 public constant MIN_JOB_REWARD = 5_000000; // 5 USDC
     uint256 public constant REPUTATION_FEE_BPS = 100; // 1% per new distinct-client point
+    uint256 public constant FLAT_REPUTATION_FEE = 500000; // 0.5 USDC minimum per new point
+    uint256 public constant MAX_PAGE_LIMIT = 100;
     /// @notice Slashed registration stake stays at this non-withdrawable sink.
     /// @dev Arc'ta yakma mümkün olmadığı için slash edilen stake burada kalır; kasıtlıdır.
     address public immutable SLASH_SINK;
@@ -59,6 +61,7 @@ contract AgentMarketplace is ReentrancyGuard {
         address client;
         address agent;
         string description;
+        string category;
         string deliverableURI;
         uint256 reward;         // USDC base units held in escrow
         JobStatus status;
@@ -71,13 +74,21 @@ contract AgentMarketplace is ReentrancyGuard {
 
     mapping(address => Agent) public agents;
     mapping(address => mapping(address => bool)) private servedClient;
+    mapping(address => mapping(bytes32 => uint256)) private categoryDistinctClients;
+    mapping(address => mapping(bytes32 => mapping(address => bool))) private servedClientByCategory;
     mapping(uint256 => Job) public jobs;
     uint256 public jobCount;
     uint256 private _slashSinkBalance;
     uint256 private _reputationFeeSink;
 
     event AgentRegistered(address indexed agent, string name, string skill, uint256 fee);
-    event JobPosted(uint256 indexed jobId, address indexed client, uint256 reward, string description);
+    event JobPosted(
+        uint256 indexed jobId,
+        address indexed client,
+        uint256 reward,
+        string description,
+        string category
+    );
     event JobAccepted(uint256 indexed jobId, address indexed agent);
     event DeliverableSubmitted(uint256 indexed jobId, string deliverableURI);
     event JobApproved(uint256 indexed jobId, address indexed agent, uint256 reward);
@@ -125,9 +136,25 @@ contract AgentMarketplace is ReentrancyGuard {
     // Jobs
     // ---------------------------------------------------------------------
 
-    /// @notice Post a job and lock `reward` USDC in escrow.
-    /// @dev Caller must approve this contract for `reward` USDC first.
+    /// @notice Legacy entry point that posts an uncategorized job.
     function postJob(string calldata description, uint256 reward) external nonReentrant returns (uint256) {
+        return _postJob(description, reward, "");
+    }
+
+    /// @notice Post a categorized job and lock `reward` USDC in escrow.
+    /// @dev Caller must approve this contract for `reward` USDC first.
+    function postJob(string calldata description, uint256 reward, string calldata category)
+        external
+        nonReentrant
+        returns (uint256)
+    {
+        require(bytes(category).length > 0, "Category required");
+        return _postJob(description, reward, category);
+    }
+
+    /// @dev Shared implementation for both public overloads. Reentrancy protection
+    /// stays on the external entry points so escrow transfer logic is not duplicated.
+    function _postJob(string memory description, uint256 reward, string memory category) internal returns (uint256) {
         require(reward >= MIN_JOB_REWARD, "Reward below minimum");
         require(bytes(description).length > 0, "Description required");
 
@@ -137,6 +164,7 @@ contract AgentMarketplace is ReentrancyGuard {
             client: msg.sender,
             agent: address(0),
             description: description,
+            category: category,
             deliverableURI: "",
             reward: reward,
             status: JobStatus.Open,
@@ -150,7 +178,7 @@ contract AgentMarketplace is ReentrancyGuard {
         // Pull the reward into escrow.
         usdc.safeTransferFrom(msg.sender, address(this), reward);
 
-        emit JobPosted(jobId, msg.sender, reward, description);
+        emit JobPosted(jobId, msg.sender, reward, description, category);
         return jobId;
     }
 
@@ -200,10 +228,18 @@ contract AgentMarketplace is ReentrancyGuard {
         if (!servedClient[job.agent][job.client]) {
             servedClient[job.agent][job.client] = true;
             agents[job.agent].distinctClients += 1;
-            reputationFee = (job.reward * REPUTATION_FEE_BPS) / 10000;
-            // MIN_JOB_REWARD keeps this strictly positive, so every additional
-            // distinct-client reputation point has a non-amortizable USDC cost.
-            require(reputationFee > 0, "Reputation fee rounds to zero");
+            uint256 percentageFee = (job.reward * REPUTATION_FEE_BPS) / 10000;
+            reputationFee = percentageFee > FLAT_REPUTATION_FEE
+                ? percentageFee
+                : FLAT_REPUTATION_FEE;
+        }
+
+        if (bytes(job.category).length > 0) {
+            bytes32 categoryHash = keccak256(bytes(job.category));
+            if (!servedClientByCategory[job.agent][categoryHash][job.client]) {
+                servedClientByCategory[job.agent][categoryHash][job.client] = true;
+                categoryDistinctClients[job.agent][categoryHash] += 1;
+            }
         }
 
         uint256 payout = job.reward - reputationFee;
@@ -332,6 +368,26 @@ contract AgentMarketplace is ReentrancyGuard {
         return list;
     }
 
+    /// @notice Return a zero-based page of jobs and the total number of jobs.
+    function getJobsPaged(uint256 offset, uint256 limit)
+        external
+        view
+        returns (Job[] memory page, uint256 total)
+    {
+        require(limit <= MAX_PAGE_LIMIT, "Page limit exceeded");
+        total = jobCount;
+        if (offset >= total || limit == 0) {
+            return (new Job[](0), total);
+        }
+
+        uint256 remaining = total - offset;
+        uint256 pageLength = limit < remaining ? limit : remaining;
+        page = new Job[](pageLength);
+        for (uint256 i = 0; i < pageLength; i++) {
+            page[i] = jobs[offset + i + 1];
+        }
+    }
+
     function getAgent(address who) external view returns (Agent memory) {
         return agents[who];
     }
@@ -363,5 +419,12 @@ contract AgentMarketplace is ReentrancyGuard {
     /// linearly inflate this trust score.
     function getReputationScore(address who) external view returns (uint256) {
         return agents[who].distinctClients * 100;
+    }
+
+    /// @notice Return reputation earned from distinct clients in one exact skill category.
+    /// @dev Category reputation is awarded only by approveAndPay and repeated work
+    /// from the same client in the same category does not add another point.
+    function getReputationByCategory(address who, string calldata category) external view returns (uint256) {
+        return categoryDistinctClients[who][keccak256(bytes(category))] * 100;
     }
 }

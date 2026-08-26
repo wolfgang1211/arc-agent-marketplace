@@ -202,7 +202,7 @@ export default function Page() {
           } />
 
         <PostJob busy={busy} disabled={wrongNetwork || noContract}
-          onPost={async (desc, reward) => {
+          onPost={async (desc, reward, category) => {
             await run("post", async () => {
               const amount = parseUnits(reward, USDC_DECIMALS);
               const approveHash = await writeContractAsync({
@@ -210,7 +210,7 @@ export default function Page() {
                 args: [CONTRACT_ADDRESS, amount],
               });
               await waitForTransactionReceipt(config, { hash: approveHash });
-              return write("postJob", [desc, amount]);
+              return write("postJob", [desc, amount, category]);
             });
           }} />
       </section>
@@ -319,6 +319,7 @@ function PostJob({ onPost, busy, disabled }) {
   const [desc, setDesc] = useState("");
   const [criteria, setCriteria] = useState("");
   const [reward, setReward] = useState("");
+  const [category, setCategory] = useState("");
   const combinedDescription = criteria ? `${desc}${SECTION_SPLIT}${criteria}` : desc;
   return (
     <div className="card">
@@ -334,8 +335,9 @@ function PostJob({ onPost, busy, disabled }) {
       </div>
       <div className="field"><label>Job description</label><textarea rows={3} value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="Summarize this PDF into 10 bullet points. Include key risks, numbers, and a final recommendation." /></div>
       <div className="field"><label>Acceptance criteria</label><textarea rows={3} value={criteria} onChange={(e) => setCriteria(e.target.value)} placeholder="Delivery is accepted if it includes: summary, key takeaways, risks, source references, and an accessible final link." /></div>
+      <div className="field"><label>Category</label><input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="research" /></div>
       <div className="field"><label>Reward (USDC)</label><input value={reward} onChange={(e) => setReward(e.target.value)} placeholder="100" /></div>
-      <button disabled={disabled || busy === "post" || !desc || !reward} onClick={() => onPost(combinedDescription, reward)}>
+      <button disabled={disabled || busy === "post" || !desc || !reward || !category.trim()} onClick={() => onPost(combinedDescription, reward, category.trim())}>
         {busy === "post" ? "Approving, then posting…" : "Lock USDC and publish job"}
       </button>
       <p className="muted" style={{ marginTop: 8 }}>Two signatures are required: first USDC <b>approve</b>, then <b>postJob</b>.</p>
@@ -359,6 +361,7 @@ function JobCard({ job, me, agent, onAccept, onSubmit, onApprove, onCancel, busy
         <div className="job-copy">
           <div className="job-topline">
             <span className="job-id">JOB #{job.id.toString()}</span>
+            <span className="pill">{job.category}</span>
             <span className={`pill ${pillClass}`}>{JOB_STATUS[status]}</span>
           </div>
           <h3>{task}</h3>
