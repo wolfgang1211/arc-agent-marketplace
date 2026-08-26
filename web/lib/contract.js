@@ -4,7 +4,17 @@ export const AGENT_STAKE = 100_000000n;
 
 // Minimal ABI for the functions and events the UI uses.
 export const MARKETPLACE_ABI = [
+  {
+    type: "event",
+    name: "AgentSlashed",
+    anonymous: false,
+    inputs: [
+      { name: "agent", type: "address", indexed: true },
+      { name: "amount", type: "uint256", indexed: false },
+    ],
+  },
   { type: "function", name: "AGENT_STAKE", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] },
+  { type: "function", name: "jobCount", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] },
   { type: "function", name: "registerAgent", stateMutability: "nonpayable", inputs: [{ name: "name", type: "string" }, { name: "skill", type: "string" }, { name: "fee", type: "uint256" }], outputs: [] },
   { type: "function", name: "postJob", stateMutability: "nonpayable", inputs: [{ name: "description", type: "string" }, { name: "reward", type: "uint256" }], outputs: [{ type: "uint256" }] },
   { type: "function", name: "postJob", stateMutability: "nonpayable", inputs: [{ name: "description", type: "string" }, { name: "reward", type: "uint256" }, { name: "category", type: "string" }], outputs: [{ type: "uint256" }] },
@@ -62,6 +72,30 @@ export const MARKETPLACE_ABI = [
       { name: "totalEarned", type: "uint256" },
     ],
   },
+  { type: "function", name: "getReputationByCategory", stateMutability: "view", inputs: [{ name: "who", type: "address" }, { name: "category", type: "string" }], outputs: [{ type: "uint256" }] },
+  {
+    type: "function", name: "getJobsPaged", stateMutability: "view", inputs: [{ name: "offset", type: "uint256" }, { name: "limit", type: "uint256" }],
+    outputs: [
+      {
+        name: "page", type: "tuple[]", components: [
+          { name: "id", type: "uint256" },
+          { name: "client", type: "address" },
+          { name: "agent", type: "address" },
+          { name: "description", type: "string" },
+          { name: "category", type: "string" },
+          { name: "deliverableURI", type: "string" },
+          { name: "reward", type: "uint256" },
+          { name: "status", type: "uint8" },
+          { name: "createdAt", type: "uint256" },
+          { name: "deliveryDeadline", type: "uint256" },
+          { name: "approvalDeadline", type: "uint256" },
+          { name: "disputeDeadline", type: "uint256" },
+          { name: "clientShareOnDispute", type: "uint256" },
+        ],
+      },
+      { name: "total", type: "uint256" },
+    ],
+  },
 ];
 
 // Minimal ERC-20 ABI (approve / allowance / balanceOf).
@@ -71,4 +105,14 @@ export const ERC20_ABI = [
   { type: "function", name: "balanceOf", stateMutability: "view", inputs: [{ name: "account", type: "address" }], outputs: [{ type: "uint256" }] },
 ];
 
-export const JOB_STATUS = ["Open", "In progress", "Submitted", "Disputed", "Completed", "Canceled"];
+export const JOB_STATUS = [
+  "Open",
+  "In progress",
+  "Submitted",
+  "Disputed",
+  "Completed",
+  "Canceled",
+  "Expired refund",
+  "Expired payout",
+  "Expired split",
+];

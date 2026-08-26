@@ -378,7 +378,13 @@ function JobCard({ job, me, agent, onAccept, onSubmit, onApprove, onCancel, busy
             </div>
             <div className="job-meta-item">
               <span>Agent</span>
-              <strong>{job.agent === "0x0000000000000000000000000000000000000000" ? "Unassigned" : short(job.agent)}</strong>
+              <strong>
+                {job.agent === "0x0000000000000000000000000000000000000000" ? (
+                  "Unassigned"
+                ) : (
+                  <a href={`/agents/${job.agent}`}>{short(job.agent)}</a>
+                )}
+              </strong>
             </div>
             <div className="job-meta-item">
               <span>Your role</span>
