@@ -16,6 +16,7 @@ import { formatUnits, parseUnits } from "viem";
 import { arcTestnet, USDC_ADDRESS, USDC_DECIMALS, EXPLORER, FAUCET } from "../lib/chain";
 import {
   CONTRACT_ADDRESS,
+  AGENT_STAKE,
   MARKETPLACE_ABI,
   ERC20_ABI,
   JOB_STATUS,
@@ -71,7 +72,7 @@ export default function Page() {
   const jobList = jobs ? [...jobs].reverse() : [];
   const openJobs = jobs ? jobs.filter((j) => Number(j.status) === 0).length : 0;
   const activeJobs = jobs ? jobs.filter((j) => [1, 2].includes(Number(j.status))).length : 0;
-  const completedJobs = jobs ? jobs.filter((j) => Number(j.status) === 3).length : 0;
+  const completedJobs = jobs ? jobs.filter((j) => Number(j.status) === 4).length : 0;
 
   async function run(label, fn) {
     setMsg(null);
@@ -188,7 +189,16 @@ export default function Page() {
       <section className="action-grid">
         <RegisterAgent agent={agent} busy={busy} disabled={wrongNetwork || noContract}
           onRegister={(name, skill, fee) =>
-            run("register", () => write("registerAgent", [name, skill, fee ? parseUnits(fee, USDC_DECIMALS) : 0n]))
+            run("register", async () => {
+              if (!agent?.registered) {
+                const approveHash = await writeContractAsync({
+                  address: USDC_ADDRESS, abi: ERC20_ABI, functionName: "approve",
+                  args: [CONTRACT_ADDRESS, AGENT_STAKE],
+                });
+                await waitForTransactionReceipt(config, { hash: approveHash });
+              }
+              return write("registerAgent", [name, skill, fee ? parseUnits(fee, USDC_DECIMALS) : 0n]);
+            })
           } />
 
         <PostJob busy={busy} disabled={wrongNetwork || noContract}
@@ -339,7 +349,7 @@ function JobCard({ job, me, agent, onAccept, onSubmit, onApprove, onCancel, busy
   const isClient = me && me.toLowerCase() === job.client.toLowerCase();
   const isAgent = me && me.toLowerCase() === job.agent.toLowerCase();
   const registered = agent && agent.registered;
-  const pillClass = ["open", "progress", "submitted", "done", "cancel"][status];
+  const pillClass = ["open", "progress", "submitted", "disputed", "done", "cancel"][status];
   const role = isClient ? "You are the client" : isAgent ? "Assigned to you" : "Available for agents";
   const { task, criteria } = parseJobDetails(job.description);
 

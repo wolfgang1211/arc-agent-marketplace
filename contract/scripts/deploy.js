@@ -28,6 +28,7 @@ async function main() {
   const address = await contract.getAddress();
   console.log("\nAgentMarketplace deployed to:", address);
   console.log("Explorer:", `https://testnet.arcscan.app/address/${address}`);
+  console.log("Reputation getter: getAgentReputation(address)");
   console.log("\nNext: put this address in web/.env.local as NEXT_PUBLIC_CONTRACT_ADDRESS");
 }
 

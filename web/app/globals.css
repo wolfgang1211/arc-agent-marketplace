@@ -53,6 +53,7 @@ button.danger { background: transparent; border: 1px solid var(--danger); color:
 .pill.open { color: var(--accent); border-color: var(--accent); }
 .pill.progress { color: #ffce6b; border-color: #ffce6b; }
 .pill.submitted { color: var(--accent-2); border-color: var(--accent-2); }
+.pill.disputed { color: var(--danger); border-color: var(--danger); }
 .pill.done { color: var(--accent-2); border-color: var(--accent-2); background: rgba(63,214,168,.08); }
 .pill.cancel { color: var(--danger); border-color: var(--danger); }
 .muted { color: var(--muted); font-size: 13px; }
@@ -149,6 +150,7 @@ a { color: var(--accent-strong); }
 .job-open:before { background: var(--accent); }
 .job-progress:before { background: #ffce6b; }
 .job-submitted:before, .job-done:before { background: var(--accent-2); }
+.job-disputed:before { background: var(--danger); }
 .job-cancel:before { background: var(--danger); }
 .job-main { display: grid; grid-template-columns: minmax(0, 1fr) 170px; gap: 16px; align-items: start; }
 .job-topline { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
