@@ -24,9 +24,10 @@ contract AgentMarketplace is ReentrancyGuard {
     /// @notice Slashed registration stake stays at this non-withdrawable sink.
     /// @dev Arc'ta yakma mümkün olmadığı için slash edilen stake burada kalır; kasıtlıdır.
     address public immutable SLASH_SINK;
-    uint256 public constant DELIVERY_TIMEOUT = 30 days;
-    uint256 public constant APPROVAL_TIMEOUT = 30 days;
-    uint256 public constant DISPUTE_TIMEOUT = 30 days;
+    uint256 public constant MIN_TIMEOUT = 5 minutes;
+    uint256 public immutable DELIVERY_TIMEOUT;
+    uint256 public immutable APPROVAL_TIMEOUT;
+    uint256 public immutable DISPUTE_TIMEOUT;
     uint256 public constant DEFAULT_CLIENT_SHARE_ON_DISPUTE = 5000; // 50%, fixed at job creation
 
     enum JobStatus {
@@ -112,10 +113,21 @@ contract AgentMarketplace is ReentrancyGuard {
     );
     event AgentSlashed(address indexed agent, uint256 amount);
 
-    constructor(address usdcAddress) {
+    constructor(
+        address usdcAddress,
+        uint256 deliveryTimeout,
+        uint256 approvalTimeout,
+        uint256 disputeTimeout
+    ) {
         require(usdcAddress != address(0), "USDC address required");
+        require(deliveryTimeout >= MIN_TIMEOUT, "Delivery timeout below minimum");
+        require(approvalTimeout >= MIN_TIMEOUT, "Approval timeout below minimum");
+        require(disputeTimeout >= MIN_TIMEOUT, "Dispute timeout below minimum");
         usdc = IERC20(usdcAddress);
         SLASH_SINK = address(this);
+        DELIVERY_TIMEOUT = deliveryTimeout;
+        APPROVAL_TIMEOUT = approvalTimeout;
+        DISPUTE_TIMEOUT = disputeTimeout;
     }
 
     // ---------------------------------------------------------------------

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "mode": "verification",
+  "mode": "production",
   "contract": "contracts/AgentMarketplace.sol:AgentMarketplace",
   "expectedChainId": "0x4cef52",
   "constructorArguments": [
@@ -17,17 +17,17 @@
     {
       "name": "deliveryTimeout",
       "type": "uint256",
-      "value": "600"
+      "value": "2592000"
     },
     {
       "name": "approvalTimeout",
       "type": "uint256",
-      "value": "600"
+      "value": "2592000"
     },
     {
       "name": "disputeTimeout",
       "type": "uint256",
-      "value": "600"
+      "value": "2592000"
     }
   ],
   "immutableRules": [
@@ -63,15 +63,6 @@
       "new",
       "reason"
     ],
-    "changeLog": [
-      {
-        "field": "constructorArguments.usdcAddress.value",
-        "primaryUrl": "https://docs.arc.network/arc/references/contract-addresses",
-        "checkedAt": "2026-08-27",
-        "old": "0x3600000000000000000000000000000000000000",
-        "new": "0x3600000000000000000000000000000000000000",
-        "reason": "Added primary-source provenance without changing the governed Arc Testnet USDC address."
-      }
-    ]
+    "changeLog": []
   }
 }

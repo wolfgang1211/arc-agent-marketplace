@@ -151,6 +151,10 @@ function constructorFragment(abi) {
 
 function resolveManifest(manifest, metadata, deployedAddress) {
   assert.equal(manifest.schemaVersion, 1, "Unsupported deployment manifest schemaVersion");
+  assert.ok(
+    manifest.mode === "verification" || manifest.mode === "production",
+    "Deployment manifest mode must be verification or production",
+  );
   assert.equal(manifest.contract, CONTRACT_ID, "Deployment manifest targets the wrong contract");
   assert.match(manifest.expectedChainId, /^0x[0-9a-fA-F]+$/, "Manifest expectedChainId is invalid");
   assert.ok(Array.isArray(manifest.constructorArguments), "Manifest constructorArguments must be an array");
@@ -216,6 +220,7 @@ function resolveManifest(manifest, metadata, deployedAddress) {
   }
 
   return {
+    mode: manifest.mode,
     constructorTypes: constructor.inputs.map((input) => input.type),
     constructorValues: constructor.inputs.map((input) => argumentsByName.get(input.name)),
     effectiveConfig,
@@ -323,6 +328,7 @@ async function attestDeployment({
   const blockTag = await provider.send("eth_blockNumber", []);
   return {
     accepted: true,
+    mode: resolved.mode,
     chainId,
     blockTag,
     address: checkedAddress,

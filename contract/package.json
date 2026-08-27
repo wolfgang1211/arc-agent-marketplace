@@ -8,7 +8,8 @@
     "verify:config": "hardhat run --no-compile scripts/verify-build-config.js",
     "verify:artifact": "node scripts/verify-artifact-identity.js",
     "attest:deployment": "node scripts/attest-deployment.js",
-    "deploy": "hardhat run scripts/deploy.js --network arcTestnet"
+    "deploy:verification": "hardhat run scripts/deploy.js --network arcTestnet",
+    "deploy:production": "hardhat run scripts/deploy.js --network arcTestnet"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "5.0.0",

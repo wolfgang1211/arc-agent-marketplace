@@ -3,8 +3,8 @@
 Every deployment card must consume this gate before an address is announced, configured in the frontend, or used for integration testing.
 
 1. Run `npm run verify:artifact` from `contract/` to clean-compile and verify the governed build identity.
-2. Review `DEPLOYMENT-MANIFEST.json`. It is the explicit expected chain, constructor configuration, and immutable-name policy; never derive expectations from the deployed contract.
-3. Run `npm run attest:deployment -- --rpc <RPC_URL> --address <DEPLOYED_ADDRESS> --tx <DEPLOYMENT_TX_HASH>`.
+2. Select and review an explicit mode: `DEPLOYMENT-MANIFEST.json` is the 10-minute Arc verification instrument; `DEPLOYMENT-MANIFEST.production.json` preserves 30-day production timeouts. Never derive expectations from the deployed contract.
+3. Run `npm run attest:deployment -- --rpc <RPC_URL> --address <DEPLOYED_ADDRESS> --tx <DEPLOYMENT_TX_HASH> --mode <verification|production>`. A wrong-mode address is rejected.
 4. Preserve the JSON output in the deployment record: RPC URL, chain ID, block tag, address, deployment transaction, constructor arguments, decoded byte length, observed and reconstructed expected keccak256 hashes, normalized hash, immutable getter values, and exit status.
 5. Accept the address only when the command exits zero and prints `ACCEPTED`. Any chain, manifest coverage, creation input, constructor argument, getter, length, hash, or byte mismatch exits nonzero and rejects the address.
 
