@@ -10,6 +10,19 @@ module.exports = {
     settings: {
       evmVersion: "cancun",
       optimizer: { enabled: true, runs: 200 },
+      outputSelection: {
+        "*": {
+          "*": [
+            "abi",
+            "evm.bytecode",
+            "evm.deployedBytecode",
+            "evm.deployedBytecode.immutableReferences",
+            "evm.methodIdentifiers",
+            "metadata",
+          ],
+          "": ["ast"],
+        },
+      },
     },
   },
   networks: {

@@ -3,7 +3,11 @@ const crypto = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
 const { spawnSync } = require("node:child_process");
-const { keccak256 } = require("ethers");
+const {
+  loadCompilerMetadata,
+  normalizeBytecode,
+  rawBytecodeIdentity,
+} = require("../lib/deployment-attestation");
 
 const ROOT = path.resolve(__dirname, "..");
 const IDENTITY_PATH = path.join(ROOT, "ARTIFACT-IDENTITY.json");
@@ -23,15 +27,6 @@ function runHardhat(task) {
 
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
-}
-
-function rawBytecodeIdentity(bytecode, label) {
-  assert.match(bytecode, /^0x[0-9a-fA-F]*$/, `${label} is not 0x-prefixed bytecode`);
-  const bytes = Buffer.from(bytecode.slice(2), "hex");
-  return {
-    rawByteLength: bytes.length,
-    keccak256: keccak256(bytecode),
-  };
 }
 
 function installedVersion(packageName) {
@@ -99,27 +94,67 @@ function collectBuildIdentity() {
 runHardhat("clean");
 runHardhat("compile");
 const actualBuild = collectBuildIdentity();
+const compilerMetadata = loadCompilerMetadata(ROOT);
+const actualNormalizedDeployed = rawBytecodeIdentity(
+  normalizeBytecode(
+    compilerMetadata.deployedBytecode,
+    compilerMetadata.immutableReferences,
+  ),
+  "normalized deployed bytecode",
+);
 
 if (process.argv.includes("--write")) {
-  const previous = fs.existsSync(IDENTITY_PATH) ? readJson(IDENTITY_PATH) : {};
+  assert.ok(fs.existsSync(IDENTITY_PATH), "Governed identity must already exist before an update");
+  const previous = readJson(IDENTITY_PATH);
+  const valueAfter = (flag) => {
+    const index = process.argv.indexOf(flag);
+    return index === -1 ? undefined : process.argv[index + 1];
+  };
+  const reason = valueAfter("--reason");
+  const recordId = valueAfter("--record-id");
+  const oldCreationHash = valueAfter("--old-creation-hash");
+  const oldDeployedHash = valueAfter("--old-deployed-hash");
+
+  assert.ok(reason && reason.length >= 20, "--reason must describe the intentional contract change");
+  assert.ok(recordId, "--record-id must identify the contract-changing commit or governed record");
+  assert.equal(
+    oldCreationHash,
+    previous.build.creationBytecode.keccak256,
+    "--old-creation-hash must exactly match the governed record",
+  );
+  assert.equal(
+    oldDeployedHash,
+    previous.build.deployedBytecode.keccak256,
+    "--old-deployed-hash must exactly match the governed record",
+  );
+  assert.ok(
+    actualBuild.creationBytecode.keccak256 !== oldCreationHash ||
+      actualBuild.deployedBytecode.keccak256 !== oldDeployedHash,
+    "Governed identity cannot be regenerated when contract bytecode is unchanged",
+  );
+
   const identity = {
-    schemaVersion: 1,
-    hashDefinition:
-      "Hashes are keccak256 over decoded raw bytecode bytes excluding the 0x prefix; creation bytecode excludes constructor arguments.",
+    ...previous,
+    schemaVersion: 2,
     build: actualBuild,
-    independentExpected: {
-      deployedBytecode: {
-        rawByteLength: 13868,
-        keccak256: "0xa3a99e0b162847232dd84a1520b2046bb2a4435c9a423c5315652aefefaebd33",
-      },
-      creationBytecode: {
-        rawByteLength: 14202,
-        keccak256: "0x338708f4ee4bedbd42ecffc6654ab2c22fa336c051b97630379ff3565c33233f",
+    governance: {
+      ...previous.governance,
+      lastContractChange: {
+        recordId,
+        reason,
+        oldCreationKeccak256: oldCreationHash,
+        newCreationKeccak256: actualBuild.creationBytecode.keccak256,
+        oldDeployedTemplateKeccak256: oldDeployedHash,
+        newDeployedTemplateKeccak256: actualBuild.deployedBytecode.keccak256,
       },
     },
+    independentExpected: null,
     independentExpectedComparison:
-      "match: clean Cancun build matches both independently supplied byte lengths and hashes",
-    arcRpcOpcodeProbes: previous.arcRpcOpcodeProbes ?? null,
+      "not carried forward: this governed intentional contract change has no independent expected identity",
+    deploymentAttestation: {
+      ...previous.deploymentAttestation,
+      normalizedDeployedBytecode: actualNormalizedDeployed,
+    },
   };
   fs.writeFileSync(IDENTITY_PATH, `${JSON.stringify(identity, null, 2)}\n`);
   console.log(`Wrote ${path.relative(ROOT, IDENTITY_PATH)}`);
@@ -132,5 +167,10 @@ assert.deepEqual(
   actualBuild,
   recorded.build,
   "ARTIFACT-IDENTITY.json is stale; run this script with --write only after reviewing the change",
+);
+assert.deepEqual(
+  actualNormalizedDeployed,
+  recorded.deploymentAttestation.normalizedDeployedBytecode,
+  "ARTIFACT-IDENTITY.json normalized deployed identity is stale",
 );
 console.log("Artifact identity matches a clean Cancun build.");

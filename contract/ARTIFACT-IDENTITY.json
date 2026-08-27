@@ -1,6 +1,17 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "hashDefinition": "Hashes are keccak256 over decoded raw bytecode bytes excluding the 0x prefix; creation bytecode excludes constructor arguments.",
+  "governance": {
+    "updatePolicy": "Only an intentional contract change may update artifact identity. Record the old and new creation and deployed runtime-template hashes plus a specific reason in the contract-changing commit or governed change record. Regeneration merely to silence the guard is forbidden.",
+    "requiredChangeRecordFields": [
+      "recordId",
+      "reason",
+      "oldCreationKeccak256",
+      "newCreationKeccak256",
+      "oldDeployedTemplateKeccak256",
+      "newDeployedTemplateKeccak256"
+    ]
+  },
   "build": {
     "contract": "contracts/AgentMarketplace.sol:AgentMarketplace",
     "solcVersion": "0.8.28",
@@ -36,6 +47,15 @@
     }
   },
   "independentExpectedComparison": "match: clean Cancun build matches both independently supplied byte lengths and hashes",
+  "deploymentAttestation": {
+    "expectedChainId": "0x4cef52",
+    "strategy": "immutable-aware exact runtime reconstruction",
+    "normalizedDeployedBytecode": {
+      "rawByteLength": 13868,
+      "keccak256": "0xa3a99e0b162847232dd84a1520b2046bb2a4435c9a423c5315652aefefaebd33"
+    },
+    "requirements": "Verify the recorded compiler template, normalize every compiler immutableReference, read every public immutable getter, reconstruct the expected runtime, and require byte-for-byte equality plus exact decoded length and keccak256. Any mismatch rejects the address."
+  },
   "arcRpcOpcodeProbes": {
     "rpcUrl": "https://rpc.testnet.arc.network",
     "stateOverrideAddress": "0x000000000000000000000000000000000000dead",
@@ -79,6 +99,7 @@
         "result": "0x000000000000000000000000000000000000000000000000000000000000002a"
       }
     ],
+    "scopeCaveat": "Arc Testnet chainId 0x4cef52 only, limited to the recorded block and observed client. eth_call stateOverride measures the node EVM specification at that block. Later forks or client changes may alter behavior; Arc mainnet requires fresh probes.",
     "interpretation": "Read-only eth_call stateOverride probes succeeded at the pinned block; no transaction, deployment, or funds were used."
   }
 }

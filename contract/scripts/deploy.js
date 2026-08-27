@@ -29,7 +29,12 @@ async function main() {
   console.log("\nAgentMarketplace deployed to:", address);
   console.log("Explorer:", `https://testnet.arcscan.app/address/${address}`);
   console.log("Reputation getter: getAgentReputation(address)");
-  console.log("\nNext: put this address in web/.env.local as NEXT_PUBLIC_CONTRACT_ADDRESS");
+  console.log("\nUNATTESTED: do not announce or configure this address yet.");
+  console.log(
+    "Next: npm run attest:deployment -- --rpc <RPC_URL> --address",
+    address,
+  );
+  console.log("Only an ACCEPTED result permits frontend/env consumption.");
 }
 
 main().catch((error) => {
