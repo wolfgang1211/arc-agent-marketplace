@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "scope": "Arc Testnet verification only; never consume this address from frontend, Vercel, demo, or announcements.",
+  "chainId": "0x4cef52",
+  "rpcUrl": "https://rpc.testnet.arc.network",
+  "manifest": {
+    "mode": "verification",
+    "deliveryTimeout": "600",
+    "approvalTimeout": "900",
+    "disputeTimeout": "1200"
+  },
+  "deployment": {
+    "status": "ATTESTED",
+    "address": "0x3b03D4Aa1bf568bE7fAC6fF9Dad2aEE9c9C057a4",
+    "transactionHash": "0xbd8024e57b7c5cbe27d657b10e011d0be7d924e7bfa2ac57a6d921ec74aa3431",
+    "blockNumber": 59187272,
+    "receiptStatus": 1,
+    "estimatedGas": "3151097",
+    "actualGasUsed": "3125127",
+    "gasDeviation": "-25970",
+    "effectiveGasPriceWei": "84000000000",
+    "actualFeeWei": "262510668000000000",
+    "explorer": "https://testnet.arcscan.app/address/0x3b03D4Aa1bf568bE7fAC6fF9Dad2aEE9c9C057a4"
+  },
+  "attestation": {
+    "accepted": true,
+    "blockTag": "0x387205a",
+    "rawByteLength": 14082,
+    "observedKeccak256": "0xa3d18de646d9d53371551c9bd9d0a161939f59b86426579d457eaee5c09f2a30",
+    "expectedKeccak256": "0xa3d18de646d9d53371551c9bd9d0a161939f59b86426579d457eaee5c09f2a30",
+    "normalizedKeccak256": "0xe9850e50a362c172c32d6a9bec2e10736f9668c86df6669386bedffb5d325bee"
+  },
+  "scenarios": {
+    "status": "BLOCKED_INSUFFICIENT_USDC",
+    "jobs": {},
+    "completedSteps": [],
+    "transactions": [],
+    "expectedFailures": []
+  },
+  "blocklist": {
+    "status": "NOT_VERIFIED",
+    "note": "Real Circle blocklist behavior is outside this run and must not be inferred from local BlocklistUSDC tests."
+  }
+}
