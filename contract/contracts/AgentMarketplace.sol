@@ -73,6 +73,11 @@ contract AgentMarketplace is ReentrancyGuard {
     }
 
     mapping(address => Agent) public agents;
+    // A slash deliberately starts a fresh reputation generation, including
+    // served-client dedupe. A re-registered agent may therefore earn from an
+    // old client again and pays the reputation fee again. This clean-slate
+    // tradeoff is intentional: it irreversibly costs the 100 USDC slashed
+    // stake plus every fee required to rebuild reputation.
     mapping(address => uint256) private repEpoch;
     mapping(address => mapping(uint256 => mapping(address => bool))) private servedClient;
     mapping(address => mapping(uint256 => mapping(bytes32 => uint256))) private categoryDistinctClients;
