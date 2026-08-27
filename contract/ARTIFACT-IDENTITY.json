@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "hashDefinition": "Hashes are keccak256 over decoded raw bytecode bytes excluding the 0x prefix; creation bytecode excludes constructor arguments.",
+  "build": {
+    "contract": "contracts/AgentMarketplace.sol:AgentMarketplace",
+    "solcVersion": "0.8.28",
+    "solcLongVersion": "0.8.28+commit.7893614a",
+    "evmVersion": "cancun",
+    "optimizer": {
+      "enabled": true,
+      "runs": 200
+    },
+    "creationBytecode": {
+      "rawByteLength": 14202,
+      "keccak256": "0x338708f4ee4bedbd42ecffc6654ab2c22fa336c051b97630379ff3565c33233f"
+    },
+    "deployedBytecode": {
+      "rawByteLength": 13868,
+      "keccak256": "0xa3a99e0b162847232dd84a1520b2046bb2a4435c9a423c5315652aefefaebd33"
+    },
+    "toolchain": {
+      "hardhat": "2.28.6",
+      "hardhatToolbox": "5.0.0",
+      "openzeppelinContracts": "5.6.1",
+      "packageLockSha256": "0x06a11e6378e9c2000da08f146ac03f27430e38d23ae48f55595b5098185cd4a0"
+    }
+  },
+  "independentExpected": {
+    "deployedBytecode": {
+      "rawByteLength": 13868,
+      "keccak256": "0xa3a99e0b162847232dd84a1520b2046bb2a4435c9a423c5315652aefefaebd33"
+    },
+    "creationBytecode": {
+      "rawByteLength": 14202,
+      "keccak256": "0x338708f4ee4bedbd42ecffc6654ab2c22fa336c051b97630379ff3565c33233f"
+    }
+  },
+  "independentExpectedComparison": "match: clean Cancun build matches both independently supplied byte lengths and hashes",
+  "arcRpcOpcodeProbes": {
+    "rpcUrl": "https://rpc.testnet.arc.network",
+    "stateOverrideAddress": "0x000000000000000000000000000000000000dead",
+    "clientVersion": "arc/v1",
+    "chainId": "0x4cef52",
+    "blockTag": "0x385d0fe",
+    "blockNumber": 59101438,
+    "requestTemplate": {
+      "jsonrpc": "2.0",
+      "method": "eth_call",
+      "params": [
+        {
+          "to": "0x000000000000000000000000000000000000dead",
+          "data": "0x"
+        },
+        "0x385d0fe",
+        {
+          "0x000000000000000000000000000000000000dead": {
+            "code": "<probe code>"
+          }
+        }
+      ]
+    },
+    "probes": [
+      {
+        "name": "PUSH0",
+        "requestId": 4,
+        "code": "0x5f60005260206000f3",
+        "result": "0x0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "name": "MCOPY",
+        "requestId": 5,
+        "code": "0x60016000526020600060205e60206020f3",
+        "result": "0x0000000000000000000000000000000000000000000000000000000000000001"
+      },
+      {
+        "name": "TSTORE_TLOAD",
+        "requestId": 6,
+        "code": "0x602a60005d60005c60005260206000f3",
+        "result": "0x000000000000000000000000000000000000000000000000000000000000002a"
+      }
+    ],
+    "interpretation": "Read-only eth_call stateOverride probes succeeded at the pinned block; no transaction, deployment, or funds were used."
+  }
+}
