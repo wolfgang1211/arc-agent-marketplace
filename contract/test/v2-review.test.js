@@ -143,13 +143,12 @@ describe("AÇIK BULGULAR (5. tur) — ölçüm ve değişmez", function () {
   });
 
   // ---------------------------------------------------------------------
-  // 7. TUR BULGUSU — slash sicil yüzeylerinin yalnız bir kısmını sıfırlıyor
-  // Bu iki test BUGÜN GEÇİYOR; geçmeleri bug'ın var olduğunu gösterir.
-  // Düzeltme gelince kutbu çevir (0n / >0n bekle), SİLME.
+  // 7. TUR REGRESYONU — slash bütün sicil yüzeylerini aynı anda sıfırlar.
+  // Bu iki test bulgu kutbundan pozitif regresyona çevrildi; silinmemeli.
   // Hedef davranış spec.test.js > SPEC 7'de yazılı.
   // ---------------------------------------------------------------------
 
-  it("BULGU: slash global sicili sıfırlıyor ama kategori sicilini bırakıyor", async function () {
+  it("REGRESYON: slash global ve kategori sicilini birlikte sıfırlıyor", async function () {
     const { usdc, market, addr, signers } = await build("MockUSDC");
     const [bad, agent, c1, c2, c3] = signers;
     await reg(usdc, market, addr, agent);
@@ -173,12 +172,12 @@ describe("AÇIK BULGULAR (5. tur) — ölçüm ve değişmez", function () {
     await warp(31 * DAY);
     await market.claimTimeout(dead);
 
-    // Aynı ajan için kontratın verdiği iki cevap birbiriyle çelişiyor.
+    // Global ve kategori yüzeyleri aynı reputation epoch'unu göstermeli.
     expect((await market.getAgentReputation(agent.address))[0]).to.equal(0n);
-    expect(await market.getReputationByCategory(agent.address, "audit")).to.equal(300n);
+    expect(await market.getReputationByCategory(agent.address, "audit")).to.equal(0n);
   });
 
-  it("BULGU: slash sonrası yeniden kayıtta eski müşteriden puan/ücret bir daha oluşmuyor", async function () {
+  it("REGRESYON: slash sonrası gerçek iş eski müşteriden yeni puan ve ücret üretir", async function () {
     const { usdc, market, addr, signers } = await build("MockUSDC");
     const [bad, agent, c1] = signers;
     await reg(usdc, market, addr, agent);
@@ -207,9 +206,10 @@ describe("AÇIK BULGULAR (5. tur) — ölçüm ve değişmez", function () {
     const feeBefore = await market.reputationFeeSinkBalance();
     await done(c1);                        // aynı müşteriye gerçek iş
 
-    // servedClient[] slash'te temizlenmediği için ne puan ne ücret oluşuyor:
-    // slash geri alınamaz bir cezadan kalıcı bir yasağa dönüşmüş durumda.
-    expect((await market.getAgentReputation(agent.address))[0]).to.equal(0n);
-    expect(await market.reputationFeeSinkBalance()).to.equal(feeBefore);
+    // Yeni epoch eski dedupe kayıtlarını erişilemez bırakır; gerçek iş yeniden
+    // puan üretir ve marjinal reputation fee'sini tekrar öder.
+    expect((await market.getAgentReputation(agent.address))[0]).to.equal(1n);
+    expect(await market.getReputationByCategory(agent.address, "audit")).to.be.greaterThan(0n);
+    expect(await market.reputationFeeSinkBalance()).to.be.greaterThan(feeBefore);
   });
 });

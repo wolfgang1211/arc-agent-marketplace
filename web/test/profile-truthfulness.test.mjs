@@ -57,8 +57,8 @@ test("profile source avoids overstated rate and raw point claims", async () => {
   assert.match(source, /fromBlock: 0n/);
   assert.match(source, /Slashed \$\{slashCount\} time/);
   assert.match(source, /categoryDistinctClients\(score\)/);
-  assert.match(source, /Category counters are unavailable after a slash because the contract does not reset category history/);
-  assert.match(source, /slashCount > 0/);
+  assert.doesNotMatch(source, /Category counters are unavailable after a slash/);
+  assert.doesNotMatch(source, /\) : slashCount > 0 \? \(/);
 });
 
 test("compiled profile artifacts cannot reintroduce forbidden trust claims", async () => {
