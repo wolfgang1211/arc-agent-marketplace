@@ -3,11 +3,12 @@
 Every deployment card must consume this gate before an address is announced, configured in the frontend, or used for integration testing.
 
 1. Run `npm run verify:artifact` from `contract/` to clean-compile and verify the governed build identity.
-2. Run `npm run attest:deployment -- --rpc <RPC_URL> --address <DEPLOYED_ADDRESS>`.
-3. Preserve the JSON output in the deployment record: RPC URL, chain ID, block tag, address, decoded byte length, observed and reconstructed expected keccak256 hashes, normalized hash, immutable getter values, and exit status.
-4. Accept the address only when the command exits zero and prints `ACCEPTED`. Any chain, length, immutable configuration, hash, or byte mismatch exits nonzero and rejects the address.
+2. Review `DEPLOYMENT-MANIFEST.json`. It is the explicit expected chain, constructor configuration, and immutable-name policy; never derive expectations from the deployed contract.
+3. Run `npm run attest:deployment -- --rpc <RPC_URL> --address <DEPLOYED_ADDRESS> --tx <DEPLOYMENT_TX_HASH>`.
+4. Preserve the JSON output in the deployment record: RPC URL, chain ID, block tag, address, deployment transaction, constructor arguments, decoded byte length, observed and reconstructed expected keccak256 hashes, normalized hash, immutable getter values, and exit status.
+5. Accept the address only when the command exits zero and prints `ACCEPTED`. Any chain, manifest coverage, creation input, constructor argument, getter, length, hash, or byte mismatch exits nonzero and rejects the address.
 
-The compiler runtime contains placeholders for Solidity immutables. A raw hash of that unpatched artifact cannot equal normal on-chain runtime code. The executable gate therefore uses the compiler `immutableReferences` to reconstruct the exact expected runtime from every public immutable getter, then requires byte-for-byte equality and an exact runtime keccak256 match. It also verifies the recorded immutable-normalized identity. This attests both the governed code body and all constructor-derived immutable configuration. If a future immutable lacks a public no-argument getter, attestation fails closed.
+The compiler runtime contains placeholders for Solidity immutables. A raw hash of that unpatched artifact cannot equal normal on-chain runtime code. The executable gate dynamically resolves compiler AST IDs to immutable names, requires exactly one manifest rule for every name, and reconstructs runtime from manifest expectations rather than trusting getters. `SLASH_SINK` is explicitly resolved to the deployed address. Public getters must equal the same effective manifest configuration. The deployment transaction must create the attested address and its input must exactly equal governed creation bytecode plus ABI-encoded manifest constructor arguments. Unknown, unmapped, missing, or duplicate immutable rules fail closed. Exact runtime bytes/hash and immutable-normalized identity are still required.
 
 `ARTIFACT-IDENTITY.json` is governed. Update it only for an intentional contract change, with the old and new creation/runtime-template hashes and a specific reason recorded in the contract-changing commit or governed change record. Regenerating identity merely to silence `verify:artifact` is forbidden.
 

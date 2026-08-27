@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "contract": "contracts/AgentMarketplace.sol:AgentMarketplace",
+  "expectedChainId": "0x4cef52",
+  "constructorArguments": [
+    {
+      "name": "usdcAddress",
+      "type": "address",
+      "value": "0x3600000000000000000000000000000000000000"
+    }
+  ],
+  "immutableRules": [
+    {
+      "name": "usdc",
+      "source": "constructorArgument",
+      "argument": "usdcAddress"
+    },
+    {
+      "name": "SLASH_SINK",
+      "source": "deployedAddress"
+    }
+  ]
+}

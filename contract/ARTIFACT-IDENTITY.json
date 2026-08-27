@@ -49,12 +49,13 @@
   "independentExpectedComparison": "match: clean Cancun build matches both independently supplied byte lengths and hashes",
   "deploymentAttestation": {
     "expectedChainId": "0x4cef52",
-    "strategy": "immutable-aware exact runtime reconstruction",
+    "strategy": "manifest-governed creation input and immutable-aware exact runtime reconstruction",
+    "manifest": "DEPLOYMENT-MANIFEST.json",
     "normalizedDeployedBytecode": {
       "rawByteLength": 13868,
       "keccak256": "0xa3a99e0b162847232dd84a1520b2046bb2a4435c9a423c5315652aefefaebd33"
     },
-    "requirements": "Verify the recorded compiler template, normalize every compiler immutableReference, read every public immutable getter, reconstruct the expected runtime, and require byte-for-byte equality plus exact decoded length and keccak256. Any mismatch rejects the address."
+    "requirements": "Map every compiler immutableReference AST ID to a name dynamically; require exactly one explicit manifest rule per name; verify the creation transaction input against governed creation bytecode plus manifest constructor arguments; require getters to equal manifest effective config; reconstruct runtime from manifest expectations; and require byte-for-byte equality, exact decoded length, and keccak256. SLASH_SINK resolves to the deployed address. Unknown, unmapped, missing, or duplicate rules reject the address."
   },
   "arcRpcOpcodeProbes": {
     "rpcUrl": "https://rpc.testnet.arc.network",

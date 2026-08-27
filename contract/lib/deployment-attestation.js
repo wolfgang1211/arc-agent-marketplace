@@ -5,6 +5,7 @@ const {
   AbiCoder,
   Interface,
   getAddress,
+  getCreateAddress,
   hexlify,
   keccak256,
   toBeHex,
@@ -13,6 +14,7 @@ const {
 
 const CONTRACT_SOURCE = "contracts/AgentMarketplace.sol";
 const CONTRACT_NAME = "AgentMarketplace";
+const CONTRACT_ID = `${CONTRACT_SOURCE}:${CONTRACT_NAME}`;
 
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
@@ -26,6 +28,19 @@ function rawBytecodeIdentity(bytecode, label = "bytecode") {
   };
 }
 
+function compilerMetadataFromBuildInfo(buildInfo) {
+  const contract = buildInfo.output?.contracts?.[CONTRACT_SOURCE]?.[CONTRACT_NAME];
+  const source = buildInfo.output?.sources?.[CONTRACT_SOURCE];
+  if (!contract || !source?.ast) return null;
+  return {
+    abi: contract.abi,
+    ast: source.ast,
+    creationBytecode: `0x${contract.evm.bytecode.object}`,
+    deployedBytecode: `0x${contract.evm.deployedBytecode.object}`,
+    immutableReferences: contract.evm.deployedBytecode.immutableReferences ?? {},
+  };
+}
+
 function loadCompilerMetadata(root) {
   const directory = path.join(root, "artifacts", "build-info");
   const candidates = fs
@@ -34,19 +49,10 @@ function loadCompilerMetadata(root) {
     .map((name) => path.join(directory, name));
 
   for (const candidate of candidates) {
-    const buildInfo = readJson(candidate);
-    const contract = buildInfo.output?.contracts?.[CONTRACT_SOURCE]?.[CONTRACT_NAME];
-    const source = buildInfo.output?.sources?.[CONTRACT_SOURCE];
-    if (contract && source?.ast) {
-      return {
-        abi: contract.abi,
-        ast: source.ast,
-        deployedBytecode: `0x${contract.evm.deployedBytecode.object}`,
-        immutableReferences: contract.evm.deployedBytecode.immutableReferences ?? {},
-      };
-    }
+    const metadata = compilerMetadataFromBuildInfo(readJson(candidate));
+    if (metadata) return metadata;
   }
-  throw new Error(`No build-info entry found for ${CONTRACT_SOURCE}:${CONTRACT_NAME}`);
+  throw new Error(`No build-info entry found for ${CONTRACT_ID}`);
 }
 
 function collectImmutableVariables(ast) {
@@ -114,6 +120,12 @@ function assertRecordedTemplate(identity, metadata) {
     variables.size,
     "Compiler immutableReferences must cover every immutable variable",
   );
+  const creationIdentity = rawBytecodeIdentity(metadata.creationBytecode, "compiler creation bytecode");
+  assert.deepEqual(
+    creationIdentity,
+    identity.build.creationBytecode,
+    "Clean compiler creation bytecode does not match ARTIFACT-IDENTITY.json",
+  );
   const templateIdentity = rawBytecodeIdentity(metadata.deployedBytecode, "compiler deployed bytecode");
   assert.deepEqual(
     templateIdentity,
@@ -132,17 +144,134 @@ function assertRecordedTemplate(identity, metadata) {
   );
 }
 
-async function attestDeployment({ provider, address, root, identityPath }) {
+function constructorFragment(abi) {
+  const fragment = abi.find((entry) => entry.type === "constructor");
+  return fragment ?? { inputs: [] };
+}
+
+function resolveManifest(manifest, metadata, deployedAddress) {
+  assert.equal(manifest.schemaVersion, 1, "Unsupported deployment manifest schemaVersion");
+  assert.equal(manifest.contract, CONTRACT_ID, "Deployment manifest targets the wrong contract");
+  assert.match(manifest.expectedChainId, /^0x[0-9a-fA-F]+$/, "Manifest expectedChainId is invalid");
+  assert.ok(Array.isArray(manifest.constructorArguments), "Manifest constructorArguments must be an array");
+  assert.ok(Array.isArray(manifest.immutableRules), "Manifest immutableRules must be an array");
+
+  const constructor = constructorFragment(metadata.abi);
+  assert.equal(
+    manifest.constructorArguments.length,
+    constructor.inputs.length,
+    "Manifest must define every constructor argument exactly once",
+  );
+  const argumentsByName = new Map();
+  constructor.inputs.forEach((input, index) => {
+    const rule = manifest.constructorArguments[index];
+    assert.equal(rule.name, input.name, `Constructor argument ${index} name mismatch`);
+    assert.equal(rule.type, input.type, `Constructor argument ${input.name} type mismatch`);
+    assert.ok(!argumentsByName.has(rule.name), `Duplicate constructor argument rule ${rule.name}`);
+    argumentsByName.set(rule.name, rule.value);
+  });
+
+  const variables = collectImmutableVariables(metadata.ast);
+  const referencedByName = new Map();
+  for (const id of Object.keys(metadata.immutableReferences)) {
+    const variable = variables.get(id);
+    assert.ok(variable, `Unknown compiler immutable AST id ${id}`);
+    assert.ok(variable.name, `Compiler immutable AST id ${id} has no name`);
+    assert.ok(!referencedByName.has(variable.name), `Duplicate compiler immutable name ${variable.name}`);
+    referencedByName.set(variable.name, { id, variable });
+  }
+
+  const rulesByName = new Map();
+  for (const rule of manifest.immutableRules) {
+    assert.ok(rule && typeof rule.name === "string", "Immutable manifest rule needs a name");
+    assert.ok(!rulesByName.has(rule.name), `Duplicate immutable manifest rule ${rule.name}`);
+    assert.ok(referencedByName.has(rule.name), `Unknown immutable manifest rule ${rule.name}`);
+    rulesByName.set(rule.name, rule);
+  }
+  assert.equal(
+    rulesByName.size,
+    referencedByName.size,
+    "Manifest must define exactly one rule for every compiler immutable",
+  );
+
+  const expectedById = new Map();
+  const effectiveConfig = {};
+  for (const [name, { id, variable }] of referencedByName) {
+    const rule = rulesByName.get(name);
+    assert.ok(rule, `Missing immutable manifest rule ${name}`);
+    let value;
+    if (rule.source === "constructorArgument") {
+      assert.ok(argumentsByName.has(rule.argument), `Immutable ${name} references unknown constructor argument`);
+      value = argumentsByName.get(rule.argument);
+    } else if (rule.source === "deployedAddress") {
+      value = deployedAddress;
+    } else if (rule.source === "literal") {
+      value = rule.value;
+    } else {
+      assert.fail(`Immutable ${name} has unsupported manifest source ${rule.source}`);
+    }
+    assert.notEqual(value, undefined, `Immutable ${name} manifest value is missing`);
+    expectedById.set(id, { name, variable, value });
+    effectiveConfig[name] = String(value);
+  }
+
+  return {
+    constructorTypes: constructor.inputs.map((input) => input.type),
+    constructorValues: constructor.inputs.map((input) => argumentsByName.get(input.name)),
+    effectiveConfig,
+    expectedById,
+  };
+}
+
+async function attestDeployment({
+  provider,
+  address,
+  transactionHash,
+  root,
+  identityPath,
+  manifestPath,
+  manifest,
+  metadata,
+}) {
   const identity = readJson(identityPath);
-  const metadata = loadCompilerMetadata(root);
-  assertRecordedTemplate(identity, metadata);
+  const compilerMetadata = metadata ?? loadCompilerMetadata(root);
+  assertRecordedTemplate(identity, compilerMetadata);
 
   const checkedAddress = getAddress(address);
+  const deploymentManifest = manifest ?? readJson(manifestPath);
+  const resolved = resolveManifest(deploymentManifest, compilerMetadata, checkedAddress);
+  if (manifestPath) {
+    assert.equal(
+      deploymentManifest.expectedChainId.toLowerCase(),
+      identity.deploymentAttestation.expectedChainId.toLowerCase(),
+      "Deployment manifest chainId does not match governed artifact identity",
+    );
+  }
   const chainId = (await provider.send("eth_chainId", [])).toLowerCase();
   assert.equal(
     chainId,
-    identity.deploymentAttestation.expectedChainId.toLowerCase(),
+    deploymentManifest.expectedChainId.toLowerCase(),
     `Unexpected chainId ${chainId}; address rejected`,
+  );
+
+  assert.ok(transactionHash, "Deployment transaction hash is required");
+  const transaction = await provider.send("eth_getTransactionByHash", [transactionHash]);
+  assert.ok(transaction, "Deployment transaction was not found");
+  assert.equal(transaction.to, null, "Attested transaction is not contract creation");
+  assert.equal(
+    getCreateAddress({ from: transaction.from, nonce: BigInt(transaction.nonce) }),
+    checkedAddress,
+    "Deployment transaction does not create the attested address",
+  );
+  const encodedArguments = AbiCoder.defaultAbiCoder().encode(
+    resolved.constructorTypes,
+    resolved.constructorValues,
+  );
+  const expectedInput = `${compilerMetadata.creationBytecode}${encodedArguments.slice(2)}`.toLowerCase();
+  assert.equal(
+    (transaction.input ?? transaction.data).toLowerCase(),
+    expectedInput,
+    "Deployment transaction input does not match governed creation bytecode and constructor arguments",
   );
 
   const observedCode = (await provider.send("eth_getCode", [checkedAddress, "latest"])).toLowerCase();
@@ -151,42 +280,43 @@ async function attestDeployment({ provider, address, root, identityPath }) {
   assert.equal(
     observedIdentity.rawByteLength,
     identity.build.deployedBytecode.rawByteLength,
-    `Deployed byte length mismatch; address rejected`,
+    "Deployed byte length mismatch; address rejected",
   );
 
-  const variables = collectImmutableVariables(metadata.ast);
-  const iface = new Interface(metadata.abi);
+  const iface = new Interface(compilerMetadata.abi);
   const valuesById = new Map();
   const immutableValues = {};
-
-  for (const id of Object.keys(metadata.immutableReferences)) {
-    const variable = variables.get(id);
-    assert.ok(variable, `No AST variable found for immutable id ${id}`);
-    assert.equal(variable.visibility, "public", `Immutable ${variable.name} must have a public getter`);
-    const fragment = iface.getFunction(variable.name);
-    assert.ok(fragment && fragment.inputs.length === 0, `Immutable ${variable.name} needs a no-argument getter`);
+  for (const [id, expected] of resolved.expectedById) {
+    const { name, variable, value } = expected;
+    assert.equal(variable.visibility, "public", `Immutable ${name} must have a public getter`);
+    const fragment = iface.getFunction(name);
+    assert.ok(fragment && fragment.inputs.length === 0, `Immutable ${name} needs a no-argument getter`);
+    assert.equal(fragment.outputs.length, 1, `Immutable ${name} getter must have one output`);
     const result = await provider.send("eth_call", [
       { to: checkedAddress, data: iface.encodeFunctionData(fragment) },
       "latest",
     ]);
-    const value = iface.decodeFunctionResult(fragment, result)[0];
-    valuesById.set(
-      id,
-      encodeImmutableValue(fragment.outputs[0].type, value, metadata.immutableReferences[id][0].length),
+    const observedValue = iface.decodeFunctionResult(fragment, result)[0];
+    assert.equal(
+      AbiCoder.defaultAbiCoder().encode([fragment.outputs[0].type], [observedValue]),
+      AbiCoder.defaultAbiCoder().encode([fragment.outputs[0].type], [value]),
+      `Immutable getter ${name} does not match manifest effective config`,
     );
-    immutableValues[variable.name] = typeof value === "bigint" ? value.toString() : String(value);
+    const length = compilerMetadata.immutableReferences[id][0].length;
+    valuesById.set(id, encodeImmutableValue(fragment.outputs[0].type, value, length));
+    immutableValues[name] = typeof observedValue === "bigint" ? observedValue.toString() : String(observedValue);
   }
 
   const expectedCode = patchExpectedRuntime(
-    metadata.deployedBytecode,
-    metadata.immutableReferences,
+    compilerMetadata.deployedBytecode,
+    compilerMetadata.immutableReferences,
     valuesById,
   ).toLowerCase();
   const expectedIdentity = rawBytecodeIdentity(expectedCode, "reconstructed expected runtime");
   assert.equal(
     observedCode,
     expectedCode,
-    `Deployed code differs from the immutable-patched compiler runtime; address rejected`,
+    "Deployed code differs from the manifest-patched compiler runtime; address rejected",
   );
   assert.equal(observedIdentity.keccak256, expectedIdentity.keccak256);
 
@@ -196,10 +326,14 @@ async function attestDeployment({ provider, address, root, identityPath }) {
     chainId,
     blockTag,
     address: checkedAddress,
+    transactionHash,
     rawByteLength: observedIdentity.rawByteLength,
     observedKeccak256: observedIdentity.keccak256,
     expectedKeccak256: expectedIdentity.keccak256,
     normalizedKeccak256: identity.deploymentAttestation.normalizedDeployedBytecode.keccak256,
+    constructorArguments: Object.fromEntries(
+      deploymentManifest.constructorArguments.map((argument) => [argument.name, String(argument.value)]),
+    ),
     immutableValues,
   };
 }
@@ -207,9 +341,11 @@ async function attestDeployment({ provider, address, root, identityPath }) {
 module.exports = {
   attestDeployment,
   collectImmutableVariables,
+  compilerMetadataFromBuildInfo,
   flattenImmutableReferences,
   loadCompilerMetadata,
   normalizeBytecode,
   patchExpectedRuntime,
   rawBytecodeIdentity,
+  resolveManifest,
 };

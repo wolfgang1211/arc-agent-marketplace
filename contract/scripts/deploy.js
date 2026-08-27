@@ -1,8 +1,9 @@
 const hre = require("hardhat");
+const manifest = require("../DEPLOYMENT-MANIFEST.json");
 
-// Official Arc Testnet ERC-20 USDC address (verify at
-// https://docs.arc.io/arc/references/contract-addresses before each deploy).
-const ARC_TESTNET_USDC = "0x3600000000000000000000000000000000000000";
+const ARC_TESTNET_USDC = manifest.constructorArguments.find(
+  ({ name }) => name === "usdcAddress",
+)?.value;
 
 async function main() {
   const [deployer] = await hre.ethers.getSigners();
@@ -18,14 +19,19 @@ async function main() {
     console.warn("WARNING: not on Arc Testnet (expected chainId 5042002).");
   }
 
-  const usdcAddress = process.env.USDC_ADDRESS || ARC_TESTNET_USDC;
+  if (`0x${net.chainId.toString(16)}` !== manifest.expectedChainId) {
+    throw new Error(`Deployment manifest rejects chainId ${net.chainId}`);
+  }
+  const usdcAddress = ARC_TESTNET_USDC;
   console.log("Using USDC:", usdcAddress);
+  console.log("Using deployment manifest: DEPLOYMENT-MANIFEST.json");
 
   const Factory = await hre.ethers.getContractFactory("AgentMarketplace");
   const contract = await Factory.deploy(usdcAddress);
   await contract.waitForDeployment();
 
   const address = await contract.getAddress();
+  const deploymentTransaction = contract.deploymentTransaction();
   console.log("\nAgentMarketplace deployed to:", address);
   console.log("Explorer:", `https://testnet.arcscan.app/address/${address}`);
   console.log("Reputation getter: getAgentReputation(address)");
@@ -33,6 +39,8 @@ async function main() {
   console.log(
     "Next: npm run attest:deployment -- --rpc <RPC_URL> --address",
     address,
+    "--tx",
+    deploymentTransaction.hash,
   );
   console.log("Only an ACCEPTED result permits frontend/env consumption.");
 }
