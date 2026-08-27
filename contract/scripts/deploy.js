@@ -71,6 +71,11 @@ async function main() {
     mode === "verification" ? "DEPLOYMENT-MANIFEST.json" : "DEPLOYMENT-MANIFEST.production.json",
   );
 
+  if (process.env.PREFLIGHT_ONLY === "1") {
+    console.log("PREFLIGHT_ONLY=1: checks passed; no transaction was sent.");
+    return;
+  }
+
   const contract = await Factory.deploy(...constructorArgs);
   const deploymentTransaction = contract.deploymentTransaction();
   const receipt = await deploymentTransaction.wait();
