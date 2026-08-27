@@ -13,7 +13,12 @@ describe("AgentMarketplace", function () {
     await usdc.waitForDeployment();
 
     const Market = await ethers.getContractFactory("AgentMarketplace");
-    market = await Market.deploy(await usdc.getAddress());
+    market = await Market.deploy(
+      await usdc.getAddress(),
+      30 * 24 * 60 * 60,
+      30 * 24 * 60 * 60,
+      30 * 24 * 60 * 60,
+    );
     await market.waitForDeployment();
 
     // Fund the client and agent with USDC.

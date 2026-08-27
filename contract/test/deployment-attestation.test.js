@@ -26,25 +26,35 @@ const {
 const ROOT = path.resolve(__dirname, "..");
 const IDENTITY_PATH = path.join(ROOT, "ARTIFACT-IDENTITY.json");
 const HARDHAT_CHAIN_ID = "0x7a69";
+const VERIFICATION_TIMEOUT = 10 * 60;
+const PRODUCTION_TIMEOUT = 30 * 24 * 60 * 60;
 
-function deploymentManifest(usdcAddress) {
+function deploymentManifest(usdcAddress, mode = "verification") {
+  const timeout = mode === "verification" ? VERIFICATION_TIMEOUT : PRODUCTION_TIMEOUT;
   return {
     schemaVersion: 1,
+    mode,
     contract: "contracts/AgentMarketplace.sol:AgentMarketplace",
     expectedChainId: HARDHAT_CHAIN_ID,
     constructorArguments: [
       { name: "usdcAddress", type: "address", value: usdcAddress },
+      { name: "deliveryTimeout", type: "uint256", value: String(timeout) },
+      { name: "approvalTimeout", type: "uint256", value: String(timeout) },
+      { name: "disputeTimeout", type: "uint256", value: String(timeout) },
     ],
     immutableRules: [
       { name: "usdc", source: "constructorArgument", argument: "usdcAddress" },
       { name: "SLASH_SINK", source: "deployedAddress" },
+      { name: "DELIVERY_TIMEOUT", source: "constructorArgument", argument: "deliveryTimeout" },
+      { name: "APPROVAL_TIMEOUT", source: "constructorArgument", argument: "approvalTimeout" },
+      { name: "DISPUTE_TIMEOUT", source: "constructorArgument", argument: "disputeTimeout" },
     ],
   };
 }
 
-async function deployMarket(ethers, usdcAddress) {
+async function deployMarket(ethers, usdcAddress, timeout = VERIFICATION_TIMEOUT) {
   const Market = await ethers.getContractFactory("AgentMarketplace");
-  const market = await Market.deploy(usdcAddress);
+  const market = await Market.deploy(usdcAddress, timeout, timeout, timeout);
   await market.waitForDeployment();
   return market;
 }
@@ -150,9 +160,13 @@ describe("deployment bytecode attestation", function () {
     expect(result.address).to.equal(await market.getAddress());
     expect(result.transactionHash).to.equal(market.deploymentTransaction().hash);
     expect(result.constructorArguments.usdcAddress).to.equal(await usdc.getAddress());
+    expect(result.mode).to.equal("verification");
     expect(result.immutableValues).to.deep.equal({
       usdc: await usdc.getAddress(),
       SLASH_SINK: await market.getAddress(),
+      DELIVERY_TIMEOUT: String(VERIFICATION_TIMEOUT),
+      APPROVAL_TIMEOUT: String(VERIFICATION_TIMEOUT),
+      DISPUTE_TIMEOUT: String(VERIFICATION_TIMEOUT),
     });
     expect(result.observedKeccak256).to.equal(result.expectedKeccak256);
   });
@@ -177,6 +191,9 @@ describe("deployment bytecode attestation", function () {
     const code = runtimeFor(metadata, {
       usdc: await usdc.getAddress(),
       SLASH_SINK: wrongSlashSink,
+      DELIVERY_TIMEOUT: VERIFICATION_TIMEOUT,
+      APPROVAL_TIMEOUT: VERIFICATION_TIMEOUT,
+      DISPUTE_TIMEOUT: VERIFICATION_TIMEOUT,
     });
     const iface = new Interface(metadata.abi);
     const slashGetter = iface.getFunction("SLASH_SINK");
@@ -239,6 +256,16 @@ describe("deployment bytecode attestation", function () {
     ).to.be.rejectedWith("constructor arguments");
   });
 
+  it("rejects a verification deployment when attested as production mode", async function () {
+    const MockUSDC = await ethers.getContractFactory("MockUSDC");
+    const usdc = await MockUSDC.deploy();
+    const market = await deployMarket(ethers, await usdc.getAddress(), VERIFICATION_TIMEOUT);
+
+    await expect(
+      attestLocal(ethers, market, deploymentManifest(await usdc.getAddress(), "production")),
+    ).to.be.rejectedWith("constructor arguments");
+  });
+
   it("maps shifted immutable AST IDs from an alternate compiled source set", async function () {
     this.timeout(120000);
     const canonical = loadCompilerMetadata(ROOT);
@@ -270,12 +297,18 @@ describe("deployment bytecode attestation", function () {
       deployedAddress,
     );
     expect([...resolved.expectedById.values()].map(({ name }) => name).sort()).to.deep.equal([
+      "APPROVAL_TIMEOUT",
+      "DELIVERY_TIMEOUT",
+      "DISPUTE_TIMEOUT",
       "SLASH_SINK",
       "usdc",
     ]);
     expect(resolved.effectiveConfig).to.deep.equal({
       usdc: usdcAddress,
       SLASH_SINK: getAddress(deployedAddress),
+      DELIVERY_TIMEOUT: String(VERIFICATION_TIMEOUT),
+      APPROVAL_TIMEOUT: String(VERIFICATION_TIMEOUT),
+      DISPUTE_TIMEOUT: String(VERIFICATION_TIMEOUT),
     });
   });
 

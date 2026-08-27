@@ -16,7 +16,12 @@ describe("ARC GUARD — kontrata bedava USDC gönderilmesi", function () {
   it("hediye USDC ne sicili ne ödemeleri ne de sink sayaçlarını etkiler", async function () {
     const [client, agent, stranger] = await ethers.getSigners();
     const usdc = await (await ethers.getContractFactory("MockUSDC")).deploy();
-    const market = await (await ethers.getContractFactory("AgentMarketplace")).deploy(await usdc.getAddress());
+    const market = await (await ethers.getContractFactory("AgentMarketplace")).deploy(
+      await usdc.getAddress(),
+      30 * 24 * 60 * 60,
+      30 * 24 * 60 * 60,
+      30 * 24 * 60 * 60,
+    );
     const addr = await market.getAddress();
     const stake = await market.AGENT_STAKE();
     const reward = await market.MIN_JOB_REWARD();

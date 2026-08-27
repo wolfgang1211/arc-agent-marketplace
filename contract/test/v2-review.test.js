@@ -23,7 +23,12 @@ async function build(tokenName) {
   const Token = await ethers.getContractFactory(tokenName);
   const usdc = await Token.deploy();
   const Market = await ethers.getContractFactory("AgentMarketplace");
-  const market = await Market.deploy(await usdc.getAddress());
+  const market = await Market.deploy(
+    await usdc.getAddress(),
+    30 * 24 * 60 * 60,
+    30 * 24 * 60 * 60,
+    30 * 24 * 60 * 60,
+  );
   const addr = await market.getAddress();
   const stake = await market.AGENT_STAKE();
   return { usdc, market, addr, signers, stake };

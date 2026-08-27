@@ -33,7 +33,12 @@ async function deploy() {
   const MockUSDC = await ethers.getContractFactory("MockUSDC");
   const usdc = await MockUSDC.deploy();
   const Market = await ethers.getContractFactory("AgentMarketplace");
-  const market = await Market.deploy(await usdc.getAddress());
+  const market = await Market.deploy(
+    await usdc.getAddress(),
+    30 * 24 * 60 * 60,
+    30 * 24 * 60 * 60,
+    30 * 24 * 60 * 60,
+  );
   return { usdc, market, signers, addr: await market.getAddress() };
 }
 
