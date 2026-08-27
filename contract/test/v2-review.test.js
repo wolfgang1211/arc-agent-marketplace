@@ -141,4 +141,75 @@ describe("AÇIK BULGULAR (5. tur) — ölçüm ve değişmez", function () {
     const rep = await market.getAgentReputation(farmer.address);
     expect(rep[0]).to.equal(4n);
   });
+
+  // ---------------------------------------------------------------------
+  // 7. TUR BULGUSU — slash sicil yüzeylerinin yalnız bir kısmını sıfırlıyor
+  // Bu iki test BUGÜN GEÇİYOR; geçmeleri bug'ın var olduğunu gösterir.
+  // Düzeltme gelince kutbu çevir (0n / >0n bekle), SİLME.
+  // Hedef davranış spec.test.js > SPEC 7'de yazılı.
+  // ---------------------------------------------------------------------
+
+  it("BULGU: slash global sicili sıfırlıyor ama kategori sicilini bırakıyor", async function () {
+    const { usdc, market, addr, signers } = await build("MockUSDC");
+    const [bad, agent, c1, c2, c3] = signers;
+    await reg(usdc, market, addr, agent);
+    const min = await market.MIN_JOB_REWARD();
+
+    for (const c of [c1, c2, c3]) {
+      await usdc.mint(c.address, min);
+      const id = (await market.jobCount()) + 1n;
+      await usdc.connect(c).approve(addr, min);
+      await market.connect(c)["postJob(string,uint256,string)"]("is", min, "audit");
+      await market.connect(agent).acceptJob(id);
+      await market.connect(agent).submitDeliverable(id, "ipfs://x");
+      await market.connect(c).approveAndPay(id);
+    }
+
+    await usdc.mint(bad.address, min);
+    const dead = (await market.jobCount()) + 1n;
+    await usdc.connect(bad).approve(addr, min);
+    await market.connect(bad)["postJob(string,uint256,string)"]("terk", min, "audit");
+    await market.connect(agent).acceptJob(dead);
+    await warp(31 * DAY);
+    await market.claimTimeout(dead);
+
+    // Aynı ajan için kontratın verdiği iki cevap birbiriyle çelişiyor.
+    expect((await market.getAgentReputation(agent.address))[0]).to.equal(0n);
+    expect(await market.getReputationByCategory(agent.address, "audit")).to.equal(300n);
+  });
+
+  it("BULGU: slash sonrası yeniden kayıtta eski müşteriden puan/ücret bir daha oluşmuyor", async function () {
+    const { usdc, market, addr, signers } = await build("MockUSDC");
+    const [bad, agent, c1] = signers;
+    await reg(usdc, market, addr, agent);
+    const min = await market.MIN_JOB_REWARD();
+
+    async function done(c) {
+      await usdc.mint(c.address, min);
+      const id = (await market.jobCount()) + 1n;
+      await usdc.connect(c).approve(addr, min);
+      await market.connect(c)["postJob(string,uint256,string)"]("is", min, "audit");
+      await market.connect(agent).acceptJob(id);
+      await market.connect(agent).submitDeliverable(id, "ipfs://x");
+      await market.connect(c).approveAndPay(id);
+    }
+
+    await done(c1);
+    await usdc.mint(bad.address, min);
+    const dead = (await market.jobCount()) + 1n;
+    await usdc.connect(bad).approve(addr, min);
+    await market.connect(bad)["postJob(string,uint256,string)"]("terk", min, "audit");
+    await market.connect(agent).acceptJob(dead);
+    await warp(31 * DAY);
+    await market.claimTimeout(dead);
+
+    await reg(usdc, market, addr, agent); // 100 USDC yeni stake yatırdı
+    const feeBefore = await market.reputationFeeSinkBalance();
+    await done(c1);                        // aynı müşteriye gerçek iş
+
+    // servedClient[] slash'te temizlenmediği için ne puan ne ücret oluşuyor:
+    // slash geri alınamaz bir cezadan kalıcı bir yasağa dönüşmüş durumda.
+    expect((await market.getAgentReputation(agent.address))[0]).to.equal(0n);
+    expect(await market.reputationFeeSinkBalance()).to.equal(feeBefore);
+  });
 });

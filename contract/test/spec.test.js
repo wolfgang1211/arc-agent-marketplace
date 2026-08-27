@@ -586,3 +586,100 @@ describe("SPEC 5 — Kimlik ve sayaç hijyeni", function () {
     requireFn(market, "getJobsPaged");
   });
 });
+
+/**
+ * ============================================================================
+ * SPEC 7 (7. tur) — SLASH BÜTÜN SİCİL YÜZEYLERİNİ AYNI ANDA SIFIRLAR
+ * ============================================================================
+ * Özellik (semptom değil): "slash" tek bir sayaç değil, ajanın sicil
+ * kimliğini sıfırlar. Kontrat aynı ajan için birbiriyle çelişen iki sicil
+ * göstermemelidir.
+ *
+ * İki farklı kategoriyle ölçülüyor — böylece "slash'e sebep olan işin
+ * kategorisini sıfırla" gibi semptomu kapatan bir yama bu testi GEÇEMEZ.
+ *
+ * İkinci parça: slash geri alınamaz bir cezadır, kalıcı bir yasak değil.
+ * Yeniden kayıt olup (100 USDC yeni stake) gerçekten iş yapan ajan
+ * puanını yeniden kazanabilmeli ve reputation fee'sini yeniden ödemeli.
+ * ============================================================================
+ */
+describe("SPEC 7 — slash sonrası sicil tutarlılığı", function () {
+
+  async function slashViaAbandonedJob(usdc, market, addr, client, agent) {
+    let min = 1n;
+    try { min = await market.MIN_JOB_REWARD(); } catch {}
+    await usdc.mint(client.address, min);
+    const id = (await market.jobCount()) + 1n;
+    await usdc.connect(client).approve(addr, min);
+    await market.connect(client)["postJob(string,uint256,string)"]("terk", min, "audit");
+    await market.connect(agent).acceptJob(id);
+    await ethers.provider.send("evm_increaseTime", [31 * DAY]);
+    await ethers.provider.send("evm_mine", []);
+    await market.claimTimeout(id);
+  }
+
+  async function completedJob(usdc, market, addr, client, agent, category) {
+    let min = 1n;
+    try { min = await market.MIN_JOB_REWARD(); } catch {}
+    await usdc.mint(client.address, min);
+    const id = (await market.jobCount()) + 1n;
+    await usdc.connect(client).approve(addr, min);
+    await market.connect(client)["postJob(string,uint256,string)"]("is", min, category);
+    await market.connect(agent).acceptJob(id);
+    await market.connect(agent).submitDeliverable(id, "ipfs://x");
+    await market.connect(client).approveAndPay(id);
+    return id;
+  }
+
+  it("slash sonrası HİÇBİR kategori sicili ayakta kalmaz", async function () {
+    const { usdc, market, signers, addr } = await deploy();
+    const [bad, agent, c1, c2] = signers;
+    await registerAgent(usdc, market, addr, agent);
+
+    await completedJob(usdc, market, addr, c1, agent, "audit");
+    await completedJob(usdc, market, addr, c2, agent, "ceviri");
+
+    expect(await market.getReputationByCategory(agent.address, "audit")).to.be.greaterThan(0n);
+    expect(await market.getReputationByCategory(agent.address, "ceviri")).to.be.greaterThan(0n);
+
+    await slashViaAbandonedJob(usdc, market, addr, bad, agent);
+
+    expect(
+      (await market.getAgentReputation(agent.address))[0],
+      "global sicil sıfırlanmadı"
+    ).to.equal(0n);
+    expect(
+      await market.getReputationByCategory(agent.address, "audit"),
+      "slash'e sebep olan kategori sıfırlanmadı"
+    ).to.equal(0n);
+    expect(
+      await market.getReputationByCategory(agent.address, "ceviri"),
+      "İLGİSİZ kategori ayakta kaldı — semptom yaması, özellik değil"
+    ).to.equal(0n);
+  });
+
+  it("slash sonrası yeniden kayıt olan ajan eski müşteriden yeniden puan kazanır ve ücretini öder", async function () {
+    const { usdc, market, signers, addr } = await deploy();
+    const [bad, agent, c1] = signers;
+    await registerAgent(usdc, market, addr, agent);
+    await completedJob(usdc, market, addr, c1, agent, "audit");
+    await slashViaAbandonedJob(usdc, market, addr, bad, agent);
+
+    await registerAgent(usdc, market, addr, agent); // yeni 100 USDC stake
+    const feeBefore = await market.reputationFeeSinkBalance();
+    await completedJob(usdc, market, addr, c1, agent, "audit");
+
+    expect(
+      (await market.getAgentReputation(agent.address))[0],
+      "gerçek iş yapıldı ama puan gelmedi — slash kalıcı yasağa dönüşmüş"
+    ).to.equal(1n);
+    expect(
+      await market.getReputationByCategory(agent.address, "audit"),
+      "kategori sicili yeniden birikmiyor"
+    ).to.be.greaterThan(0n);
+    expect(
+      await market.reputationFeeSinkBalance(),
+      "puan yeniden kazanıldı ama marjinal maliyet alınmadı (SPEC 3 delinir)"
+    ).to.be.greaterThan(feeBefore);
+  });
+});
