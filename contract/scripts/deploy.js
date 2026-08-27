@@ -1,4 +1,5 @@
 const hre = require("hardhat");
+const { assertDeploymentManifest } = require("../lib/deployment-manifest");
 const manifests = {
   verification: require("../DEPLOYMENT-MANIFEST.json"),
   production: require("../DEPLOYMENT-MANIFEST.production.json"),
@@ -9,6 +10,7 @@ function deploymentConfig(mode) {
   if (!manifest || manifest.mode !== mode) {
     throw new Error("Select deploy:verification or deploy:production explicitly");
   }
+  assertDeploymentManifest(manifest, mode);
   return {
     manifest,
     values: Object.fromEntries(

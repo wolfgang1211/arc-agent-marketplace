@@ -22,12 +22,12 @@
     {
       "name": "approvalTimeout",
       "type": "uint256",
-      "value": "600"
+      "value": "900"
     },
     {
       "name": "disputeTimeout",
       "type": "uint256",
-      "value": "600"
+      "value": "1200"
     }
   ],
   "immutableRules": [

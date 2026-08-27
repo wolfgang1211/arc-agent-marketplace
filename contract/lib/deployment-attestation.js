@@ -11,6 +11,7 @@ const {
   toBeHex,
   zeroPadValue,
 } = require("ethers");
+const { assertDeploymentManifest } = require("./deployment-manifest");
 
 const CONTRACT_SOURCE = "contracts/AgentMarketplace.sol";
 const CONTRACT_NAME = "AgentMarketplace";
@@ -244,6 +245,7 @@ async function attestDeployment({
 
   const checkedAddress = getAddress(address);
   const deploymentManifest = manifest ?? readJson(manifestPath);
+  assertDeploymentManifest(deploymentManifest);
   const resolved = resolveManifest(deploymentManifest, compilerMetadata, checkedAddress);
   if (manifestPath) {
     assert.equal(
