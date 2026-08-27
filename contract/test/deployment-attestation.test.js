@@ -22,15 +22,26 @@ const {
   patchExpectedRuntime,
   resolveManifest,
 } = require("../lib/deployment-attestation");
+const { assertDeploymentManifest } = require("../lib/deployment-manifest");
 
 const ROOT = path.resolve(__dirname, "..");
 const IDENTITY_PATH = path.join(ROOT, "ARTIFACT-IDENTITY.json");
 const HARDHAT_CHAIN_ID = "0x7a69";
-const VERIFICATION_TIMEOUT = 10 * 60;
+const VERIFICATION_TIMEOUTS = Object.freeze({
+  deliveryTimeout: 10 * 60,
+  approvalTimeout: 15 * 60,
+  disputeTimeout: 20 * 60,
+});
 const PRODUCTION_TIMEOUT = 30 * 24 * 60 * 60;
 
 function deploymentManifest(usdcAddress, mode = "verification") {
-  const timeout = mode === "verification" ? VERIFICATION_TIMEOUT : PRODUCTION_TIMEOUT;
+  const timeouts = mode === "verification"
+    ? VERIFICATION_TIMEOUTS
+    : {
+        deliveryTimeout: PRODUCTION_TIMEOUT,
+        approvalTimeout: PRODUCTION_TIMEOUT,
+        disputeTimeout: PRODUCTION_TIMEOUT,
+      };
   return {
     schemaVersion: 1,
     mode,
@@ -38,9 +49,9 @@ function deploymentManifest(usdcAddress, mode = "verification") {
     expectedChainId: HARDHAT_CHAIN_ID,
     constructorArguments: [
       { name: "usdcAddress", type: "address", value: usdcAddress },
-      { name: "deliveryTimeout", type: "uint256", value: String(timeout) },
-      { name: "approvalTimeout", type: "uint256", value: String(timeout) },
-      { name: "disputeTimeout", type: "uint256", value: String(timeout) },
+      { name: "deliveryTimeout", type: "uint256", value: String(timeouts.deliveryTimeout) },
+      { name: "approvalTimeout", type: "uint256", value: String(timeouts.approvalTimeout) },
+      { name: "disputeTimeout", type: "uint256", value: String(timeouts.disputeTimeout) },
     ],
     immutableRules: [
       { name: "usdc", source: "constructorArgument", argument: "usdcAddress" },
@@ -52,9 +63,14 @@ function deploymentManifest(usdcAddress, mode = "verification") {
   };
 }
 
-async function deployMarket(ethers, usdcAddress, timeout = VERIFICATION_TIMEOUT) {
+async function deployMarket(ethers, usdcAddress, timeouts = VERIFICATION_TIMEOUTS) {
   const Market = await ethers.getContractFactory("AgentMarketplace");
-  const market = await Market.deploy(usdcAddress, timeout, timeout, timeout);
+  const market = await Market.deploy(
+    usdcAddress,
+    timeouts.deliveryTimeout,
+    timeouts.approvalTimeout,
+    timeouts.disputeTimeout,
+  );
   await market.waitForDeployment();
   return market;
 }
@@ -164,9 +180,9 @@ describe("deployment bytecode attestation", function () {
     expect(result.immutableValues).to.deep.equal({
       usdc: await usdc.getAddress(),
       SLASH_SINK: await market.getAddress(),
-      DELIVERY_TIMEOUT: String(VERIFICATION_TIMEOUT),
-      APPROVAL_TIMEOUT: String(VERIFICATION_TIMEOUT),
-      DISPUTE_TIMEOUT: String(VERIFICATION_TIMEOUT),
+      DELIVERY_TIMEOUT: String(VERIFICATION_TIMEOUTS.deliveryTimeout),
+      APPROVAL_TIMEOUT: String(VERIFICATION_TIMEOUTS.approvalTimeout),
+      DISPUTE_TIMEOUT: String(VERIFICATION_TIMEOUTS.disputeTimeout),
     });
     expect(result.observedKeccak256).to.equal(result.expectedKeccak256);
   });
@@ -191,9 +207,9 @@ describe("deployment bytecode attestation", function () {
     const code = runtimeFor(metadata, {
       usdc: await usdc.getAddress(),
       SLASH_SINK: wrongSlashSink,
-      DELIVERY_TIMEOUT: VERIFICATION_TIMEOUT,
-      APPROVAL_TIMEOUT: VERIFICATION_TIMEOUT,
-      DISPUTE_TIMEOUT: VERIFICATION_TIMEOUT,
+      DELIVERY_TIMEOUT: VERIFICATION_TIMEOUTS.deliveryTimeout,
+      APPROVAL_TIMEOUT: VERIFICATION_TIMEOUTS.approvalTimeout,
+      DISPUTE_TIMEOUT: VERIFICATION_TIMEOUTS.disputeTimeout,
     });
     const iface = new Interface(metadata.abi);
     const slashGetter = iface.getFunction("SLASH_SINK");
@@ -259,7 +275,7 @@ describe("deployment bytecode attestation", function () {
   it("rejects a verification deployment when attested as production mode", async function () {
     const MockUSDC = await ethers.getContractFactory("MockUSDC");
     const usdc = await MockUSDC.deploy();
-    const market = await deployMarket(ethers, await usdc.getAddress(), VERIFICATION_TIMEOUT);
+    const market = await deployMarket(ethers, await usdc.getAddress());
 
     await expect(
       attestLocal(ethers, market, deploymentManifest(await usdc.getAddress(), "production")),
@@ -306,9 +322,34 @@ describe("deployment bytecode attestation", function () {
     expect(resolved.effectiveConfig).to.deep.equal({
       usdc: usdcAddress,
       SLASH_SINK: getAddress(deployedAddress),
-      DELIVERY_TIMEOUT: String(VERIFICATION_TIMEOUT),
-      APPROVAL_TIMEOUT: String(VERIFICATION_TIMEOUT),
-      DISPUTE_TIMEOUT: String(VERIFICATION_TIMEOUT),
+      DELIVERY_TIMEOUT: String(VERIFICATION_TIMEOUTS.deliveryTimeout),
+      APPROVAL_TIMEOUT: String(VERIFICATION_TIMEOUTS.approvalTimeout),
+      DISPUTE_TIMEOUT: String(VERIFICATION_TIMEOUTS.disputeTimeout),
+    });
+  });
+
+  it("guards exact differentiated verification and production manifest timeouts", function () {
+    const address = "0x3600000000000000000000000000000000000000";
+    const verification = deploymentManifest(address);
+    expect(assertDeploymentManifest(verification, "verification")).to.deep.equal({
+      deliveryTimeout: "600",
+      approvalTimeout: "900",
+      disputeTimeout: "1200",
+    });
+
+    const legacyEqualWindows = deploymentManifest(address);
+    legacyEqualWindows.constructorArguments.find(({ name }) => name === "approvalTimeout").value = "600";
+    legacyEqualWindows.constructorArguments.find(({ name }) => name === "disputeTimeout").value = "600";
+    expect(() => assertDeploymentManifest(legacyEqualWindows, "verification")).to.throw(
+      "Verification deployment timeouts must not all be equal",
+    );
+
+    expect(
+      assertDeploymentManifest(deploymentManifest(address, "production"), "production"),
+    ).to.deep.equal({
+      deliveryTimeout: String(PRODUCTION_TIMEOUT),
+      approvalTimeout: String(PRODUCTION_TIMEOUT),
+      disputeTimeout: String(PRODUCTION_TIMEOUT),
     });
   });
 
