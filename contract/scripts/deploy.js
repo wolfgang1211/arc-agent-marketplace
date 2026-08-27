@@ -1,5 +1,9 @@
 const hre = require("hardhat");
 const { assertDeploymentManifest } = require("../lib/deployment-manifest");
+const {
+  normalizePrivateKey,
+  runDeploymentPreflight,
+} = require("../lib/deploy-preflight");
 const manifests = {
   verification: require("../DEPLOYMENT-MANIFEST.json"),
   production: require("../DEPLOYMENT-MANIFEST.production.json"),
@@ -22,22 +26,40 @@ function deploymentConfig(mode) {
 async function main() {
   const mode = process.env.DEPLOYMENT_MODE ?? process.env.npm_lifecycle_event?.split(":")[1];
   const { manifest, values } = deploymentConfig(mode);
+
+  // This must run before the first RPC request. It accepts either common key
+  // representation but never logs or returns the secret.
+  normalizePrivateKey(process.env.PRIVATE_KEY);
+
+  const constructorArgs = [
+    values.usdcAddress,
+    values.deliveryTimeout,
+    values.approvalTimeout,
+    values.disputeTimeout,
+  ];
+  const Factory = await hre.ethers.getContractFactory("AgentMarketplace");
+  const preflight = await runDeploymentPreflight({
+    provider: hre.ethers.provider,
+    factory: Factory,
+    constructorArgs,
+    expectedChainId: BigInt(manifest.expectedChainId),
+    rawPrivateKey: process.env.PRIVATE_KEY,
+  });
   const [deployer] = await hre.ethers.getSigners();
-  const net = await hre.ethers.provider.getNetwork();
-
-  console.log("Network chainId:", net.chainId.toString());
-  console.log("Deployer:", deployer.address);
-
-  const balance = await hre.ethers.provider.getBalance(deployer.address);
-  console.log("Native gas USDC balance:", hre.ethers.formatUnits(balance, 18));
-
-  if (net.chainId !== 5042002n) {
-    console.warn("WARNING: not on Arc Testnet (expected chainId 5042002).");
+  if (deployer.address.toLowerCase() !== preflight.deployerAddress.toLowerCase()) {
+    throw new Error("Configured signer does not match the preflight wallet. No transaction was sent.");
   }
 
-  if (`0x${net.chainId.toString(16)}` !== manifest.expectedChainId) {
-    throw new Error(`Deployment manifest rejects chainId ${net.chainId}`);
-  }
+  console.log("Preflight: ACCEPTED");
+  console.log("Network chainId:", preflight.chainId.toString());
+  console.log("RPC block:", preflight.blockNumber);
+  console.log("Deployer:", preflight.deployerAddress);
+  console.log("Native gas USDC balance (18 decimals):", hre.ethers.formatUnits(preflight.balance, 18));
+  console.log("Estimated deployment gas:", preflight.estimatedGas.toString());
+  console.log("Preflight max fee per gas:", preflight.maxFeePerGas.toString());
+  console.log("Estimated deployment fee (wei):", preflight.estimatedCost.toString());
+  console.log("Required balance with 2x reserve (wei):", preflight.required.toString());
+
   const usdcAddress = values.usdcAddress;
   console.log("Using USDC:", usdcAddress);
   console.log("Deployment mode:", mode);
@@ -49,17 +71,22 @@ async function main() {
     mode === "verification" ? "DEPLOYMENT-MANIFEST.json" : "DEPLOYMENT-MANIFEST.production.json",
   );
 
-  const Factory = await hre.ethers.getContractFactory("AgentMarketplace");
-  const contract = await Factory.deploy(
-    usdcAddress,
-    values.deliveryTimeout,
-    values.approvalTimeout,
-    values.disputeTimeout,
-  );
+  const contract = await Factory.deploy(...constructorArgs);
+  const deploymentTransaction = contract.deploymentTransaction();
+  const receipt = await deploymentTransaction.wait();
+  if (!receipt || receipt.status !== 1) {
+    throw new Error(
+      `Deployment transaction ${deploymentTransaction.hash} failed with receipt.status=${receipt?.status ?? "missing"}. Address is rejected.`,
+    );
+  }
   await contract.waitForDeployment();
 
   const address = await contract.getAddress();
-  const deploymentTransaction = contract.deploymentTransaction();
+  console.log("Actual deployment gas:", receipt.gasUsed.toString());
+  console.log(
+    "Deployment gas deviation:",
+    `${(receipt.gasUsed - preflight.estimatedGas).toString()} gas`,
+  );
   console.log("\nAgentMarketplace deployed to:", address);
   console.log("Explorer:", `https://testnet.arcscan.app/address/${address}`);
   console.log("Reputation getter: getAgentReputation(address)");

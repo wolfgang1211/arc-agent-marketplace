@@ -1,7 +1,10 @@
 require("@nomicfoundation/hardhat-toolbox");
 require("dotenv").config();
+const { normalizePrivateKey } = require("./lib/deploy-preflight");
 
-const PRIVATE_KEY = process.env.PRIVATE_KEY;
+const PRIVATE_KEY = process.env.PRIVATE_KEY
+  ? normalizePrivateKey(process.env.PRIVATE_KEY)
+  : undefined;
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
