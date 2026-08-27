@@ -9,8 +9,8 @@
       "type": "address",
       "value": "0x3600000000000000000000000000000000000000",
       "provenance": {
-        "primaryUrl": "https://docs.arc.network/arc/references/contract-addresses",
-        "checkedAt": "2026-08-27",
+        "primaryUrl": "https://docs.arc.io/arc/references/contract-addresses",
+        "checkedAt": "2026-08-28",
         "verifiedClaim": "Arc Testnet USDC address 0x3600000000000000000000000000000000000000 is the optional ERC-20 interface for native USDC and uses 6 decimals; native gas representation uses 18 decimals."
       }
     },
@@ -71,6 +71,13 @@
         "old": "0x3600000000000000000000000000000000000000",
         "new": "0x3600000000000000000000000000000000000000",
         "reason": "Added primary-source provenance without changing the governed Arc Testnet USDC address."
+      },
+      {
+        "field": "constructorArguments.usdcAddress.provenance.primaryUrl",
+        "checkedAt": "2026-08-28",
+        "old": "https://docs.arc.network/arc/references/contract-addresses",
+        "new": "https://docs.arc.io/arc/references/contract-addresses",
+        "reason": "Use the canonical working Arc documentation URL; the old host currently redirects to this URL. The verified USDC address and decimal claim are unchanged."
       }
     ]
   }
