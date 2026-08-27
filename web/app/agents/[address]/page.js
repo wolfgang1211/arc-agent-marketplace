@@ -226,8 +226,6 @@ export default function AgentProfilePage({ params }) {
           </div>
           {!slashHistoryReady ? (
             <EmptyProfileState copy="Category counters are hidden until lifetime slash history is available." />
-          ) : slashCount > 0 ? (
-            <EmptyProfileState copy="Category counters are unavailable after a slash because the contract does not reset category history." />
           ) : categoryScores.length === 0 ? (
             <EmptyProfileState copy="No category reputation recorded yet." />
           ) : (

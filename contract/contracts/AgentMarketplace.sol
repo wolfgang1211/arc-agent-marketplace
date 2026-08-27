@@ -73,9 +73,10 @@ contract AgentMarketplace is ReentrancyGuard {
     }
 
     mapping(address => Agent) public agents;
-    mapping(address => mapping(address => bool)) private servedClient;
-    mapping(address => mapping(bytes32 => uint256)) private categoryDistinctClients;
-    mapping(address => mapping(bytes32 => mapping(address => bool))) private servedClientByCategory;
+    mapping(address => uint256) private repEpoch;
+    mapping(address => mapping(uint256 => mapping(address => bool))) private servedClient;
+    mapping(address => mapping(uint256 => mapping(bytes32 => uint256))) private categoryDistinctClients;
+    mapping(address => mapping(uint256 => mapping(bytes32 => mapping(address => bool)))) private servedClientByCategory;
     mapping(uint256 => Job) public jobs;
     uint256 public jobCount;
     uint256 private _slashSinkBalance;
@@ -224,9 +225,10 @@ contract AgentMarketplace is ReentrancyGuard {
         job.status = JobStatus.Completed;
         agents[job.agent].approvedDeliveries += 1;
         agents[job.agent].activeJobs -= 1;
+        uint256 epoch = repEpoch[job.agent];
         uint256 reputationFee;
-        if (!servedClient[job.agent][job.client]) {
-            servedClient[job.agent][job.client] = true;
+        if (!servedClient[job.agent][epoch][job.client]) {
+            servedClient[job.agent][epoch][job.client] = true;
             agents[job.agent].distinctClients += 1;
             uint256 percentageFee = (job.reward * REPUTATION_FEE_BPS) / 10000;
             reputationFee = percentageFee > FLAT_REPUTATION_FEE
@@ -236,9 +238,9 @@ contract AgentMarketplace is ReentrancyGuard {
 
         if (bytes(job.category).length > 0) {
             bytes32 categoryHash = keccak256(bytes(job.category));
-            if (!servedClientByCategory[job.agent][categoryHash][job.client]) {
-                servedClientByCategory[job.agent][categoryHash][job.client] = true;
-                categoryDistinctClients[job.agent][categoryHash] += 1;
+            if (!servedClientByCategory[job.agent][epoch][categoryHash][job.client]) {
+                servedClientByCategory[job.agent][epoch][categoryHash][job.client] = true;
+                categoryDistinctClients[job.agent][epoch][categoryHash] += 1;
             }
         }
 
@@ -289,6 +291,7 @@ contract AgentMarketplace is ReentrancyGuard {
             agents[job.agent].approvedDeliveries = 0;
             agents[job.agent].disputes = 0;
             agents[job.agent].totalEarned = 0;
+            repEpoch[job.agent] += 1;
             job.status = JobStatus.ExpiredRefund;
             _slashSinkBalance += stake;
             // Refund only escrow. The slashed registration stake deliberately
@@ -425,6 +428,6 @@ contract AgentMarketplace is ReentrancyGuard {
     /// @dev Category reputation is awarded only by approveAndPay and repeated work
     /// from the same client in the same category does not add another point.
     function getReputationByCategory(address who, string calldata category) external view returns (uint256) {
-        return categoryDistinctClients[who][keccak256(bytes(category))] * 100;
+        return categoryDistinctClients[who][repEpoch[who]][keccak256(bytes(category))] * 100;
     }
 }
