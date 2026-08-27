@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   useAccount,
   useConnect,
@@ -21,10 +21,12 @@ import {
   ERC20_ABI,
   JOB_STATUS,
 } from "../lib/contract";
+import { fetchDiscovery, filterAndSortOpenJobs } from "../lib/discovery.mjs";
 
 const short = (a) => (a ? a.slice(0, 6) + "…" + a.slice(-4) : "");
 const fmt = (v) => (v == null ? "0" : formatUnits(v, USDC_DECIMALS));
 const SECTION_SPLIT = "\n\nAcceptance criteria:\n";
+const DISCOVERY_ENDPOINT = process.env.NEXT_PUBLIC_ENVIO_GRAPHQL_URL || "";
 const parseJobDetails = (description = "") => {
   const [task, criteria] = String(description).split(SECTION_SPLIT);
   return { task: task || description, criteria: criteria || "" };
@@ -41,6 +43,13 @@ export default function Page() {
 
   const [busy, setBusy] = useState("");
   const [msg, setMsg] = useState(null); // {type, text}
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [rewardMin, setRewardMin] = useState("");
+  const [rewardMax, setRewardMax] = useState("");
+  const [jobSort, setJobSort] = useState("newest");
+  const [indexedDiscovery, setIndexedDiscovery] = useState(null);
+  const [discoveryError, setDiscoveryError] = useState("");
+  const [discoveryLoading, setDiscoveryLoading] = useState(false);
 
   const wrongNetwork = isConnected && chainId !== arcTestnet.id;
   const noContract = !CONTRACT_ADDRESS;
@@ -68,8 +77,42 @@ export default function Page() {
     query: { enabled: !!address },
   });
 
-  const refreshAll = () => { refetchJobs(); refetchAgent(); refetchBal(); };
-  const jobList = jobs ? [...jobs].reverse() : [];
+  const discoveryFilters = useMemo(() => ({
+    category: categoryFilter,
+    rewardMin: parseRewardFilter(rewardMin),
+    rewardMax: parseRewardFilter(rewardMax),
+    sort: jobSort,
+    first: 100,
+  }), [categoryFilter, rewardMin, rewardMax, jobSort]);
+
+  useEffect(() => {
+    if (!DISCOVERY_ENDPOINT) return;
+    const controller = new AbortController();
+    setDiscoveryLoading(true);
+    setDiscoveryError("");
+    fetchDiscovery(DISCOVERY_ENDPOINT, discoveryFilters, (url, options) => fetch(url, { ...options, signal: controller.signal }))
+      .then((result) => setIndexedDiscovery(result))
+      .catch((error) => {
+        if (error.name !== "AbortError") setDiscoveryError(error.message);
+      })
+      .finally(() => setDiscoveryLoading(false));
+    return () => controller.abort();
+  }, [discoveryFilters]);
+
+  const refreshAll = () => {
+    refetchJobs();
+    refetchAgent();
+    refetchBal();
+    if (DISCOVERY_ENDPOINT) {
+      setDiscoveryLoading(true);
+      fetchDiscovery(DISCOVERY_ENDPOINT, discoveryFilters)
+        .then((result) => { setIndexedDiscovery(result); setDiscoveryError(""); })
+        .catch((error) => setDiscoveryError(error.message))
+        .finally(() => setDiscoveryLoading(false));
+    }
+  };
+  const fallbackJobs = filterAndSortOpenJobs(jobs || [], discoveryFilters);
+  const jobList = indexedDiscovery ? indexedDiscovery.jobs.map(hydrateIndexedJob) : fallbackJobs;
   const openJobs = jobs ? jobs.filter((j) => Number(j.status) === 0).length : 0;
   const activeJobs = jobs ? jobs.filter((j) => [1, 2].includes(Number(j.status))).length : 0;
   const completedJobs = jobs ? jobs.filter((j) => Number(j.status) === 4).length : 0;
@@ -225,6 +268,34 @@ export default function Page() {
           <button className="ghost" onClick={refreshAll}>Refresh</button>
         </div>
 
+        <div className="discovery-toolbar" aria-label="Job discovery filters">
+          <div className="field">
+            <label htmlFor="job-category-filter">Category</label>
+            <input id="job-category-filter" value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)} placeholder="All categories" />
+          </div>
+          <div className="field">
+            <label htmlFor="job-reward-min">Minimum reward</label>
+            <input id="job-reward-min" inputMode="decimal" value={rewardMin} onChange={(event) => setRewardMin(event.target.value)} placeholder="5 USDC" />
+          </div>
+          <div className="field">
+            <label htmlFor="job-reward-max">Maximum reward</label>
+            <input id="job-reward-max" inputMode="decimal" value={rewardMax} onChange={(event) => setRewardMax(event.target.value)} placeholder="No maximum" />
+          </div>
+          <div className="field">
+            <label htmlFor="job-sort">Sort open jobs</label>
+            <select id="job-sort" value={jobSort} onChange={(event) => setJobSort(event.target.value)}>
+              <option value="newest">Newest first</option>
+              <option value="rewardDesc">Highest reward</option>
+              <option value="rewardAsc">Lowest reward</option>
+            </select>
+          </div>
+        </div>
+        <div className="discovery-summary">
+          <span>{discoveryLoading ? "Updating indexed jobs…" : `${indexedDiscovery?.total ?? jobList.length} open jobs found`}</span>
+          <span>{indexedDiscovery ? "Envio indexed discovery" : "Bounded on-chain fallback"}</span>
+        </div>
+        {discoveryError && <div className="banner warn">Indexer unavailable: {discoveryError}. Showing the last indexed result.</div>}
+
         {jobList.length === 0 ? (
           <div className="empty-state">
             <div className="empty-icon">✦</div>
@@ -245,7 +316,50 @@ export default function Page() {
           </div>
         )}
       </section>
+
+      <RankedAgents agents={indexedDiscovery?.agents || []} indexerConfigured={!!DISCOVERY_ENDPOINT} loading={discoveryLoading} />
     </Shell>
+  );
+}
+
+function RankedAgents({ agents, indexerConfigured, loading }) {
+  return (
+    <section className="card ranked-agents-panel">
+      <div className="section-head">
+        <div>
+          <div className="eyebrow small-eyebrow">Reputation</div>
+          <h2>Recommended agents</h2>
+          <p className="muted">Ranked by distinct approved clients since the latest slash, then approved deliveries.</p>
+        </div>
+      </div>
+      {!indexerConfigured ? (
+        <div className="profile-empty">Connect the Envio GraphQL endpoint to enable current-era agent recommendations.</div>
+      ) : loading && agents.length === 0 ? (
+        <div className="profile-empty">Loading ranked agents…</div>
+      ) : agents.length === 0 ? (
+        <div className="profile-empty">No approved agent history has been indexed yet.</div>
+      ) : (
+        <div className="ranked-agent-list">
+          {agents.map((rankedAgent, index) => (
+            <a className="ranked-agent" href={`/agents/${rankedAgent.address}`} key={rankedAgent.address}>
+              <span className="ranked-agent-position">#{index + 1}</span>
+              <span className="ranked-agent-copy">
+                <strong>{rankedAgent.name || short(rankedAgent.address)}</strong>
+                <small>{rankedAgent.skill || "No skill summary"}</small>
+              </span>
+              <span className="ranked-agent-metric">
+                <strong>{rankedAgent.currentDistinctClients}</strong>
+                <small>distinct clients</small>
+              </span>
+              <span className="ranked-agent-metric">
+                <strong>{rankedAgent.currentApprovedDeliveries}</strong>
+                <small>approved</small>
+              </span>
+            </a>
+          ))}
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -448,4 +562,23 @@ function humanError(e) {
   if (/insufficient funds/i.test(m)) return "Insufficient balance. Native USDC is required for gas.";
   if (/transfer amount exceeds balance/i.test(m)) return "Your ERC-20 USDC balance is too low.";
   return m;
+}
+
+function parseRewardFilter(value) {
+  if (!String(value).trim()) return null;
+  try {
+    return parseUnits(String(value).trim(), USDC_DECIMALS);
+  } catch {
+    return null;
+  }
+}
+
+function hydrateIndexedJob(job) {
+  return {
+    ...job,
+    id: BigInt(job.id),
+    reward: BigInt(job.reward),
+    status: JOB_STATUS.indexOf(job.status),
+    createdAt: BigInt(job.createdAt),
+  };
 }

@@ -1,0 +1,17 @@
+{
+  "name": "arc-agent-marketplace-indexer",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "codegen": "envio codegen",
+    "dev": "envio dev",
+    "start": "envio start",
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "envio": "3.6.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  }
+}

@@ -1,0 +1,53 @@
+type Job {
+  id: ID!
+  jobId: BigInt! @index
+  client: String!
+  agent: String!
+  description: String!
+  category: String!
+  categoryNormalized: String! @index
+  reward: BigInt! @index
+  status: String! @index
+  deliverableURI: String!
+  createdAt: BigInt! @index
+  updatedAt: BigInt!
+}
+
+type Agent {
+  id: ID!
+  address: String! @index
+  name: String!
+  skill: String!
+  reputationEpoch: Int!
+  lifetimeSlashes: Int!
+  currentDistinctClients: Int! @index
+  currentApprovedDeliveries: Int! @index
+  currentTotalEarned: BigInt!
+}
+
+type AgentClient {
+  id: ID!
+  agent: String! @index
+  client: String!
+  firstApprovedJob: String!
+  lastApprovedJob: String!
+  epoch: Int!
+}
+
+type AgentCategoryClient {
+  id: ID!
+  agent: String! @index
+  client: String!
+  category: String!
+  firstApprovedJob: String!
+  lastApprovedJob: String!
+  epoch: Int!
+}
+
+type AgentCategory {
+  id: ID!
+  agent: String! @index
+  category: String!
+  epoch: Int!
+  currentDistinctClients: Int!
+}

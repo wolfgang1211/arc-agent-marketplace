@@ -1,0 +1,25 @@
+name: arc-agent-marketplace
+ecosystem: evm
+schema: ./schema.graphql
+contracts:
+  - name: AgentMarketplace
+    handler: ./src/EventHandlers.ts
+    events:
+      - event: AgentRegistered(address indexed agent, string name, string skill, uint256 fee)
+      - event: JobPosted(uint256 indexed jobId, address indexed client, uint256 reward, string description, string category)
+      - event: JobAccepted(uint256 indexed jobId, address indexed agent)
+      - event: DeliverableSubmitted(uint256 indexed jobId, string deliverableURI)
+      - event: JobApproved(uint256 indexed jobId, address indexed agent, uint256 reward)
+      - event: JobDisputed(uint256 indexed jobId, address indexed agent)
+      - event: JobCancelled(uint256 indexed jobId)
+      - event: JobExpiredRefunded(uint256 indexed jobId, address indexed client, uint256 reward)
+      - event: JobExpiredPaid(uint256 indexed jobId, address indexed agent, uint256 reward)
+      - event: JobExpiredSplit(uint256 indexed jobId, address indexed client, address indexed agent, uint256 clientAmount, uint256 agentAmount)
+      - event: AgentSlashed(address indexed agent, uint256 amount)
+chains:
+  - id: 5042002
+    start_block: ${START_BLOCK}
+    rpc: ${ARC_TESTNET_RPC_URL}
+    contracts:
+      - name: AgentMarketplace
+        address: ${CONTRACT_ADDRESS}

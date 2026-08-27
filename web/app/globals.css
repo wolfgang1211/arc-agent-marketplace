@@ -32,11 +32,11 @@ body {
 .card h2 { font-size: 15px; margin: 0 0 12px; color: var(--text); }
 .row { display: flex; gap: 10px; flex-wrap: wrap; }
 .row > * { flex: 1; min-width: 140px; }
-input, textarea {
+input, textarea, select {
   width: 100%; background: var(--panel-2); border: 1px solid var(--border);
   border-radius: 10px; color: var(--text); padding: 10px 12px; font-size: 14px; outline: none;
 }
-input:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(91,140,255,.14); }
+input:focus, textarea:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(91,140,255,.14); }
 label { display: block; font-size: 12px; color: var(--muted); margin: 0 0 6px; }
 .field { margin-bottom: 10px; }
 button {
@@ -138,6 +138,21 @@ a { color: var(--accent-strong); }
 .small-eyebrow { font-size: 11px; }
 .jobs-panel { padding: 20px; }
 .jobs-list { display: grid; gap: 12px; }
+.discovery-toolbar { display: grid; grid-template-columns: 1.2fr repeat(2, .8fr) 1fr; gap: 10px; padding: 12px; border: 1px solid var(--border); border-radius: 14px; background: rgba(255,255,255,.025); }
+.discovery-toolbar .field { margin-bottom: 0; }
+.discovery-summary { display: flex; justify-content: space-between; gap: 10px; margin: 9px 2px 14px; color: var(--muted); font-size: 11px; }
+.ranked-agents-panel { padding: 20px; }
+.ranked-agent-list { display: grid; gap: 8px; }
+.ranked-agent { display: grid; grid-template-columns: 42px minmax(0, 1fr) 116px 98px; gap: 12px; align-items: center; padding: 12px; border: 1px solid var(--border); border-radius: 13px; background: rgba(255,255,255,.025); color: var(--text); text-decoration: none; }
+.ranked-agent:hover { border-color: var(--border-strong); background: rgba(91,140,255,.06); }
+.ranked-agent-position { color: var(--accent-strong); font-size: 12px; font-weight: 900; }
+.ranked-agent-copy, .ranked-agent-metric { min-width: 0; }
+.ranked-agent-copy strong, .ranked-agent-copy small, .ranked-agent-metric strong, .ranked-agent-metric small { display: block; }
+.ranked-agent-copy strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
+.ranked-agent-copy small { margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
+.ranked-agent-metric { text-align: right; }
+.ranked-agent-metric strong { color: var(--accent-2); font-size: 17px; }
+.ranked-agent-metric small { color: var(--muted); font-size: 10px; }
 .empty-state { border: 1px dashed var(--border-strong); border-radius: 16px; padding: 36px; text-align: center; background: rgba(255,255,255,.025); }
 .empty-state h3 { margin: 8px 0 4px; }
 .empty-state p { margin: 0; color: var(--muted); }
@@ -288,6 +303,7 @@ a { color: var(--accent-strong); }
   .action-grid { grid-template-columns: 1fr; }
   .profile-trust-grid { grid-template-columns: 1fr 1fr; }
   .profile-columns { grid-template-columns: 1fr; }
+  .discovery-toolbar { grid-template-columns: 1fr 1fr; }
 }
 
 @media (max-width: 760px) {
@@ -305,6 +321,8 @@ a { color: var(--accent-strong); }
   .profile-state { position: static; width: fit-content; margin-top: 18px; }
   .profile-job-row { grid-template-columns: 48px minmax(0, 1fr); }
   .profile-job-row > .pill, .profile-job-reward { justify-self: start; text-align: left; }
+  .ranked-agent { grid-template-columns: 34px minmax(0, 1fr); }
+  .ranked-agent-metric { grid-column: 2; text-align: left; }
 }
 
 @media (max-width: 520px) {
@@ -318,4 +336,6 @@ a { color: var(--accent-strong); }
   .profile-panel { padding: 16px; }
   .profile-delivery { align-items: stretch; flex-direction: column; }
   .delivery-cta { text-align: center; }
+  .discovery-toolbar { grid-template-columns: 1fr; }
+  .discovery-summary { align-items: flex-start; flex-direction: column; }
 }
