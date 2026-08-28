@@ -15,7 +15,7 @@ async function deployMarket(delivery, approval, dispute) {
   const [client, agent] = await ethers.getSigners();
   const usdc = await (await ethers.getContractFactory("MockUSDC")).deploy();
   const Market = await ethers.getContractFactory("AgentMarketplace");
-  const market = await Market.deploy(await usdc.getAddress(), delivery, approval, dispute);
+  const market = await Market.deploy(await usdc.getAddress(), 100_000000n, delivery, approval, dispute);
   await market.waitForDeployment();
   return { client, agent, usdc, Market, market, address: await market.getAddress() };
 }
@@ -83,13 +83,13 @@ describe("TIMEOUT SPEC — constructor-configured verification windows", functio
     const Market = await ethers.getContractFactory("AgentMarketplace");
     const usdcAddress = await usdc.getAddress();
 
-    await expect(Market.deploy(usdcAddress, 299, 300, 300)).to.be.revertedWith(
+    await expect(Market.deploy(usdcAddress, 100_000000n, 299, 300, 300)).to.be.revertedWith(
       "Delivery timeout below minimum",
     );
-    await expect(Market.deploy(usdcAddress, 300, 299, 300)).to.be.revertedWith(
+    await expect(Market.deploy(usdcAddress, 100_000000n, 300, 299, 300)).to.be.revertedWith(
       "Approval timeout below minimum",
     );
-    await expect(Market.deploy(usdcAddress, 300, 300, 299)).to.be.revertedWith(
+    await expect(Market.deploy(usdcAddress, 100_000000n, 300, 300, 299)).to.be.revertedWith(
       "Dispute timeout below minimum",
     );
   });

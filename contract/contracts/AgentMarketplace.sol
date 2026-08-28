@@ -14,10 +14,11 @@ contract AgentMarketplace is ReentrancyGuard {
 
     /// @notice ERC-20 USDC token used for job rewards (Arc Testnet: 0x3600...0000).
     IERC20 public immutable usdc;
-    uint256 public constant AGENT_STAKE = 100_000000; // 100 USDC
     // Five USDC preserves a practical small-job tier while making each new
     // distinct-client reputation point materially expensive to farm.
     uint256 public constant MIN_JOB_REWARD = 5_000000; // 5 USDC
+    uint256 public constant MIN_AGENT_STAKE = MIN_JOB_REWARD;
+    uint256 public immutable AGENT_STAKE;
     uint256 public constant REPUTATION_FEE_BPS = 100; // 1% per new distinct-client point
     uint256 public constant FLAT_REPUTATION_FEE = 500000; // 0.5 USDC minimum per new point
     uint256 public constant MAX_PAGE_LIMIT = 100;
@@ -115,15 +116,18 @@ contract AgentMarketplace is ReentrancyGuard {
 
     constructor(
         address usdcAddress,
+        uint256 agentStake,
         uint256 deliveryTimeout,
         uint256 approvalTimeout,
         uint256 disputeTimeout
     ) {
         require(usdcAddress != address(0), "USDC address required");
+        require(agentStake >= MIN_AGENT_STAKE, "Agent stake below minimum");
         require(deliveryTimeout >= MIN_TIMEOUT, "Delivery timeout below minimum");
         require(approvalTimeout >= MIN_TIMEOUT, "Approval timeout below minimum");
         require(disputeTimeout >= MIN_TIMEOUT, "Dispute timeout below minimum");
         usdc = IERC20(usdcAddress);
+        AGENT_STAKE = agentStake;
         SLASH_SINK = address(this);
         DELIVERY_TIMEOUT = deliveryTimeout;
         APPROVAL_TIMEOUT = approvalTimeout;

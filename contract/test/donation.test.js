@@ -18,6 +18,7 @@ describe("ARC GUARD — kontrata bedava USDC gönderilmesi", function () {
     const usdc = await (await ethers.getContractFactory("MockUSDC")).deploy();
     const market = await (await ethers.getContractFactory("AgentMarketplace")).deploy(
       await usdc.getAddress(),
+      100_000000n,
       30 * 24 * 60 * 60,
       30 * 24 * 60 * 60,
       30 * 24 * 60 * 60,

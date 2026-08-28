@@ -15,6 +15,7 @@ describe("AgentMarketplace", function () {
     const Market = await ethers.getContractFactory("AgentMarketplace");
     market = await Market.deploy(
       await usdc.getAddress(),
+      100_000000n,
       30 * 24 * 60 * 60,
       30 * 24 * 60 * 60,
       30 * 24 * 60 * 60,

@@ -67,6 +67,7 @@ async function deployMarket(ethers, usdcAddress, timeouts = VERIFICATION_TIMEOUT
   const Market = await ethers.getContractFactory("AgentMarketplace");
   const market = await Market.deploy(
     usdcAddress,
+    100_000000n,
     timeouts.deliveryTimeout,
     timeouts.approvalTimeout,
     timeouts.disputeTimeout,

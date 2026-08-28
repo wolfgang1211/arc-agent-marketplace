@@ -12,7 +12,7 @@ describe("ARC PARITE — 28 Agustos kosumunun yerel yeniden uretimi", function (
     const [client, agent, stranger] = await ethers.getSigners();
     const usdc = await (await ethers.getContractFactory("MockUSDC")).deploy();
     const M = await ethers.getContractFactory("AgentMarketplace");
-    const market = await M.deploy(await usdc.getAddress(), 600, 900, 1200);
+    const market = await M.deploy(await usdc.getAddress(), 100_000000n, 600, 900, 1200);
     const addr = await market.getAddress();
     const stake = await market.AGENT_STAKE();
 
