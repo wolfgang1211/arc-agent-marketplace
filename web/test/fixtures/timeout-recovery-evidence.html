@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Timeout recovery evidence fixture</title>
+  <link rel="stylesheet" href="/app/globals.css" />
+  <style>
+    body { min-width: 0; }
+    .evidence-shell { max-width: 1180px; margin: 0 auto; padding: 22px; }
+    .evidence-header { display: flex; justify-content: space-between; gap: 16px; align-items: end; margin-bottom: 18px; }
+    .evidence-header h1 { margin: 4px 0; font-size: 25px; }
+    .evidence-header p { margin: 0; color: var(--muted); font-size: 13px; }
+    .fixture-badge { color: var(--accent-strong); font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+    .state-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+    .state-card { min-width: 0; margin: 0; padding: 16px; }
+    .state-card h2 { margin: 10px 0 5px; font-size: 15px; }
+    .state-meta { color: var(--muted); font-size: 11px; }
+    .state-card .timeout-panel { min-height: 148px; }
+    .state-card .timeout-panel p { font-size: 12px; }
+    .state-card button { width: 100%; margin-top: 10px; }
+    .terminal-note { margin-top: 8px; color: var(--muted); font-size: 11px; }
+    .dispute-evidence { width: min(620px, 100%); margin: 4vh auto 0; }
+    .dispute-evidence .dispute-confirmation { width: 100%; max-height: none; }
+    .dispute-evidence .split-preview { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 14px 0; }
+    .split-preview div { padding: 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--panel-2); }
+    .split-preview span { display: block; color: var(--muted); font-size: 11px; }
+    .split-preview strong { display: block; margin-top: 4px; color: var(--accent-2); }
+    [data-view] { display: none; }
+    body.states [data-view="states"], body.dispute [data-view="dispute"] { display: block; }
+    @media (max-width: 620px) {
+      .evidence-shell { padding: 12px; }
+      .evidence-header { align-items: flex-start; margin-bottom: 10px; }
+      .evidence-header h1 { font-size: 19px; }
+      .evidence-header p { font-size: 11px; }
+      .state-grid { grid-template-columns: 1fr; gap: 8px; }
+      .state-card { padding: 10px 12px; }
+      .state-card h2 { margin: 6px 0 2px; font-size: 13px; }
+      .state-meta { font-size: 10px; }
+      .state-card .timeout-panel { min-height: 0; margin-top: 7px; padding: 8px 9px; line-height: 1.35; }
+      .state-card .timeout-panel p { font-size: 10px; }
+      .state-card .timeout-panel small { font-size: 9px; }
+      .state-card button { margin-top: 6px; padding: 7px 10px; font-size: 11px; }
+      .terminal-note { display: none; }
+      .dispute-evidence { margin-top: 0; }
+      .dispute-evidence .dispute-confirmation { padding: 16px; }
+      .dispute-confirmation p { font-size: 11px; line-height: 1.45; }
+      .split-preview strong { font-size: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="evidence-shell">
+    <header class="evidence-header">
+      <div>
+        <div class="fixture-badge">Deterministic local evidence</div>
+        <h1>Timeout recovery lifecycle</h1>
+        <p>Chain timestamp fixture: 2,000 · 6-decimal USDC arithmetic</p>
+      </div>
+    </header>
+
+    <section data-view="states">
+      <div class="state-grid">
+        <article class="card state-card job-expired-refund">
+          <span class="pill progress">In progress</span>
+          <h2>Missed delivery</h2>
+          <div class="state-meta">JOB #41 · Observer · reward 12.345678 USDC</div>
+          <div class="timeout-panel claimable">
+            <strong>Deadline reached</strong>
+            <p>Delivery deadline passed. Settling refunds 12.345678 USDC to the client and burns the agent's 100.000000 USDC stake. The stake is not paid to anyone — it stays in the contract permanently.</p>
+            <small>Anyone can settle an expired job. You pay only the network fee.</small>
+          </div>
+          <button class="timeout-claim">Settle job</button>
+        </article>
+
+        <article class="card state-card job-submitted">
+          <span class="pill submitted">Submitted</span>
+          <h2>Approval window open</h2>
+          <div class="state-meta">JOB #42 · Observer · reward 25.000001 USDC</div>
+          <div class="timeout-panel waiting">
+            <strong>Chain-confirmed deadline</strong>
+            <p>Awaiting client approval for 9m 59s. If the window closes, the agent is paid 25.000001 USDC.</p>
+          </div>
+          <button disabled>Settle job unavailable</button>
+        </article>
+
+        <article class="card state-card job-expired-split">
+          <span class="pill expired-split">Expired split</span>
+          <h2>Terminal settlement</h2>
+          <div class="state-meta">JOB #43 · Fixed 33.33% client share</div>
+          <div class="timeout-panel terminal">
+            <strong>Final timeout outcome</strong>
+            <p>Settled — dispute window closed with no resolution. 4.114814 USDC to the client, 8.230864 USDC to the agent.</p>
+          </div>
+          <div class="terminal-note">Read-only terminal state · no settlement action</div>
+        </article>
+      </div>
+    </section>
+
+    <section class="dispute-evidence" data-view="dispute">
+      <div class="dispute-confirmation" role="dialog" aria-modal="true" aria-labelledby="fixture-dispute-title">
+        <span class="pill disputed">Before disputing JOB #44</span>
+        <h3 id="fixture-dispute-title">Disputing does not get your money back.</h3>
+        <p>No one reviews a dispute — there is no arbiter, no appeal, and no support team. Disputing only changes how the escrow is split when the dispute window closes.</p>
+        <p>If you dispute, in 20m the escrow splits automatically: 6.172839 USDC to you, 6.172839 USDC to the agent. That split is fixed and cannot be changed.</p>
+        <div class="split-preview">
+          <div><span>Client receives</span><strong>6.172839 USDC</strong></div>
+          <div><span>Agent receives</span><strong>6.172839 USDC</strong></div>
+        </div>
+        <p>If you approve instead, the agent is paid in full. If you do nothing, the agent is paid in full when the approval window closes.</p>
+        <div class="confirmation-actions">
+          <button class="danger">Dispute and accept the split</button>
+          <button class="ghost">Go back</button>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script>
+    document.body.className = new URLSearchParams(location.search).get("view") === "dispute" ? "dispute" : "states";
+  </script>
+</body>
+</html>
