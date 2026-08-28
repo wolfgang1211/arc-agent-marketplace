@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "deploymentMode": "live-testnet",
+  "manifestFile": "DEPLOYMENT-MANIFEST.live-testnet.json",
+  "artifactIdentityFile": "ARTIFACT-IDENTITY.json",
+  "artifactIdentity": {
+    "creationKeccak256": "0x803795ecb060cf265994264c251b2f9403fc4ced998f51273b66db90cb8e4191",
+    "normalizedDeployedKeccak256": "0x4aa705055a1e316abac996d4da4ec0d0ef494c4b552bccc123ddb9ade26a86f4"
+  },
+  "status": "ATTESTED",
+  "chainId": "5042002",
+  "contractAddress": "0xFc7dE289e02FCFB4268AE8f0e49991D2Eafe5C87",
+  "transactionHash": "0x9c8ba13239dc13da81fc04828f304af6f2c70ad2776ef13e1a9180a490eff12e",
+  "blockNumber": 59319767,
+  "receiptStatus": 1,
+  "estimatedGas": "3172886",
+  "actualGasUsed": "3146745",
+  "gasDeviation": "-26141",
+  "effectiveGasPriceWei": "23100000000",
+  "attestation": {
+    "manifestFile": "DEPLOYMENT-MANIFEST.live-testnet.json",
+    "accepted": true,
+    "mode": "live-testnet",
+    "chainId": "0x4cef52",
+    "blockTag": "0x3892696",
+    "address": "0xFc7dE289e02FCFB4268AE8f0e49991D2Eafe5C87",
+    "transactionHash": "0x9c8ba13239dc13da81fc04828f304af6f2c70ad2776ef13e1a9180a490eff12e",
+    "rawByteLength": 14177,
+    "observedKeccak256": "0x003d02ac6c6d5df20a62f28f3fb3b82d60f2af5347e315180e83674ba849f19a",
+    "expectedKeccak256": "0x003d02ac6c6d5df20a62f28f3fb3b82d60f2af5347e315180e83674ba849f19a",
+    "normalizedKeccak256": "0x4aa705055a1e316abac996d4da4ec0d0ef494c4b552bccc123ddb9ade26a86f4",
+    "constructorArguments": {
+      "usdcAddress": "0x3600000000000000000000000000000000000000",
+      "agentStake": "10000000",
+      "deliveryTimeout": "86400",
+      "approvalTimeout": "86400",
+      "disputeTimeout": "86400"
+    },
+    "immutableValues": {
+      "usdc": "0x3600000000000000000000000000000000000000",
+      "AGENT_STAKE": "10000000",
+      "SLASH_SINK": "0xFc7dE289e02FCFB4268AE8f0e49991D2Eafe5C87",
+      "DELIVERY_TIMEOUT": "86400",
+      "APPROVAL_TIMEOUT": "86400",
+      "DISPUTE_TIMEOUT": "86400"
+    }
+  }
+}
