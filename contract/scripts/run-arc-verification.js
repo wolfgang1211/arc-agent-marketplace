@@ -177,19 +177,22 @@ async function main() {
   const tokenAgent = new ethers.Contract(USDC_ADDRESS, USDC_ABI, agent);
   const marketClient = new ethers.Contract(MARKET_ADDRESS, MARKET_ARTIFACT.abi, deployer);
   const marketAgent = new ethers.Contract(MARKET_ADDRESS, MARKET_ARTIFACT.abi, agent);
-  const initial = await balances(provider, tokenClient, deployer.address);
-  finding(state, "funding-preflight", {
-    blockNumber: await provider.getBlockNumber(),
-    deployer: deployer.address,
-    nativeRaw: initial.nativeRaw.toString(),
-    erc20Raw: initial.erc20Raw.toString(),
-    nativeUsdc: ethers.formatUnits(initial.nativeRaw, 18),
-    erc20Usdc: ethers.formatUnits(initial.erc20Raw, 6),
-  });
-  if (initial.erc20Raw < 128_000000n && !state.scenarios.completedSteps.includes("funding-preflight")) {
-    throw new Error(`Need 128 USDC before run; have ${ethers.formatUnits(initial.erc20Raw, 6)}`);
+  if (!state.scenarios.completedSteps.includes("funding-preflight")) {
+    const initial = await balances(provider, tokenClient, deployer.address);
+    const initialBlock = await provider.getBlockNumber();
+    finding(state, "funding-preflight", {
+      blockNumber: initialBlock,
+      deployer: deployer.address,
+      nativeRaw: initial.nativeRaw.toString(),
+      erc20Raw: initial.erc20Raw.toString(),
+      nativeUsdc: ethers.formatUnits(initial.nativeRaw, 18),
+      erc20Usdc: ethers.formatUnits(initial.erc20Raw, 6),
+    });
+    if (initial.erc20Raw < 128_000000n) {
+      throw new Error(`Need 128 USDC before run; have ${ethers.formatUnits(initial.erc20Raw, 6)}`);
+    }
+    complete(state, "funding-preflight");
   }
-  complete(state, "funding-preflight");
 
   // Arc native/ERC20 equivalence gate. No stake may be sent before this completes.
   if (!state.scenarios.completedSteps.includes("arc-asset-gate")) {
