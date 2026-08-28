@@ -44,5 +44,175 @@
       "APPROVAL_TIMEOUT": "86400",
       "DISPUTE_TIMEOUT": "86400"
     }
+  },
+  "showcase": {
+    "status": "VERIFIED",
+    "transactions": [
+      {
+        "label": "agent:approveStake",
+        "hash": "0x47572ca6a1ba95446fdd464453a69ca641c1e94a8dde280d2f7140a8bd33dc58",
+        "estimatedGas": "56241",
+        "receiptStatus": 1,
+        "actualGas": "55438",
+        "gasDeviation": "-803",
+        "effectiveGasPriceWei": "21000000000",
+        "actualFeeWei": "1164198000000000",
+        "blockNumber": 59320569
+      },
+      {
+        "label": "agent:register",
+        "hash": "0xa5d9e4fc3c0b3ac50ade63d3b168e9510d4fce5a67c7dd4683a8ad1e97a62190",
+        "estimatedGas": "162774",
+        "receiptStatus": 1,
+        "actualGas": "151866",
+        "gasDeviation": "-10908",
+        "effectiveGasPriceWei": "21000000000",
+        "actualFeeWei": "3189186000000000",
+        "blockNumber": 59320579
+      },
+      {
+        "label": "client:approveEscrow",
+        "hash": "0xc97243c8065e38ed50c035bea2183e11d7809bb3f20c6fd95e3b197a0e54f2b5",
+        "estimatedGas": "56241",
+        "receiptStatus": 1,
+        "actualGas": "55438",
+        "gasDeviation": "-803",
+        "effectiveGasPriceWei": "21000000000",
+        "actualFeeWei": "1164198000000000",
+        "blockNumber": 59320597
+      },
+      {
+        "label": "postJob:completedOne",
+        "hash": "0x383ae88c0a0026d35da447c04074b05f7b81f03e8b2c8bbacf5f5940e0a3b0ac",
+        "estimatedGas": "375380",
+        "receiptStatus": 1,
+        "actualGas": "369855",
+        "gasDeviation": "-5525",
+        "effectiveGasPriceWei": "21000000000",
+        "actualFeeWei": "7766955000000000",
+        "blockNumber": 59320615
+      },
+      {
+        "label": "completedOne:accept",
+        "hash": "0xa622356c202c687e3a35156ceaa0182d64cf31c40777c87e81219e59f21e2d45",
+        "estimatedGas": "141874",
+        "receiptStatus": 1,
+        "actualGas": "140733",
+        "gasDeviation": "-1141",
+        "effectiveGasPriceWei": "21000000000",
+        "actualFeeWei": "2955393000000000",
+        "blockNumber": 59320632
+      },
+      {
+        "label": "completedOne:submit",
+        "hash": "0x8900b7b1568f8447f11dab97d4372064711be00c653b2309a63a58b2c579aed0",
+        "estimatedGas": "107021",
+        "receiptStatus": 1,
+        "actualGas": "101507",
+        "gasDeviation": "-5514",
+        "effectiveGasPriceWei": "21000000000",
+        "actualFeeWei": "2131647000000000",
+        "blockNumber": 59320650
+      },
+      {
+        "label": "completedOne:approve",
+        "hash": "0x9344ca050a154788e69d6d7926902c917820f282b307b3f3df73f4b74c94fb7d",
+        "estimatedGas": "248366",
+        "receiptStatus": 1,
+        "actualGas": "237991",
+        "gasDeviation": "-10375",
+        "effectiveGasPriceWei": "21000000000",
+        "actualFeeWei": "4997811000000000",
+        "blockNumber": 59320668
+      },
+      {
+        "label": "postJob:completedTwo",
+        "hash": "0xf7f709f686050396fda2cf0187648415876984cbba4dfef6ada682c663c991be",
+        "estimatedGas": "335299",
+        "receiptStatus": 1,
+        "actualGas": "330090",
+        "gasDeviation": "-5209",
+        "effectiveGasPriceWei": "21000000000",
+        "actualFeeWei": "6931890000000000",
+        "blockNumber": 59320678
+      },
+      {
+        "label": "completedTwo:accept",
+        "hash": "0xacebab80dfe0ec4609d21e8eef3fee5e222c6d64c323cc5551df481e49e97376",
+        "estimatedGas": "141874",
+        "receiptStatus": 1,
+        "actualGas": "140733",
+        "gasDeviation": "-1141",
+        "effectiveGasPriceWei": "21000000000",
+        "actualFeeWei": "2955393000000000",
+        "blockNumber": 59320696
+      },
+      {
+        "label": "completedTwo:submit",
+        "hash": "0x42f45c3af8d576057f6bce71fabe7cd31d52df47f85f8b510d19af0d8238683b",
+        "estimatedGas": "89763",
+        "receiptStatus": 1,
+        "actualGas": "84419",
+        "gasDeviation": "-5344",
+        "effectiveGasPriceWei": "21000000000",
+        "actualFeeWei": "1772799000000000",
+        "blockNumber": 59320714
+      },
+      {
+        "label": "completedTwo:approve",
+        "hash": "0x1e3c32635c70faed386d2b85dcc7fe8398cfd9ef9a075782f2b8261d43acba32",
+        "estimatedGas": "147059",
+        "receiptStatus": 1,
+        "actualGas": "136366",
+        "gasDeviation": "-10693",
+        "effectiveGasPriceWei": "21000000000",
+        "actualFeeWei": "2863686000000000",
+        "blockNumber": 59320731
+      },
+      {
+        "label": "postJob:open",
+        "hash": "0xd98003ee48dbd76867364f34e098cb0e975ec7f8f0b78a7409cc20620627b290",
+        "estimatedGas": "359773",
+        "receiptStatus": 1,
+        "actualGas": "348087",
+        "gasDeviation": "-11686",
+        "effectiveGasPriceWei": "21000000000",
+        "actualFeeWei": "7309827000000000",
+        "blockNumber": 59320748
+      }
+    ],
+    "jobs": {
+      "completedOne": {
+        "id": "1",
+        "expectedStatus": "Completed"
+      },
+      "completedTwo": {
+        "id": "2",
+        "expectedStatus": "Completed"
+      },
+      "open": {
+        "id": "3",
+        "expectedStatus": "Open"
+      }
+    },
+    "verifiedAtBlock": 59320764,
+    "verifiedAtTimestamp": 1787944371,
+    "clientAddress": "0x571780eaE1681Ccec73195D83D0c6DFd4c3cd696",
+    "agentAddress": "0x1529C3D39227DcB6935f870cf14d153cbc4f48e8",
+    "summary": {
+      "registeredAgents": 1,
+      "jobs": 3,
+      "statuses": [
+        "Completed",
+        "Completed",
+        "Open"
+      ],
+      "agentStake": "10000000",
+      "approvedDeliveries": "2",
+      "distinctClients": "1",
+      "slashSinkBalance": "0",
+      "reputationFeeSinkBalance": "500000",
+      "contractBalance": "15500000"
+    }
   }
 }
