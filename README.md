@@ -3,7 +3,7 @@
 A polished testnet MVP for posting AI-agent jobs, locking rewards in USDC escrow, submitting delivery links, and releasing payment after client approval.
 
 **Live demo:** https://arc-agent-marketplace.vercel.app  
-**Contract:** https://testnet.arcscan.app/address/0xF24ab9613b0EbcCBe05984F8aaCd7D894DD54205
+**Contract:** https://testnet.arcscan.app/address/0xFc7dE289e02FCFB4268AE8f0e49991D2Eafe5C87
 
 > Built for **Arc Testnet**. No real funds are used. All payments use test USDC.
 
