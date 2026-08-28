@@ -12,12 +12,12 @@
       "newDeployedTemplateKeccak256"
     ],
     "lastContractChange": {
-      "recordId": "t_1bc20b5d",
-      "reason": "Configure independently attested delivery, approval, and dispute timeouts",
-      "oldCreationKeccak256": "0x338708f4ee4bedbd42ecffc6654ab2c22fa336c051b97630379ff3565c33233f",
-      "newCreationKeccak256": "0x41d620418ced5c946f80c72db5c1b60146651a6ddd902348336bb2268d5c7d08",
-      "oldDeployedTemplateKeccak256": "0xa3a99e0b162847232dd84a1520b2046bb2a4435c9a423c5315652aefefaebd33",
-      "newDeployedTemplateKeccak256": "0xe9850e50a362c172c32d6a9bec2e10736f9668c86df6669386bedffb5d325bee"
+      "recordId": "agent-stake-constructor-2026-08-28",
+      "reason": "Make AGENT_STAKE a bounded constructor immutable so verification uses 10 USDC while production retains 100 USDC",
+      "oldCreationKeccak256": "0x41d620418ced5c946f80c72db5c1b60146651a6ddd902348336bb2268d5c7d08",
+      "newCreationKeccak256": "0x803795ecb060cf265994264c251b2f9403fc4ced998f51273b66db90cb8e4191",
+      "oldDeployedTemplateKeccak256": "0xe9850e50a362c172c32d6a9bec2e10736f9668c86df6669386bedffb5d325bee",
+      "newDeployedTemplateKeccak256": "0x4aa705055a1e316abac996d4da4ec0d0ef494c4b552bccc123ddb9ade26a86f4"
     }
   },
   "build": {
@@ -30,12 +30,12 @@
       "runs": 200
     },
     "creationBytecode": {
-      "rawByteLength": 14754,
-      "keccak256": "0x41d620418ced5c946f80c72db5c1b60146651a6ddd902348336bb2268d5c7d08"
+      "rawByteLength": 14969,
+      "keccak256": "0x803795ecb060cf265994264c251b2f9403fc4ced998f51273b66db90cb8e4191"
     },
     "deployedBytecode": {
-      "rawByteLength": 14082,
-      "keccak256": "0xe9850e50a362c172c32d6a9bec2e10736f9668c86df6669386bedffb5d325bee"
+      "rawByteLength": 14177,
+      "keccak256": "0x4aa705055a1e316abac996d4da4ec0d0ef494c4b552bccc123ddb9ade26a86f4"
     },
     "toolchain": {
       "hardhat": "2.28.6",
@@ -51,8 +51,8 @@
     "strategy": "manifest-governed creation input and immutable-aware exact runtime reconstruction",
     "manifest": "DEPLOYMENT-MANIFEST.json",
     "normalizedDeployedBytecode": {
-      "rawByteLength": 14082,
-      "keccak256": "0xe9850e50a362c172c32d6a9bec2e10736f9668c86df6669386bedffb5d325bee"
+      "rawByteLength": 14177,
+      "keccak256": "0x4aa705055a1e316abac996d4da4ec0d0ef494c4b552bccc123ddb9ade26a86f4"
     },
     "requirements": "Map every compiler immutableReference AST ID to a name dynamically; require exactly one explicit manifest rule per name; verify the creation transaction input against governed creation bytecode plus manifest constructor arguments; require getters to equal manifest effective config; reconstruct runtime from manifest expectations; and require byte-for-byte equality, exact decoded length, and keccak256. SLASH_SINK resolves to the deployed address. Unknown, unmapped, missing, or duplicate rules reject the address."
   },

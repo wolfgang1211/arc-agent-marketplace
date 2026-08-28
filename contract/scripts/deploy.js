@@ -33,6 +33,7 @@ async function main() {
 
   const constructorArgs = [
     values.usdcAddress,
+    values.agentStake,
     values.deliveryTimeout,
     values.approvalTimeout,
     values.disputeTimeout,
@@ -63,6 +64,7 @@ async function main() {
   const usdcAddress = values.usdcAddress;
   console.log("Using USDC:", usdcAddress);
   console.log("Deployment mode:", mode);
+  console.log("Agent stake (USDC base units):", values.agentStake);
   console.log("Delivery timeout (seconds):", values.deliveryTimeout);
   console.log("Approval timeout (seconds):", values.approvalTimeout);
   console.log("Dispute timeout (seconds):", values.disputeTimeout);

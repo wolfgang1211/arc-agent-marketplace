@@ -32,9 +32,12 @@ const VERIFICATION_TIMEOUTS = Object.freeze({
   approvalTimeout: 15 * 60,
   disputeTimeout: 20 * 60,
 });
-const PRODUCTION_TIMEOUT = 30 * 24 * 60 * 60;
+const VERIFICATION_STAKE = 10_000000;
+const PRODUCTION_STAKE = 100_000000;
+const PRODUCTION_TIMEOUT = 24 * 60 * 60;
 
 function deploymentManifest(usdcAddress, mode = "verification") {
+  const agentStake = mode === "verification" ? VERIFICATION_STAKE : PRODUCTION_STAKE;
   const timeouts = mode === "verification"
     ? VERIFICATION_TIMEOUTS
     : {
@@ -49,6 +52,7 @@ function deploymentManifest(usdcAddress, mode = "verification") {
     expectedChainId: HARDHAT_CHAIN_ID,
     constructorArguments: [
       { name: "usdcAddress", type: "address", value: usdcAddress },
+      { name: "agentStake", type: "uint256", value: String(agentStake) },
       { name: "deliveryTimeout", type: "uint256", value: String(timeouts.deliveryTimeout) },
       { name: "approvalTimeout", type: "uint256", value: String(timeouts.approvalTimeout) },
       { name: "disputeTimeout", type: "uint256", value: String(timeouts.disputeTimeout) },
@@ -56,6 +60,7 @@ function deploymentManifest(usdcAddress, mode = "verification") {
     immutableRules: [
       { name: "usdc", source: "constructorArgument", argument: "usdcAddress" },
       { name: "SLASH_SINK", source: "deployedAddress" },
+      { name: "AGENT_STAKE", source: "constructorArgument", argument: "agentStake" },
       { name: "DELIVERY_TIMEOUT", source: "constructorArgument", argument: "deliveryTimeout" },
       { name: "APPROVAL_TIMEOUT", source: "constructorArgument", argument: "approvalTimeout" },
       { name: "DISPUTE_TIMEOUT", source: "constructorArgument", argument: "disputeTimeout" },
@@ -63,11 +68,11 @@ function deploymentManifest(usdcAddress, mode = "verification") {
   };
 }
 
-async function deployMarket(ethers, usdcAddress, timeouts = VERIFICATION_TIMEOUTS) {
+async function deployMarket(ethers, usdcAddress, timeouts = VERIFICATION_TIMEOUTS, agentStake = VERIFICATION_STAKE) {
   const Market = await ethers.getContractFactory("AgentMarketplace");
   const market = await Market.deploy(
     usdcAddress,
-    100_000000n,
+    agentStake,
     timeouts.deliveryTimeout,
     timeouts.approvalTimeout,
     timeouts.disputeTimeout,
@@ -180,6 +185,7 @@ describe("deployment bytecode attestation", function () {
     expect(result.mode).to.equal("verification");
     expect(result.immutableValues).to.deep.equal({
       usdc: await usdc.getAddress(),
+      AGENT_STAKE: String(VERIFICATION_STAKE),
       SLASH_SINK: await market.getAddress(),
       DELIVERY_TIMEOUT: String(VERIFICATION_TIMEOUTS.deliveryTimeout),
       APPROVAL_TIMEOUT: String(VERIFICATION_TIMEOUTS.approvalTimeout),
@@ -207,6 +213,7 @@ describe("deployment bytecode attestation", function () {
     const wrongSlashSink = "0x2000000000000000000000000000000000000002";
     const code = runtimeFor(metadata, {
       usdc: await usdc.getAddress(),
+      AGENT_STAKE: VERIFICATION_STAKE,
       SLASH_SINK: wrongSlashSink,
       DELIVERY_TIMEOUT: VERIFICATION_TIMEOUTS.deliveryTimeout,
       APPROVAL_TIMEOUT: VERIFICATION_TIMEOUTS.approvalTimeout,
@@ -283,6 +290,26 @@ describe("deployment bytecode attestation", function () {
     ).to.be.rejectedWith("constructor arguments");
   });
 
+  it("rejects a production deployment with the superseded 30-day timeout values", async function () {
+    const MockUSDC = await ethers.getContractFactory("MockUSDC");
+    const usdc = await MockUSDC.deploy();
+    const oldProductionTimeouts = {
+      deliveryTimeout: 30 * 24 * 60 * 60,
+      approvalTimeout: 30 * 24 * 60 * 60,
+      disputeTimeout: 30 * 24 * 60 * 60,
+    };
+    const market = await deployMarket(
+      ethers,
+      await usdc.getAddress(),
+      oldProductionTimeouts,
+      PRODUCTION_STAKE,
+    );
+
+    await expect(
+      attestLocal(ethers, market, deploymentManifest(await usdc.getAddress(), "production")),
+    ).to.be.rejectedWith("constructor arguments");
+  });
+
   it("maps shifted immutable AST IDs from an alternate compiled source set", async function () {
     this.timeout(120000);
     const canonical = loadCompilerMetadata(ROOT);
@@ -314,6 +341,7 @@ describe("deployment bytecode attestation", function () {
       deployedAddress,
     );
     expect([...resolved.expectedById.values()].map(({ name }) => name).sort()).to.deep.equal([
+      "AGENT_STAKE",
       "APPROVAL_TIMEOUT",
       "DELIVERY_TIMEOUT",
       "DISPUTE_TIMEOUT",
@@ -322,6 +350,7 @@ describe("deployment bytecode attestation", function () {
     ]);
     expect(resolved.effectiveConfig).to.deep.equal({
       usdc: usdcAddress,
+      AGENT_STAKE: String(VERIFICATION_STAKE),
       SLASH_SINK: getAddress(deployedAddress),
       DELIVERY_TIMEOUT: String(VERIFICATION_TIMEOUTS.deliveryTimeout),
       APPROVAL_TIMEOUT: String(VERIFICATION_TIMEOUTS.approvalTimeout),
@@ -343,6 +372,18 @@ describe("deployment bytecode attestation", function () {
     legacyEqualWindows.constructorArguments.find(({ name }) => name === "disputeTimeout").value = "600";
     expect(() => assertDeploymentManifest(legacyEqualWindows, "verification")).to.throw(
       "Verification deployment timeouts must not all be equal",
+    );
+
+    const wrongVerificationStake = deploymentManifest(address);
+    wrongVerificationStake.constructorArguments.find(({ name }) => name === "agentStake").value = String(PRODUCTION_STAKE);
+    expect(() => assertDeploymentManifest(wrongVerificationStake, "verification")).to.throw(
+      "verification deployment agent stake configuration mismatch",
+    );
+
+    const wrongProductionStake = deploymentManifest(address, "production");
+    wrongProductionStake.constructorArguments.find(({ name }) => name === "agentStake").value = String(VERIFICATION_STAKE);
+    expect(() => assertDeploymentManifest(wrongProductionStake, "production")).to.throw(
+      "production deployment agent stake configuration mismatch",
     );
 
     expect(

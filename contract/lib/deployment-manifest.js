@@ -7,10 +7,14 @@ const EXPECTED_TIMEOUTS = Object.freeze({
     disputeTimeout: "1200",
   }),
   production: Object.freeze({
-    deliveryTimeout: "2592000",
-    approvalTimeout: "2592000",
-    disputeTimeout: "2592000",
+    deliveryTimeout: "86400",
+    approvalTimeout: "86400",
+    disputeTimeout: "86400",
   }),
+});
+const EXPECTED_STAKES = Object.freeze({
+  verification: "10000000",
+  production: "100000000",
 });
 
 function assertDeploymentManifest(manifest, expectedMode = manifest?.mode) {
@@ -30,6 +34,12 @@ function assertDeploymentManifest(manifest, expectedMode = manifest?.mode) {
       return [name, values.get(name)];
     }),
   );
+  assert.ok(values.has("agentStake"), "Missing constructor argument agentStake");
+  assert.equal(
+    values.get("agentStake"),
+    EXPECTED_STAKES[expectedMode],
+    `${expectedMode} deployment agent stake configuration mismatch`,
+  );
 
   if (expectedMode === "verification") {
     assert.ok(
@@ -47,6 +57,7 @@ function assertDeploymentManifest(manifest, expectedMode = manifest?.mode) {
 }
 
 module.exports = {
+  EXPECTED_STAKES,
   EXPECTED_TIMEOUTS,
   assertDeploymentManifest,
 };

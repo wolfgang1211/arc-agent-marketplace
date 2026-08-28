@@ -15,19 +15,24 @@
       }
     },
     {
+      "name": "agentStake",
+      "type": "uint256",
+      "value": "100000000"
+    },
+    {
       "name": "deliveryTimeout",
       "type": "uint256",
-      "value": "2592000"
+      "value": "86400"
     },
     {
       "name": "approvalTimeout",
       "type": "uint256",
-      "value": "2592000"
+      "value": "86400"
     },
     {
       "name": "disputeTimeout",
       "type": "uint256",
-      "value": "2592000"
+      "value": "86400"
     }
   ],
   "immutableRules": [
@@ -39,6 +44,11 @@
     {
       "name": "SLASH_SINK",
       "source": "deployedAddress"
+    },
+    {
+      "name": "AGENT_STAKE",
+      "source": "constructorArgument",
+      "argument": "agentStake"
     },
     {
       "name": "DELIVERY_TIMEOUT",
@@ -63,6 +73,35 @@
       "new",
       "reason"
     ],
-    "changeLog": []
+    "changeLog": [
+      {
+        "field": "constructorArguments.agentStake.value",
+        "checkedAt": "2026-08-28",
+        "old": "100000000 (fixed contract constant)",
+        "new": "100000000 (constructor argument)",
+        "reason": "Make registration stake deployment-configurable while retaining the governed 100 USDC production value."
+      },
+      {
+        "field": "constructorArguments.deliveryTimeout.value",
+        "checkedAt": "2026-08-28",
+        "old": "2592000",
+        "new": "86400",
+        "reason": "AI agent marketplace jobs complete on an hours-scale; a 24-hour recovery window is observable and domain-appropriate while the prior 30-day value came from generic escrow convention."
+      },
+      {
+        "field": "constructorArguments.approvalTimeout.value",
+        "checkedAt": "2026-08-28",
+        "old": "2592000",
+        "new": "86400",
+        "reason": "AI agent marketplace jobs complete on an hours-scale; a 24-hour recovery window is observable and domain-appropriate while the prior 30-day value came from generic escrow convention."
+      },
+      {
+        "field": "constructorArguments.disputeTimeout.value",
+        "checkedAt": "2026-08-28",
+        "old": "2592000",
+        "new": "86400",
+        "reason": "AI agent marketplace jobs complete on an hours-scale; a 24-hour recovery window is observable and domain-appropriate while the prior 30-day value came from generic escrow convention."
+      }
+    ]
   }
 }

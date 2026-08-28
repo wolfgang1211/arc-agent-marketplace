@@ -15,6 +15,11 @@
       }
     },
     {
+      "name": "agentStake",
+      "type": "uint256",
+      "value": "10000000"
+    },
+    {
       "name": "deliveryTimeout",
       "type": "uint256",
       "value": "600"
@@ -39,6 +44,11 @@
     {
       "name": "SLASH_SINK",
       "source": "deployedAddress"
+    },
+    {
+      "name": "AGENT_STAKE",
+      "source": "constructorArgument",
+      "argument": "agentStake"
     },
     {
       "name": "DELIVERY_TIMEOUT",
@@ -78,6 +88,13 @@
         "old": "https://docs.arc.network/arc/references/contract-addresses",
         "new": "https://docs.arc.io/arc/references/contract-addresses",
         "reason": "Use the canonical working Arc documentation URL; the old host currently redirects to this URL. The verified USDC address and decimal claim are unchanged."
+      },
+      {
+        "field": "constructorArguments.agentStake.value",
+        "checkedAt": "2026-08-28",
+        "old": "100000000 (fixed contract constant)",
+        "new": "10000000 (constructor argument)",
+        "reason": "Use a 10 USDC Arc Testnet registration stake so faucet-funded visitors can register while preserving a non-zero stake at least equal to MIN_JOB_REWARD."
       }
     ]
   }

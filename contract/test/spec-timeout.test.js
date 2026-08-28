@@ -8,7 +8,7 @@ const { ethers } = require("hardhat");
 const DELIVERY_TIMEOUT = 600;
 const APPROVAL_TIMEOUT = 1200;
 const DISPUTE_TIMEOUT = 1800;
-const PRODUCTION_TIMEOUT = 30 * 24 * 60 * 60;
+const PRODUCTION_TIMEOUT = 24 * 60 * 60;
 const REWARD = 100_000000n;
 
 async function deployMarket(delivery, approval, dispute) {
@@ -103,7 +103,7 @@ describe("TIMEOUT SPEC — constructor-configured verification windows", functio
     expect(await market.DISPUTE_TIMEOUT()).to.equal(1800n);
   });
 
-  it("preserves the prior 30-day production timeout behavior", async function () {
+  it("preserves the governed 24-hour production timeout behavior", async function () {
     const fixture = await deployMarket(PRODUCTION_TIMEOUT, PRODUCTION_TIMEOUT, PRODUCTION_TIMEOUT);
     const { agent, market } = fixture;
     await prepareActors(fixture);
