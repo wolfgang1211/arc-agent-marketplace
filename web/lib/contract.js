@@ -1,6 +1,5 @@
 export const CONTRACT_ADDRESS =
   process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || "";
-export const AGENT_STAKE = 100_000000n;
 
 // Minimal ABI for the functions and events the UI uses.
 export const MARKETPLACE_ABI = [

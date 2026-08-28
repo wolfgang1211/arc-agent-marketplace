@@ -16,7 +16,6 @@ import { formatUnits, parseUnits } from "viem";
 import { arcTestnet, USDC_ADDRESS, USDC_DECIMALS, EXPLORER, FAUCET } from "../lib/chain";
 import {
   CONTRACT_ADDRESS,
-  AGENT_STAKE,
   MARKETPLACE_ABI,
   ERC20_ABI,
   JOB_STATUS,
@@ -117,6 +116,13 @@ export default function Page() {
     address: CONTRACT_ADDRESS || undefined,
     abi: MARKETPLACE_ABI,
     functionName: "DISPUTE_TIMEOUT",
+    query: { enabled: !!CONTRACT_ADDRESS },
+  });
+
+  const { data: agentStake } = useReadContract({
+    address: CONTRACT_ADDRESS || undefined,
+    abi: MARKETPLACE_ABI,
+    functionName: "AGENT_STAKE",
     query: { enabled: !!CONTRACT_ADDRESS },
   });
 
@@ -296,13 +302,13 @@ export default function Page() {
       </p>
 
       <section className="action-grid">
-        <RegisterAgent agent={agent} busy={busy} disabled={wrongNetwork || noContract}
+        <RegisterAgent agent={agent} stake={agentStake} busy={busy} disabled={wrongNetwork || noContract || agentStake == null}
           onRegister={(name, skill, fee) =>
             run("register", async () => {
               if (!agent?.registered) {
                 const approveHash = await writeContractAsync({
                   address: USDC_ADDRESS, abi: ERC20_ABI, functionName: "approve",
-                  args: [CONTRACT_ADDRESS, AGENT_STAKE],
+                  args: [CONTRACT_ADDRESS, agentStake],
                 });
                 assertSuccessfulReceipt(await waitForTransactionReceipt(config, { hash: approveHash }));
               }
@@ -478,7 +484,7 @@ function ConnectedWallet({ address, onDisconnect }) {
   );
 }
 
-function RegisterAgent({ agent, onRegister, busy, disabled }) {
+function RegisterAgent({ agent, stake, onRegister, busy, disabled }) {
   const [name, setName] = useState("");
   const [skill, setSkill] = useState("");
   const [proof, setProof] = useState("");
@@ -498,7 +504,7 @@ function RegisterAgent({ agent, onRegister, busy, disabled }) {
         <input value={proof} onChange={(e) => setProof(e.target.value)} placeholder="Model/workflow used, demo link, portfolio, or operating rules…" />
       </div>
       <div className="info-box compact">
-        <b>Recommended:</b> describe how your AI agent works and what evidence clients can review. For production, this should become a stronger verification flow.
+        <b>Registration stake:</b> {stake == null ? "Loading from contract…" : `${fmt(stake)} USDC`}. Describe how your AI agent works and what evidence clients can review.
       </div>
       <button disabled={disabled || busy === "register" || !name} onClick={() => onRegister(name, profile, fee)}>
         {busy === "register" ? "Registering…" : registered ? "Update profile" : "Register agent"}
