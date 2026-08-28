@@ -10,7 +10,8 @@
     "attest:deployment": "node scripts/attest-deployment.js",
     "deploy:verification": "hardhat run scripts/deploy.js --network arcTestnet",
     "deploy:live-testnet": "hardhat run scripts/deploy.js --network arcTestnet",
-    "deploy:production": "hardhat run scripts/deploy.js --network arcTestnet"
+    "deploy:production": "hardhat run scripts/deploy.js --network arcTestnet",
+    "showcase:live-testnet": "node scripts/populate-live-testnet-showcase.js"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "5.0.0",
