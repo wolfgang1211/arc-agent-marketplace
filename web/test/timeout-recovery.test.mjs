@@ -125,11 +125,17 @@ test("countdown copy is exact and role-scoped", () => {
   );
 });
 
-test("observer countdown variants contain no second-person wording", () => {
+test("observer financial outcomes are third-person while caller fee copy may use you", () => {
   for (const status of [1, 2, 3]) {
-    const copy = timeoutOutcomeCopy({ ...baseJob, status }, "observer", 61n, false);
-    assert.doesNotMatch(copy, /\byou(?:r|rs|self)?\b/i);
+    const countdown = timeoutOutcomeCopy({ ...baseJob, status }, "observer", 61n, false);
+    const claimable = timeoutOutcomeCopy({ ...baseJob, status }, "observer", 0n, true);
+    assert.doesNotMatch(countdown, /\byou(?:r|rs|self)?\b/i);
+    assert.doesNotMatch(claimable, /\byou(?:r|rs|self)?\b/i);
   }
+  for (const status of [6, 7, 8]) {
+    assert.doesNotMatch(terminalOutcomeCopy({ ...baseJob, status }), /\byou(?:r|rs|self)?\b/i);
+  }
+  assert.equal(PERMISSIONLESS_SETTLEMENT_COPY, "Anyone can settle an expired job. You pay only the network fee.");
 });
 
 test("each claimable branch uses the exact permissionless outcome copy", () => {

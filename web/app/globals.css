@@ -193,8 +193,8 @@ a { color: var(--accent-strong); }
 .timeout-panel p { margin: 0; color: #c8d2e6; }
 .timeout-panel small { color: var(--muted); }
 .timeout-panel.waiting { background: rgba(255,206,107,.06); border-color: rgba(255,206,107,.24); }
-.timeout-panel.claimable { background: rgba(255,107,107,.08); border-color: rgba(255,107,107,.34); }
-.timeout-panel.claimable strong { color: var(--danger); }
+.timeout-panel.claimable { background: rgba(91,140,255,.09); border-color: rgba(91,140,255,.32); }
+.timeout-panel.claimable strong { color: var(--accent-strong); }
 .timeout-panel.terminal { background: rgba(63,214,168,.07); border-color: rgba(63,214,168,.24); }
 .timeout-panel.terminal strong { color: var(--accent-2); }
 .submitted-actions { display: grid; gap: 10px; }
