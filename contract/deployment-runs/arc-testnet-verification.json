@@ -32,6 +32,21 @@
   },
   "scenarios": {
     "status": "BLOCKED_INSUFFICIENT_USDC",
+    "preStakeArcAssetGate": {
+      "status": "PENDING",
+      "mustPassBeforeStake": true,
+      "fundingTransferUsdc": "0.5",
+      "walletProbeReturnTransferUsdc": "0.01",
+      "requiredEvidence": [
+        "deployer ERC20 transfer receipt.status=1 and tx hash",
+        "second-wallet eth_getBalance using 18 decimals",
+        "second-wallet ERC20 balanceOf using 6 decimals",
+        "exact scale check nativeRaw / 10^12 == erc20Raw before the second-wallet transaction",
+        "second-wallet 0.01 USDC return transfer receipt.status=1 with estimated and actual gas",
+        "post-transaction native/ERC20 balances reconciled with transfer and gas"
+      ],
+      "failClosedRule": "Do not approve or transfer the 100 USDC registration stake unless every check passes."
+    },
     "fundingPlan": {
       "currentBalanceUsdc": "1.677299",
       "recommendedTotalUsdc": "128",
