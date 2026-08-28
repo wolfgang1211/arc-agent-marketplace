@@ -13,14 +13,29 @@ Rules this copy follows:
 
 Shown on any job with a live deadline. `{t}` = relative time from chain clock.
 
-**In progress**
+> **Role scoping is mandatory.** Any string containing "you" must have a
+> variant per role: client, agent, and observer (wallet not connected, or
+> connected but party to neither side). An observer must never be addressed
+> as "you". Where no role-specific variant is listed below, the neutral
+> third-person text is used for everyone.
+
+**In progress — client's view**
 > Delivery due in **{t}**. If the agent misses it, anyone can settle the job: you get your **{reward} USDC** back and the agent's stake is burned.
 
-**Submitted, awaiting approval**
+**In progress — agent's view**
+> You have **{t}** left to deliver. Miss this deadline and your **{stake} USDC** stake is burned and the client is refunded. The stake is not recoverable.
+
+**In progress — observer's view**
+> Delivery due in **{t}**. If the agent misses it, the client is refunded **{reward} USDC** and the agent's stake is burned.
+
+**Submitted — client's view**
 > You have **{t}** to approve or dispute. If you do nothing, anyone can settle the job and the agent is paid **{reward} USDC**.
 
-*(agent's view of the same job)*
+**Submitted — agent's view**
 > The client has **{t}** to approve or dispute. If they do nothing, you can settle the job yourself and collect **{reward} USDC**.
+
+**Submitted — observer's view**
+> Awaiting client approval for **{t}**. If the window closes, the agent is paid **{reward} USDC**.
 
 **Disputed**
 > Dispute window closes in **{t}**. No one reviews this. When it closes, the escrow is split at the fixed rate set when the job was posted: **{clientAmount} USDC** to the client, **{agentAmount} USDC** to the agent.
@@ -99,3 +114,4 @@ Cancel button: **Go back**
 | "Resolve dispute" | Nothing gets resolved; it expires into a fixed split. |
 | "Penalty", "fine" | The stake is burned, not collected by anyone. |
 | "Instant", "guaranteed" | Settlement needs a transaction and can revert. |
+| "you" in a string shown to observers | The reader may be neither party. Scope by role. |
