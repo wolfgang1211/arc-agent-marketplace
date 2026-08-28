@@ -144,6 +144,14 @@ async function expectTimeoutRevert(state, label, market, jobId, provider, expect
     console.log(`${label}: expected revert observed: ${expectedText}`);
   }
 }
+
+async function requireJobStatus(market, jobId, expectedStatus, label) {
+  const job = await market.jobs(jobId);
+  if (job.status !== BigInt(expectedStatus)) {
+    throw new Error(`${label} state mismatch: expected ${expectedStatus}, observed ${job.status}`);
+  }
+}
+
 async function waitUntil(provider, timestamp, label) {
   while (true) {
     const block = await provider.getBlock("latest");
@@ -321,6 +329,11 @@ async function main() {
   const deliveryDeadline = BigInt(state.scenarios.jobs.timeoutDelivery.deadline);
   const approvalDeadline = BigInt(state.scenarios.jobs.timeoutApproval.deadline);
   const disputeDeadline = BigInt(state.scenarios.jobs.timeoutDispute.deadline);
+  if (!state.scenarios.completedSteps.includes("delivery-timeout-settled")) {
+    await requireJobStatus(marketClient, deliveryId, 1, "timeoutDelivery");
+    await requireJobStatus(marketClient, approvalId, 2, "timeoutApproval before delivery claim");
+    await requireJobStatus(marketClient, disputeId, 3, "timeoutDispute before delivery claim");
+  }
   await waitUntil(provider, deliveryDeadline, "delivery deadline");
   await expectTimeoutRevert(state, "approval-before-deadline", marketClient, approvalId, provider, "Approval deadline not reached");
   if (!state.scenarios.completedSteps.includes("delivery-timeout-settled")) {
@@ -331,12 +344,19 @@ async function main() {
     if (job.status !== 6n || agentState.registered || agentState.stake !== 0n || globalRep[0] !== 0n || categoryRep !== 0n) throw new Error("Delivery slash/epoch state mismatch");
     complete(state, "delivery-timeout-settled");
   }
+  if (!state.scenarios.completedSteps.includes("approval-timeout-settled")) {
+    await requireJobStatus(marketClient, approvalId, 2, "timeoutApproval");
+    await requireJobStatus(marketClient, disputeId, 3, "timeoutDispute before approval claim");
+  }
   await waitUntil(provider, approvalDeadline, "approval deadline");
   await expectTimeoutRevert(state, "dispute-before-deadline", marketClient, disputeId, provider, "Dispute deadline not reached");
   if (!state.scenarios.completedSteps.includes("approval-timeout-settled")) {
     await executeTx(state, "timeoutApproval:claim", () => marketClient.claimTimeout.estimateGas(approvalId), () => marketClient.claimTimeout(approvalId), provider);
     if ((await marketClient.jobs(approvalId)).status !== 7n) throw new Error("Submitted timeout status mismatch");
     complete(state, "approval-timeout-settled");
+  }
+  if (!state.scenarios.completedSteps.includes("dispute-timeout-settled")) {
+    await requireJobStatus(marketClient, disputeId, 3, "timeoutDispute");
   }
   await waitUntil(provider, disputeDeadline, "dispute deadline");
   if (!state.scenarios.completedSteps.includes("dispute-timeout-settled")) {
