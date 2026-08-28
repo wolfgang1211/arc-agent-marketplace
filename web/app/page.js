@@ -26,6 +26,7 @@ import {
   assertSuccessfulReceipt,
   formatDuration,
   formatUsdcAmount,
+  getJobStatusCounts,
   getPaginationState,
   getTimeoutState,
   PERMISSIONLESS_SETTLEMENT_COPY,
@@ -165,9 +166,7 @@ export default function Page() {
   const lifecycleJobs = jobs.filter((job) => Number(job.status) !== 0);
   const jobList = [...lifecycleJobs, ...openOnPage].sort((a, b) => Number(b.id - a.id));
   const pagination = getPaginationState(pageOffset, JOB_PAGE_SIZE, totalJobs);
-  const openJobs = jobs ? jobs.filter((j) => Number(j.status) === 0).length : 0;
-  const activeJobs = jobs ? jobs.filter((j) => [1, 2, 3].includes(Number(j.status))).length : 0;
-  const completedJobs = jobs ? jobs.filter((j) => Number(j.status) === 4).length : 0;
+  const statusCounts = getJobStatusCounts(jobList);
 
   async function run(label, fn) {
     setMsg(null);
@@ -287,9 +286,9 @@ export default function Page() {
             <button className="ghost">Get test USDC</button>
           </a>
         </div>
-        <MetricCard label="Open on page" value={openJobs} tone="blue" />
-        <MetricCard label="Active on page" value={activeJobs} tone="yellow" />
-        <MetricCard label="Completed on page" value={completedJobs} tone="green" />
+        <MetricCard label="Open on page" value={statusCounts.open} tone="blue" />
+        <MetricCard label="Active on page" value={statusCounts.active} tone="yellow" />
+        <MetricCard label="Settled on page" value={statusCounts.settled} tone="green" />
       </section>
 
       <p className="network-note">

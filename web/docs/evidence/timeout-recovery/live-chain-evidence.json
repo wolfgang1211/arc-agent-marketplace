@@ -4,6 +4,12 @@
   "appUrl": "http://127.0.0.1:4174",
   "transactionSent": false,
   "walletPermissionGranted": false,
+  "summaryCounts": {
+    "open": 0,
+    "active": 0,
+    "settled": 5,
+    "displayedJobs": 5
+  },
   "temporaryBoundary": "Verification address was a process-only environment override; wallet-connect render gate was bypassed only in the local working copy and restored before commit.",
   "captures": [
     {

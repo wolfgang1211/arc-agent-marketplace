@@ -8,6 +8,33 @@ const USDC_SCALE = 1_000000n;
 const DISPUTE_BPS_SCALE = 10_000n;
 const AGENT_STAKE = 100_000000n;
 
+export const JOB_STATUS_BUCKETS = Object.freeze([
+  "open",
+  "active",
+  "active",
+  "active",
+  "settled",
+  "settled",
+  "settled",
+  "settled",
+  "settled",
+]);
+
+export function getJobStatusCounts(jobs) {
+  const counts = { open: 0, active: 0, settled: 0, total: 0 };
+  for (const job of jobs) {
+    const status = Number(job.status);
+    const bucket = JOB_STATUS_BUCKETS[status];
+    if (!bucket) throw new Error(`Unclassified JobStatus: ${status}`);
+    counts[bucket] += 1;
+    counts.total += 1;
+  }
+  if (counts.open + counts.active + counts.settled !== counts.total) {
+    throw new Error("Job status bucket total mismatch");
+  }
+  return counts;
+}
+
 export function formatUsdcAmount(value) {
   const amount = BigInt(value ?? 0);
   const sign = amount < 0n ? "-" : "";

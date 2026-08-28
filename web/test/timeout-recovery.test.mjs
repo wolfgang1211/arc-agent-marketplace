@@ -1,11 +1,15 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 
 import {
   assertSuccessfulReceipt,
   formatDuration,
   formatUsdcAmount,
+  getJobStatusCounts,
   getPaginationState,
+  JOB_STATUS_BUCKETS,
   getTimeoutState,
   PERMISSIONLESS_SETTLEMENT_COPY,
   revalidateTimeoutClaim,
@@ -22,6 +26,41 @@ const baseJob = {
   disputeDeadline: 3_000n,
   clientShareOnDispute: 3333n,
 };
+
+const marketplaceSourcePath = fileURLToPath(new URL("../../contract/contracts/AgentMarketplace.sol", import.meta.url));
+
+test("summary buckets cover the Solidity JobStatus enum in exact order", async () => {
+  const source = await readFile(marketplaceSourcePath, "utf8");
+  const body = source.match(/enum\s+JobStatus\s*{([\s\S]*?)}/)?.[1];
+  assert.ok(body, "JobStatus enum missing from AgentMarketplace.sol");
+  const statuses = body
+    .replace(/\/\/.*$/gm, "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+  assert.deepEqual(statuses, [
+    "Open", "InProgress", "Submitted", "Disputed", "Completed",
+    "Cancelled", "ExpiredRefund", "ExpiredPayout", "ExpiredSplit",
+  ]);
+  assert.equal(JOB_STATUS_BUCKETS.length, statuses.length);
+});
+
+test("every JobStatus is assigned to exactly one summary bucket", () => {
+  const expectedBuckets = ["open", "active", "active", "active", "settled", "settled", "settled", "settled", "settled"];
+  assert.deepEqual(JOB_STATUS_BUCKETS, expectedBuckets);
+  for (const [status, bucket] of expectedBuckets.entries()) {
+    const counts = getJobStatusCounts([{ status }]);
+    assert.equal(counts[bucket], 1, `JobStatus ${status} must count as ${bucket}`);
+    assert.equal(counts.open + counts.active + counts.settled, 1);
+    assert.equal(counts.total, 1);
+  }
+});
+
+test("summary bucket totals equal the displayed job count and reject unknown statuses", () => {
+  const jobs = JOB_STATUS_BUCKETS.map((_, status) => ({ status }));
+  assert.deepEqual(getJobStatusCounts(jobs), { open: 1, active: 3, settled: 5, total: 9 });
+  assert.throws(() => getJobStatusCounts([{ status: JOB_STATUS_BUCKETS.length }]), /Unclassified JobStatus: 9/);
+});
 
 for (const row of [
   { status: 1, deadline: 1_000n, name: "InProgress" },
