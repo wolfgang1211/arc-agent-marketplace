@@ -1,4 +1,5 @@
 const assert = require("node:assert/strict");
+const { DEPLOYMENT_MODES } = require("./deployment-modes");
 const fs = require("node:fs");
 const path = require("node:path");
 const {
@@ -152,10 +153,7 @@ function constructorFragment(abi) {
 
 function resolveManifest(manifest, metadata, deployedAddress) {
   assert.equal(manifest.schemaVersion, 1, "Unsupported deployment manifest schemaVersion");
-  assert.ok(
-    manifest.mode === "verification" || manifest.mode === "production",
-    "Deployment manifest mode must be verification or production",
-  );
+  assert.ok(DEPLOYMENT_MODES[manifest.mode], "Deployment manifest mode is unsupported");
   assert.equal(manifest.contract, CONTRACT_ID, "Deployment manifest targets the wrong contract");
   assert.match(manifest.expectedChainId, /^0x[0-9a-fA-F]+$/, "Manifest expectedChainId is invalid");
   assert.ok(Array.isArray(manifest.constructorArguments), "Manifest constructorArguments must be an array");

@@ -9,6 +9,7 @@
     "verify:artifact": "node scripts/verify-artifact-identity.js",
     "attest:deployment": "node scripts/attest-deployment.js",
     "deploy:verification": "hardhat run scripts/deploy.js --network arcTestnet",
+    "deploy:live-testnet": "hardhat run scripts/deploy.js --network arcTestnet",
     "deploy:production": "hardhat run scripts/deploy.js --network arcTestnet"
   },
   "devDependencies": {

@@ -6,6 +6,11 @@ const EXPECTED_TIMEOUTS = Object.freeze({
     approvalTimeout: "900",
     disputeTimeout: "1200",
   }),
+  "live-testnet": Object.freeze({
+    deliveryTimeout: "86400",
+    approvalTimeout: "86400",
+    disputeTimeout: "86400",
+  }),
   production: Object.freeze({
     deliveryTimeout: "86400",
     approvalTimeout: "86400",
@@ -13,7 +18,8 @@ const EXPECTED_TIMEOUTS = Object.freeze({
   }),
 });
 const EXPECTED_STAKES = Object.freeze({
-  verification: "10000000",
+  verification: "100000000",
+  "live-testnet": "10000000",
   production: "100000000",
 });
 

@@ -32,19 +32,33 @@ const VERIFICATION_TIMEOUTS = Object.freeze({
   approvalTimeout: 15 * 60,
   disputeTimeout: 20 * 60,
 });
-const VERIFICATION_STAKE = 10_000000;
+const VERIFICATION_STAKE = 100_000000;
+const LIVE_TESTNET_STAKE = 10_000000;
 const PRODUCTION_STAKE = 100_000000;
 const PRODUCTION_TIMEOUT = 24 * 60 * 60;
 
+const MODE_CONFIG = Object.freeze({
+  verification: Object.freeze({ stake: VERIFICATION_STAKE, timeouts: VERIFICATION_TIMEOUTS }),
+  "live-testnet": Object.freeze({
+    stake: LIVE_TESTNET_STAKE,
+    timeouts: Object.freeze({
+      deliveryTimeout: PRODUCTION_TIMEOUT,
+      approvalTimeout: PRODUCTION_TIMEOUT,
+      disputeTimeout: PRODUCTION_TIMEOUT,
+    }),
+  }),
+  production: Object.freeze({
+    stake: PRODUCTION_STAKE,
+    timeouts: Object.freeze({
+      deliveryTimeout: PRODUCTION_TIMEOUT,
+      approvalTimeout: PRODUCTION_TIMEOUT,
+      disputeTimeout: PRODUCTION_TIMEOUT,
+    }),
+  }),
+});
+
 function deploymentManifest(usdcAddress, mode = "verification") {
-  const agentStake = mode === "verification" ? VERIFICATION_STAKE : PRODUCTION_STAKE;
-  const timeouts = mode === "verification"
-    ? VERIFICATION_TIMEOUTS
-    : {
-        deliveryTimeout: PRODUCTION_TIMEOUT,
-        approvalTimeout: PRODUCTION_TIMEOUT,
-        disputeTimeout: PRODUCTION_TIMEOUT,
-      };
+  const { stake: agentStake, timeouts } = MODE_CONFIG[mode];
   return {
     schemaVersion: 1,
     mode,
@@ -280,15 +294,26 @@ describe("deployment bytecode attestation", function () {
     ).to.be.rejectedWith("constructor arguments");
   });
 
-  it("rejects a verification deployment when attested as production mode", async function () {
-    const MockUSDC = await ethers.getContractFactory("MockUSDC");
-    const usdc = await MockUSDC.deploy();
-    const market = await deployMarket(ethers, await usdc.getAddress());
+  for (const deployedMode of Object.keys(MODE_CONFIG)) {
+    for (const attestedMode of Object.keys(MODE_CONFIG)) {
+      if (deployedMode === attestedMode) continue;
+      it(`rejects ${deployedMode} parameters against the ${attestedMode} manifest`, async function () {
+        const MockUSDC = await ethers.getContractFactory("MockUSDC");
+        const usdc = await MockUSDC.deploy();
+        const deployed = MODE_CONFIG[deployedMode];
+        const market = await deployMarket(
+          ethers,
+          await usdc.getAddress(),
+          deployed.timeouts,
+          deployed.stake,
+        );
 
-    await expect(
-      attestLocal(ethers, market, deploymentManifest(await usdc.getAddress(), "production")),
-    ).to.be.rejectedWith("constructor arguments");
-  });
+        await expect(
+          attestLocal(ethers, market, deploymentManifest(await usdc.getAddress(), attestedMode)),
+        ).to.be.rejectedWith("constructor arguments");
+      });
+    }
+  }
 
   it("rejects a production deployment with the superseded 30-day timeout values", async function () {
     const MockUSDC = await ethers.getContractFactory("MockUSDC");
@@ -358,7 +383,7 @@ describe("deployment bytecode attestation", function () {
     });
   });
 
-  it("guards exact differentiated verification and production manifest timeouts", function () {
+  it("guards exact verification, live-testnet, and production manifest parameters", function () {
     const address = "0x3600000000000000000000000000000000000000";
     const verification = deploymentManifest(address);
     expect(assertDeploymentManifest(verification, "verification")).to.deep.equal({
@@ -375,16 +400,24 @@ describe("deployment bytecode attestation", function () {
     );
 
     const wrongVerificationStake = deploymentManifest(address);
-    wrongVerificationStake.constructorArguments.find(({ name }) => name === "agentStake").value = String(PRODUCTION_STAKE);
+    wrongVerificationStake.constructorArguments.find(({ name }) => name === "agentStake").value = String(LIVE_TESTNET_STAKE);
     expect(() => assertDeploymentManifest(wrongVerificationStake, "verification")).to.throw(
       "verification deployment agent stake configuration mismatch",
     );
 
     const wrongProductionStake = deploymentManifest(address, "production");
-    wrongProductionStake.constructorArguments.find(({ name }) => name === "agentStake").value = String(VERIFICATION_STAKE);
+    wrongProductionStake.constructorArguments.find(({ name }) => name === "agentStake").value = String(LIVE_TESTNET_STAKE);
     expect(() => assertDeploymentManifest(wrongProductionStake, "production")).to.throw(
       "production deployment agent stake configuration mismatch",
     );
+
+    expect(
+      assertDeploymentManifest(deploymentManifest(address, "live-testnet"), "live-testnet"),
+    ).to.deep.equal({
+      deliveryTimeout: String(PRODUCTION_TIMEOUT),
+      approvalTimeout: String(PRODUCTION_TIMEOUT),
+      disputeTimeout: String(PRODUCTION_TIMEOUT),
+    });
 
     expect(
       assertDeploymentManifest(deploymentManifest(address, "production"), "production"),

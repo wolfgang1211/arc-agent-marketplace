@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "mode": "verification",
+  "mode": "live-testnet",
   "contract": "contracts/AgentMarketplace.sol:AgentMarketplace",
   "expectedChainId": "0x4cef52",
   "constructorArguments": [
@@ -17,22 +17,22 @@
     {
       "name": "agentStake",
       "type": "uint256",
-      "value": "100000000"
+      "value": "10000000"
     },
     {
       "name": "deliveryTimeout",
       "type": "uint256",
-      "value": "600"
+      "value": "86400"
     },
     {
       "name": "approvalTimeout",
       "type": "uint256",
-      "value": "900"
+      "value": "86400"
     },
     {
       "name": "disputeTimeout",
       "type": "uint256",
-      "value": "1200"
+      "value": "86400"
     }
   ],
   "immutableRules": [
@@ -75,33 +75,11 @@
     ],
     "changeLog": [
       {
-        "field": "constructorArguments.usdcAddress.value",
-        "primaryUrl": "https://docs.arc.network/arc/references/contract-addresses",
-        "checkedAt": "2026-08-27",
-        "old": "0x3600000000000000000000000000000000000000",
-        "new": "0x3600000000000000000000000000000000000000",
-        "reason": "Added primary-source provenance without changing the governed Arc Testnet USDC address."
-      },
-      {
-        "field": "constructorArguments.usdcAddress.provenance.primaryUrl",
+        "field": "profile",
         "checkedAt": "2026-08-28",
-        "old": "https://docs.arc.network/arc/references/contract-addresses",
-        "new": "https://docs.arc.io/arc/references/contract-addresses",
-        "reason": "Use the canonical working Arc documentation URL; the old host currently redirects to this URL. The verified USDC address and decimal claim are unchanged."
-      },
-      {
-        "field": "constructorArguments.agentStake.value",
-        "checkedAt": "2026-08-28",
-        "old": "100000000 (fixed contract constant)",
-        "new": "10000000 (constructor argument)",
-        "reason": "Use a 10 USDC Arc Testnet registration stake so faucet-funded visitors can register while preserving a non-zero stake at least equal to MIN_JOB_REWARD."
-      },
-      {
-        "field": "constructorArguments.agentStake.value",
-        "checkedAt": "2026-08-28",
-        "old": "10000000 (incorrect post-run metadata)",
-        "new": "100000000 (historical deployed value)",
-        "reason": "Restore historical accuracy: the verification deployment predated constructor-configurable stake and actually collected and slashed 100 USDC. The 10 USDC visitor value belongs only to the live-testnet profile."
+        "old": "No dedicated live Arc Testnet profile",
+        "new": "10 USDC stake and 86400/86400/86400 timeouts",
+        "reason": "Keep the historical verification deployment and undeployed production parameters truthful while giving the public Arc Testnet showcase usable visitor economics and 24-hour recovery windows."
       }
     ]
   }

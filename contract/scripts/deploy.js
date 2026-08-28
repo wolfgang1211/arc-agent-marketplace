@@ -1,22 +1,30 @@
 const hre = require("hardhat");
+const fs = require("node:fs");
+const path = require("node:path");
 const { assertDeploymentManifest } = require("../lib/deployment-manifest");
+const {
+  DEPLOYMENT_MODES,
+  resolveDeploymentMode,
+  writeDeploymentRunState,
+} = require("../lib/deployment-modes");
 const {
   normalizePrivateKey,
   runDeploymentPreflight,
 } = require("../lib/deploy-preflight");
-const manifests = {
-  verification: require("../DEPLOYMENT-MANIFEST.json"),
-  production: require("../DEPLOYMENT-MANIFEST.production.json"),
-};
+const ROOT = path.resolve(__dirname, "..");
 
 function deploymentConfig(mode) {
-  const manifest = manifests[mode];
+  const manifestFile = DEPLOYMENT_MODES[mode]?.manifestFile;
+  const manifest = manifestFile
+    ? JSON.parse(fs.readFileSync(path.join(ROOT, manifestFile), "utf8"))
+    : undefined;
   if (!manifest || manifest.mode !== mode) {
-    throw new Error("Select deploy:verification or deploy:production explicitly");
+    throw new Error("Select deploy:verification, deploy:live-testnet, or deploy:production explicitly");
   }
   assertDeploymentManifest(manifest, mode);
   return {
     manifest,
+    manifestFile,
     values: Object.fromEntries(
       manifest.constructorArguments.map(({ name, value }) => [name, value]),
     ),
@@ -24,8 +32,11 @@ function deploymentConfig(mode) {
 }
 
 async function main() {
-  const mode = process.env.DEPLOYMENT_MODE ?? process.env.npm_lifecycle_event?.split(":")[1];
-  const { manifest, values } = deploymentConfig(mode);
+  const { mode } = resolveDeploymentMode({
+    explicitMode: process.env.DEPLOYMENT_MODE,
+    lifecycleEvent: process.env.npm_lifecycle_event,
+  });
+  const { manifest, manifestFile, values } = deploymentConfig(mode);
 
   // This must run before the first RPC request. It accepts either common key
   // representation but never logs or returns the secret.
@@ -70,7 +81,7 @@ async function main() {
   console.log("Dispute timeout (seconds):", values.disputeTimeout);
   console.log(
     "Using deployment manifest:",
-    mode === "verification" ? "DEPLOYMENT-MANIFEST.json" : "DEPLOYMENT-MANIFEST.production.json",
+    manifestFile,
   );
 
   if (process.env.PREFLIGHT_ONLY === "1") {
@@ -89,12 +100,38 @@ async function main() {
   await contract.waitForDeployment();
 
   const address = await contract.getAddress();
+  const identity = JSON.parse(fs.readFileSync(path.join(ROOT, "ARTIFACT-IDENTITY.json"), "utf8"));
+  const runStatePath = writeDeploymentRunState({
+    root: ROOT,
+    mode,
+    state: {
+      schemaVersion: 1,
+      deploymentMode: mode,
+      manifestFile,
+      artifactIdentityFile: "ARTIFACT-IDENTITY.json",
+      artifactIdentity: {
+        creationKeccak256: identity?.bytecode?.creationBytecode?.keccak256,
+        normalizedDeployedKeccak256: identity?.bytecode?.normalizedDeployedBytecode?.keccak256,
+      },
+      status: "UNATTESTED",
+      chainId: preflight.chainId.toString(),
+      contractAddress: address,
+      transactionHash: deploymentTransaction.hash,
+      blockNumber: receipt.blockNumber,
+      receiptStatus: receipt.status,
+      estimatedGas: preflight.estimatedGas.toString(),
+      actualGasUsed: receipt.gasUsed.toString(),
+      gasDeviation: (receipt.gasUsed - preflight.estimatedGas).toString(),
+      effectiveGasPriceWei: (receipt.gasPrice ?? receipt.effectiveGasPrice)?.toString() ?? null,
+    },
+  });
   console.log("Actual deployment gas:", receipt.gasUsed.toString());
   console.log(
     "Deployment gas deviation:",
     `${(receipt.gasUsed - preflight.estimatedGas).toString()} gas`,
   );
   console.log("\nAgentMarketplace deployed to:", address);
+  console.log("Deployment run state:", runStatePath);
   console.log("Explorer:", `https://testnet.arcscan.app/address/${address}`);
   console.log("Reputation getter: getAgentReputation(address)");
   console.log("\nUNATTESTED: do not announce or configure this address yet.");
