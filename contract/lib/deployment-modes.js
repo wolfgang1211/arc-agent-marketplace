@@ -10,6 +10,16 @@ const DEPLOYMENT_MODES = Object.freeze({
 const EXPLICIT_MODE_ERROR =
   "Select deploy:verification, deploy:live-testnet, or deploy:production explicitly";
 
+function artifactIdentitySummary(identity) {
+  const creationKeccak256 = identity?.build?.creationBytecode?.keccak256;
+  const normalizedDeployedKeccak256 =
+    identity?.deploymentAttestation?.normalizedDeployedBytecode?.keccak256;
+  if (!creationKeccak256 || !normalizedDeployedKeccak256) {
+    throw new Error("Artifact identity is incomplete");
+  }
+  return { creationKeccak256, normalizedDeployedKeccak256 };
+}
+
 function modeFromLifecycleEvent(lifecycleEvent) {
   if (typeof lifecycleEvent !== "string" || !lifecycleEvent.startsWith("deploy:")) return undefined;
   const mode = lifecycleEvent.slice("deploy:".length);
@@ -91,6 +101,7 @@ function markDeploymentAttested({ root, mode, address, attestation }) {
 module.exports = {
   DEPLOYMENT_MODES,
   EXPLICIT_MODE_ERROR,
+  artifactIdentitySummary,
   deploymentRunPath,
   markDeploymentAttested,
   readDeploymentRunState,

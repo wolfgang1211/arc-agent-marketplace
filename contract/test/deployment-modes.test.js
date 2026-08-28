@@ -4,6 +4,7 @@ const os = require("node:os");
 const path = require("node:path");
 const {
   DEPLOYMENT_MODES,
+  artifactIdentitySummary,
   deploymentRunPath,
   markDeploymentAttested,
   resolveDeploymentMode,
@@ -11,6 +12,19 @@ const {
 } = require("../lib/deployment-modes");
 
 describe("deployment mode selection and run state", function () {
+  it("extracts non-empty creation and normalized runtime identities", function () {
+    expect(artifactIdentitySummary({
+      build: { creationBytecode: { keccak256: "0xcreation" } },
+      deploymentAttestation: {
+        normalizedDeployedBytecode: { keccak256: "0xruntime" },
+      },
+    })).to.deep.equal({
+      creationKeccak256: "0xcreation",
+      normalizedDeployedKeccak256: "0xruntime",
+    });
+    expect(() => artifactIdentitySummary({})).to.throw("Artifact identity is incomplete");
+  });
+
   it("requires an explicit supported mode and has no default", function () {
     expect(() => resolveDeploymentMode({})).to.throw(
       "Select deploy:verification, deploy:live-testnet, or deploy:production explicitly",

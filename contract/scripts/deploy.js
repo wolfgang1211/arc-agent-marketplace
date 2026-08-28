@@ -4,6 +4,7 @@ const path = require("node:path");
 const { assertDeploymentManifest } = require("../lib/deployment-manifest");
 const {
   DEPLOYMENT_MODES,
+  artifactIdentitySummary,
   resolveDeploymentMode,
   writeDeploymentRunState,
 } = require("../lib/deployment-modes");
@@ -109,10 +110,7 @@ async function main() {
       deploymentMode: mode,
       manifestFile,
       artifactIdentityFile: "ARTIFACT-IDENTITY.json",
-      artifactIdentity: {
-        creationKeccak256: identity?.bytecode?.creationBytecode?.keccak256,
-        normalizedDeployedKeccak256: identity?.bytecode?.normalizedDeployedBytecode?.keccak256,
-      },
+      artifactIdentity: artifactIdentitySummary(identity),
       status: "UNATTESTED",
       chainId: preflight.chainId.toString(),
       contractAddress: address,
