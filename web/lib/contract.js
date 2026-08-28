@@ -14,6 +14,7 @@ export const MARKETPLACE_ABI = [
     ],
   },
   { type: "function", name: "AGENT_STAKE", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] },
+  { type: "function", name: "DISPUTE_TIMEOUT", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] },
   { type: "function", name: "jobCount", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] },
   { type: "function", name: "registerAgent", stateMutability: "nonpayable", inputs: [{ name: "name", type: "string" }, { name: "skill", type: "string" }, { name: "fee", type: "uint256" }], outputs: [] },
   { type: "function", name: "postJob", stateMutability: "nonpayable", inputs: [{ name: "description", type: "string" }, { name: "reward", type: "uint256" }], outputs: [{ type: "uint256" }] },
@@ -22,27 +23,8 @@ export const MARKETPLACE_ABI = [
   { type: "function", name: "submitDeliverable", stateMutability: "nonpayable", inputs: [{ name: "jobId", type: "uint256" }, { name: "deliverableURI", type: "string" }], outputs: [] },
   { type: "function", name: "approveAndPay", stateMutability: "nonpayable", inputs: [{ name: "jobId", type: "uint256" }], outputs: [] },
   { type: "function", name: "disputeJob", stateMutability: "nonpayable", inputs: [{ name: "jobId", type: "uint256" }], outputs: [] },
+  { type: "function", name: "claimTimeout", stateMutability: "nonpayable", inputs: [{ name: "jobId", type: "uint256" }], outputs: [] },
   { type: "function", name: "cancelJob", stateMutability: "nonpayable", inputs: [{ name: "jobId", type: "uint256" }], outputs: [] },
-  {
-    type: "function", name: "getAllJobs", stateMutability: "view", inputs: [],
-    outputs: [{
-      type: "tuple[]", components: [
-        { name: "id", type: "uint256" },
-        { name: "client", type: "address" },
-        { name: "agent", type: "address" },
-        { name: "description", type: "string" },
-        { name: "category", type: "string" },
-        { name: "deliverableURI", type: "string" },
-        { name: "reward", type: "uint256" },
-        { name: "status", type: "uint8" },
-        { name: "createdAt", type: "uint256" },
-        { name: "deliveryDeadline", type: "uint256" },
-        { name: "approvalDeadline", type: "uint256" },
-        { name: "disputeDeadline", type: "uint256" },
-        { name: "clientShareOnDispute", type: "uint256" },
-      ],
-    }],
-  },
   {
     type: "function", name: "getAgent", stateMutability: "view", inputs: [{ name: "who", type: "address" }],
     outputs: [{

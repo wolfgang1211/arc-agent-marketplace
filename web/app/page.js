@@ -11,7 +11,7 @@ import {
   useWriteContract,
   useConfig,
 } from "wagmi";
-import { waitForTransactionReceipt } from "wagmi/actions";
+import { getBlock, readContract, waitForTransactionReceipt } from "wagmi/actions";
 import { formatUnits, parseUnits } from "viem";
 import { arcTestnet, USDC_ADDRESS, USDC_DECIMALS, EXPLORER, FAUCET } from "../lib/chain";
 import {
@@ -22,11 +22,24 @@ import {
   JOB_STATUS,
 } from "../lib/contract";
 import { fetchDiscovery, filterAndSortOpenJobs } from "../lib/discovery.mjs";
+import {
+  assertSuccessfulReceipt,
+  formatDuration,
+  formatUsdcAmount,
+  getPaginationState,
+  getTimeoutState,
+  PERMISSIONLESS_SETTLEMENT_COPY,
+  revalidateTimeoutClaim,
+  splitDisputedReward,
+  terminalOutcomeCopy,
+  timeoutOutcomeCopy,
+} from "../lib/timeout-recovery.mjs";
 
 const short = (a) => (a ? a.slice(0, 6) + "…" + a.slice(-4) : "");
 const fmt = (v) => (v == null ? "0" : formatUnits(v, USDC_DECIMALS));
 const SECTION_SPLIT = "\n\nAcceptance criteria:\n";
 const DISCOVERY_ENDPOINT = process.env.NEXT_PUBLIC_ENVIO_GRAPHQL_URL || "";
+const JOB_PAGE_SIZE = 20n;
 const parseJobDetails = (description = "") => {
   const [task, criteria] = String(description).split(SECTION_SPLIT);
   return { task: task || description, criteria: criteria || "" };
@@ -50,16 +63,38 @@ export default function Page() {
   const [indexedDiscovery, setIndexedDiscovery] = useState(null);
   const [discoveryError, setDiscoveryError] = useState("");
   const [discoveryLoading, setDiscoveryLoading] = useState(false);
+  const [pageOffset, setPageOffset] = useState(0n);
+  const [chainTimestamp, setChainTimestamp] = useState(null);
 
   const wrongNetwork = isConnected && chainId !== arcTestnet.id;
   const noContract = !CONTRACT_ADDRESS;
 
-  const { data: jobs, refetch: refetchJobs } = useReadContract({
+  const { data: jobsPage, refetch: refetchJobs } = useReadContract({
     address: CONTRACT_ADDRESS || undefined,
     abi: MARKETPLACE_ABI,
-    functionName: "getAllJobs",
+    functionName: "getJobsPaged",
+    args: [pageOffset, JOB_PAGE_SIZE],
     query: { enabled: !!CONTRACT_ADDRESS, refetchInterval: 8000 },
   });
+
+  useEffect(() => {
+    if (!CONTRACT_ADDRESS) return undefined;
+    let mounted = true;
+    const syncChainTime = async () => {
+      try {
+        const block = await getBlock(config, { chainId: arcTestnet.id, blockTag: "latest" });
+        if (mounted) setChainTimestamp(block.timestamp);
+      } catch {
+        if (mounted) setChainTimestamp(null);
+      }
+    };
+    syncChainTime();
+    const interval = setInterval(syncChainTime, 8000);
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
+  }, [config]);
 
   const { data: agent, refetch: refetchAgent } = useReadContract({
     address: CONTRACT_ADDRESS || undefined,
@@ -75,6 +110,13 @@ export default function Page() {
     functionName: "balanceOf",
     args: [address],
     query: { enabled: !!address },
+  });
+
+  const { data: disputeTimeout, refetch: refetchDisputeTimeout } = useReadContract({
+    address: CONTRACT_ADDRESS || undefined,
+    abi: MARKETPLACE_ABI,
+    functionName: "DISPUTE_TIMEOUT",
+    query: { enabled: !!CONTRACT_ADDRESS },
   });
 
   const discoveryFilters = useMemo(() => ({
@@ -99,22 +141,32 @@ export default function Page() {
     return () => controller.abort();
   }, [discoveryFilters]);
 
-  const refreshAll = () => {
-    refetchJobs();
-    refetchAgent();
-    refetchBal();
+  const refreshAll = async () => {
+    const refreshes = [refetchJobs(), refetchAgent(), refetchBal(), refetchDisputeTimeout()];
+    if (CONTRACT_ADDRESS) {
+      refreshes.push(
+        getBlock(config, { chainId: arcTestnet.id, blockTag: "latest" })
+          .then((block) => setChainTimestamp(block.timestamp))
+          .catch(() => setChainTimestamp(null))
+      );
+    }
     if (DISCOVERY_ENDPOINT) {
       setDiscoveryLoading(true);
-      fetchDiscovery(DISCOVERY_ENDPOINT, discoveryFilters)
+      refreshes.push(fetchDiscovery(DISCOVERY_ENDPOINT, discoveryFilters)
         .then((result) => { setIndexedDiscovery(result); setDiscoveryError(""); })
         .catch((error) => setDiscoveryError(error.message))
-        .finally(() => setDiscoveryLoading(false));
+        .finally(() => setDiscoveryLoading(false)));
     }
+    await Promise.allSettled(refreshes);
   };
-  const fallbackJobs = filterAndSortOpenJobs(jobs || [], discoveryFilters);
-  const jobList = indexedDiscovery ? indexedDiscovery.jobs.map(hydrateIndexedJob) : fallbackJobs;
+  const jobs = jobsPage?.[0] || [];
+  const totalJobs = jobsPage?.[1] || 0n;
+  const openOnPage = filterAndSortOpenJobs(jobs, discoveryFilters);
+  const lifecycleJobs = jobs.filter((job) => Number(job.status) !== 0);
+  const jobList = [...lifecycleJobs, ...openOnPage].sort((a, b) => Number(b.id - a.id));
+  const pagination = getPaginationState(pageOffset, JOB_PAGE_SIZE, totalJobs);
   const openJobs = jobs ? jobs.filter((j) => Number(j.status) === 0).length : 0;
-  const activeJobs = jobs ? jobs.filter((j) => [1, 2].includes(Number(j.status))).length : 0;
+  const activeJobs = jobs ? jobs.filter((j) => [1, 2, 3].includes(Number(j.status))).length : 0;
   const completedJobs = jobs ? jobs.filter((j) => Number(j.status) === 4).length : 0;
 
   async function run(label, fn) {
@@ -123,16 +175,18 @@ export default function Page() {
     try {
       const hash = await fn();
       if (hash) {
-        await waitForTransactionReceipt(config, { hash });
+        const receipt = await waitForTransactionReceipt(config, { hash });
+        assertSuccessfulReceipt(receipt);
         setMsg({
           type: "ok",
           text: "Transaction confirmed.",
           link: `${EXPLORER}/tx/${hash}`,
         });
       }
-      refreshAll();
+      await refreshAll();
     } catch (e) {
       setMsg({ type: "err", text: humanError(e) });
+      await refreshAll();
     } finally {
       setBusy("");
     }
@@ -140,6 +194,19 @@ export default function Page() {
 
   const write = (functionName, args) =>
     writeContractAsync({ address: CONTRACT_ADDRESS, abi: MARKETPLACE_ABI, functionName, args });
+
+  const readTimeoutSnapshot = async (jobId) => {
+    const block = await getBlock(config, { chainId: arcTestnet.id, blockTag: "latest" });
+    const result = await readContract(config, {
+      address: CONTRACT_ADDRESS,
+      abi: MARKETPLACE_ABI,
+      functionName: "getJobsPaged",
+      args: [BigInt(jobId) - 1n, 1n],
+      blockNumber: block.number,
+      chainId: arcTestnet.id,
+    });
+    return { job: result?.[0]?.[0], chainTimestamp: block.timestamp };
+  };
 
   if (!isConnected) {
     return (
@@ -220,9 +287,9 @@ export default function Page() {
             <button className="ghost">Get test USDC</button>
           </a>
         </div>
-        <MetricCard label="Open jobs" value={openJobs} tone="blue" />
-        <MetricCard label="Active work" value={activeJobs} tone="yellow" />
-        <MetricCard label="Completed" value={completedJobs} tone="green" />
+        <MetricCard label="Open on page" value={openJobs} tone="blue" />
+        <MetricCard label="Active on page" value={activeJobs} tone="yellow" />
+        <MetricCard label="Completed on page" value={completedJobs} tone="green" />
       </section>
 
       <p className="network-note">
@@ -238,7 +305,7 @@ export default function Page() {
                   address: USDC_ADDRESS, abi: ERC20_ABI, functionName: "approve",
                   args: [CONTRACT_ADDRESS, AGENT_STAKE],
                 });
-                await waitForTransactionReceipt(config, { hash: approveHash });
+                assertSuccessfulReceipt(await waitForTransactionReceipt(config, { hash: approveHash }));
               }
               return write("registerAgent", [name, skill, fee ? parseUnits(fee, USDC_DECIMALS) : 0n]);
             })
@@ -252,7 +319,7 @@ export default function Page() {
                 address: USDC_ADDRESS, abi: ERC20_ABI, functionName: "approve",
                 args: [CONTRACT_ADDRESS, amount],
               });
-              await waitForTransactionReceipt(config, { hash: approveHash });
+              assertSuccessfulReceipt(await waitForTransactionReceipt(config, { hash: approveHash }));
               return write("postJob", [desc, amount, category]);
             });
           }} />
@@ -263,12 +330,12 @@ export default function Page() {
           <div>
             <div className="eyebrow small-eyebrow">Marketplace</div>
             <h2>Available jobs</h2>
-            <p className="muted">Track open requests, active deliveries, and completed payments in one place.</p>
+            <p className="muted">Track open requests, chain-confirmed deadlines, and terminal settlements in bounded pages.</p>
           </div>
           <button className="ghost" onClick={refreshAll}>Refresh</button>
         </div>
 
-        <div className="discovery-toolbar" aria-label="Job discovery filters">
+        <div className="discovery-toolbar" aria-label="Open job discovery filters">
           <div className="field">
             <label htmlFor="job-category-filter">Category</label>
             <input id="job-category-filter" value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)} placeholder="All categories" />
@@ -291,8 +358,8 @@ export default function Page() {
           </div>
         </div>
         <div className="discovery-summary">
-          <span>{discoveryLoading ? "Updating indexed jobs…" : `${indexedDiscovery?.total ?? jobList.length} open jobs found`}</span>
-          <span>{indexedDiscovery ? "Envio indexed discovery" : "Bounded on-chain fallback"}</span>
+          <span>{totalJobs.toString()} total on-chain jobs · showing {pagination.start.toString()}–{pagination.end.toString()}</span>
+          <span>{discoveryLoading ? "Updating indexed recommendations…" : "Bounded on-chain page"}</span>
         </div>
         {discoveryError && <div className="banner warn">Indexer unavailable: {discoveryError}. Showing the last indexed result.</div>}
 
@@ -307,14 +374,26 @@ export default function Page() {
             {jobList.map((j) => (
               <JobCard key={j.id.toString()} job={j} me={address} agent={agent} busy={busy}
                 disabled={wrongNetwork || noContract}
+                chainTimestamp={chainTimestamp}
+                disputeTimeout={disputeTimeout}
                 onAccept={() => run("accept" + j.id, () => write("acceptJob", [j.id]))}
                 onSubmit={(uri) => run("submit" + j.id, () => write("submitDeliverable", [j.id, uri]))}
                 onApprove={() => run("approve" + j.id, () => write("approveAndPay", [j.id]))}
+                onDispute={() => run("dispute" + j.id, () => write("disputeJob", [j.id]))}
+                onClaim={() => run("claim" + j.id, async () => {
+                  await revalidateTimeoutClaim(j.id, () => readTimeoutSnapshot(j.id));
+                  return write("claimTimeout", [j.id]);
+                })}
                 onCancel={() => run("cancel" + j.id, () => write("cancelJob", [j.id]))}
               />
             ))}
           </div>
         )}
+        <div className="pagination" aria-label="Job pages">
+          <button className="ghost" disabled={!pagination.hasPrevious} onClick={() => setPageOffset(pagination.previousOffset)}>Previous</button>
+          <span>Jobs {pagination.start.toString()}–{pagination.end.toString()} of {totalJobs.toString()}</span>
+          <button className="ghost" disabled={!pagination.hasNext} onClick={() => setPageOffset(pagination.nextOffset)}>Next</button>
+        </div>
       </section>
 
       <RankedAgents agents={indexedDiscovery?.agents || []} indexerConfigured={!!DISCOVERY_ENDPOINT} loading={discoveryLoading} />
@@ -459,15 +538,23 @@ function PostJob({ onPost, busy, disabled }) {
   );
 }
 
-function JobCard({ job, me, agent, onAccept, onSubmit, onApprove, onCancel, busy, disabled }) {
+function JobCard({ job, me, agent, onAccept, onSubmit, onApprove, onDispute, onClaim, onCancel, busy, disabled, chainTimestamp, disputeTimeout }) {
   const [uri, setUri] = useState("");
+  const [confirmingDispute, setConfirmingDispute] = useState(false);
   const status = Number(job.status);
   const isClient = me && me.toLowerCase() === job.client.toLowerCase();
   const isAgent = me && me.toLowerCase() === job.agent.toLowerCase();
   const registered = agent && agent.registered;
-  const pillClass = ["open", "progress", "submitted", "disputed", "done", "cancel"][status];
-  const role = isClient ? "You are the client" : isAgent ? "Assigned to you" : "Available for agents";
+  const pillClass = ["open", "progress", "submitted", "disputed", "done", "cancel", "expired-refund", "expired-payout", "expired-split"][status];
+  const timeoutRole = isClient ? "client" : isAgent ? "agent" : "observer";
+  const role = isClient ? "You are the client" : isAgent ? "Assigned to you" : "Observer";
   const { task, criteria } = parseJobDetails(job.description);
+  const timeoutState = getTimeoutState(job, chainTimestamp);
+  const terminalCopy = terminalOutcomeCopy(job);
+  const timeoutCopy = timeoutState.active && !timeoutState.chainTimePending
+    ? timeoutOutcomeCopy(job, timeoutRole, timeoutState.remainingSeconds, timeoutState.claimable)
+    : "";
+  const { clientAmount, agentAmount } = splitAmounts(job);
 
   return (
     <article className={`job job-${pillClass}`}>
@@ -510,6 +597,20 @@ function JobCard({ job, me, agent, onAccept, onSubmit, onApprove, onCancel, busy
               Delivery: {job.deliverableURI}
             </a>
           )}
+          {timeoutState.active && (
+            <div className={`timeout-panel ${timeoutState.claimable ? "claimable" : "waiting"}`}>
+              <strong>
+                {timeoutState.chainTimePending
+                  ? "Waiting for latest chain time"
+                  : timeoutState.claimable
+                    ? "Deadline reached"
+                    : "Chain-confirmed deadline"}
+              </strong>
+              {timeoutCopy && <p>{timeoutCopy}</p>}
+              {timeoutState.claimable && <small>{PERMISSIONLESS_SETTLEMENT_COPY}</small>}
+            </div>
+          )}
+          {terminalCopy && <div className="timeout-panel terminal"><strong>Final timeout outcome</strong><p>{terminalCopy}</p></div>}
         </div>
 
         <div className="job-side">
@@ -547,8 +648,32 @@ function JobCard({ job, me, agent, onAccept, onSubmit, onApprove, onCancel, busy
           </div>
         )}
         {status === 2 && isClient && (
-          <button className="ok" disabled={disabled || busy === "approve" + job.id} onClick={onApprove}>
-            {busy === "approve" + job.id ? "Approving…" : "Approve and pay"}
+          <div className="submitted-actions">
+            <button className="ok" disabled={disabled || busy === "approve" + job.id} onClick={onApprove}>
+              {busy === "approve" + job.id ? "Approving…" : "Approve and pay"}
+            </button>
+            <button className="danger" disabled={disabled || disputeTimeout == null || busy === "dispute" + job.id} onClick={() => setConfirmingDispute(true)}>
+              {busy === "dispute" + job.id ? "Starting dispute…" : "Dispute"}
+            </button>
+            {confirmingDispute && (
+              <div className="modal-backdrop" role="presentation">
+                <div className="dispute-confirmation" role="dialog" aria-modal="true" aria-labelledby={`dispute-title-${job.id}`}>
+                  <h3 id={`dispute-title-${job.id}`}>Disputing does not get your money back.</h3>
+                  <p>No one reviews a dispute — there is no arbiter, no appeal, and no support team. Disputing only changes how the escrow is split when the dispute window closes.</p>
+                  <p>If you dispute, in {formatDuration(disputeTimeout)} the escrow splits automatically: {formatUsdcAmount(clientAmount)} USDC to you, {formatUsdcAmount(agentAmount)} USDC to the agent. That split is fixed and cannot be changed.</p>
+                  <p>If you approve instead, the agent is paid in full. If you do nothing, the agent is paid in full when the approval window closes.</p>
+                  <div className="confirmation-actions">
+                    <button className="danger" onClick={() => { setConfirmingDispute(false); onDispute(); }}>Dispute and accept the split</button>
+                    <button className="ghost" onClick={() => setConfirmingDispute(false)}>Go back</button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+        {timeoutState.active && timeoutState.claimable && (
+          <button className="timeout-claim" disabled={disabled || busy === "claim" + job.id} onClick={onClaim}>
+            {busy === "claim" + job.id ? "Revalidating chain state…" : "Settle job"}
           </button>
         )}
       </div>
@@ -573,12 +698,6 @@ function parseRewardFilter(value) {
   }
 }
 
-function hydrateIndexedJob(job) {
-  return {
-    ...job,
-    id: BigInt(job.id),
-    reward: BigInt(job.reward),
-    status: JOB_STATUS.indexOf(job.status),
-    createdAt: BigInt(job.createdAt),
-  };
+function splitAmounts(job) {
+  return splitDisputedReward(job.reward, job.clientShareOnDispute);
 }
