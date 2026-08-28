@@ -32,6 +32,20 @@
   },
   "scenarios": {
     "status": "BLOCKED_INSUFFICIENT_USDC",
+    "fundingPlan": {
+      "currentBalanceUsdc": "1.677299",
+      "recommendedTotalUsdc": "128",
+      "additionalNeededUsdc": "126.322701",
+      "components": {
+        "singleAgentReusableStake": "100",
+        "threeConcurrentTimeoutEscrows": "15",
+        "happyPathReward": "5",
+        "donationWorkflowReward": "5",
+        "combinedGasReserve": "3"
+      },
+      "donationAmountUsdc": "5",
+      "epochReregisterAfterSlash": "LOCAL_ONLY; not included in this live run and would require another 100 USDC because the first stake is irreversibly slashed"
+    },
     "jobs": {},
     "completedSteps": [],
     "transactions": [],
