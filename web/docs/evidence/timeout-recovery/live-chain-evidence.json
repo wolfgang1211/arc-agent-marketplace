@@ -1,0 +1,46 @@
+{
+  "source": "Arc Testnet live read-only integration",
+  "contractAddress": "0x3b03D4Aa1bf568bE7fAC6fF9Dad2aEE9c9C057a4",
+  "appUrl": "http://127.0.0.1:4174",
+  "transactionSent": false,
+  "walletPermissionGranted": false,
+  "temporaryBoundary": "Verification address was a process-only environment override; wallet-connect render gate was bypassed only in the local working copy and restored before commit.",
+  "captures": [
+    {
+      "name": "desktop-live-chain",
+      "outputPath": "C:\\Users\\wolfgang\\arc-agent-marketplace\\arc-agent-marketplace\\web\\docs\\evidence\\timeout-recovery\\desktop-live-chain.png",
+      "viewport": "1440x900",
+      "pageSize": "1425x3037",
+      "statuses": [
+        "Expired refund",
+        "Expired payout",
+        "Expired split"
+      ],
+      "jobIds": [
+        "5",
+        "4",
+        "3",
+        "2",
+        "1"
+      ]
+    },
+    {
+      "name": "mobile-live-chain",
+      "outputPath": "C:\\Users\\wolfgang\\arc-agent-marketplace\\arc-agent-marketplace\\web\\docs\\evidence\\timeout-recovery\\mobile-live-chain.png",
+      "viewport": "390x844",
+      "pageSize": "390x5579",
+      "statuses": [
+        "Expired refund",
+        "Expired payout",
+        "Expired split"
+      ],
+      "jobIds": [
+        "5",
+        "4",
+        "3",
+        "2",
+        "1"
+      ]
+    }
+  ]
+}
