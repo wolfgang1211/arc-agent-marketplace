@@ -6,3 +6,4 @@ coverage
 coverage.json
 typechain
 typechain-types
+.deployment-secrets/
