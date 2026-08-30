@@ -24,6 +24,7 @@ export const MARKETPLACE_ABI = [
   { type: "function", name: "disputeJob", stateMutability: "nonpayable", inputs: [{ name: "jobId", type: "uint256" }], outputs: [] },
   { type: "function", name: "claimTimeout", stateMutability: "nonpayable", inputs: [{ name: "jobId", type: "uint256" }], outputs: [] },
   { type: "function", name: "cancelJob", stateMutability: "nonpayable", inputs: [{ name: "jobId", type: "uint256" }], outputs: [] },
+  { type: "function", name: "withdrawStake", stateMutability: "nonpayable", inputs: [], outputs: [] },
   {
     type: "function", name: "getAgent", stateMutability: "view", inputs: [{ name: "who", type: "address" }],
     outputs: [{

@@ -20,7 +20,11 @@ import {
   ERC20_ABI,
   JOB_STATUS,
 } from "../lib/contract";
-import { fetchDiscovery, filterAndSortOpenJobs } from "../lib/discovery.mjs";
+import {
+  fetchDiscovery,
+  filterAndSortOpenJobs,
+  loadOnchainAgentFallback,
+} from "../lib/discovery.mjs";
 import {
   assertSuccessfulReceipt,
   formatDuration,
@@ -61,6 +65,9 @@ export default function Page() {
   const [rewardMax, setRewardMax] = useState("");
   const [jobSort, setJobSort] = useState("newest");
   const [indexedDiscovery, setIndexedDiscovery] = useState(null);
+  const [onchainAgents, setOnchainAgents] = useState([]);
+  const [onchainAgentsLoading, setOnchainAgentsLoading] = useState(false);
+  const [onchainAgentsError, setOnchainAgentsError] = useState("");
   const [discoveryError, setDiscoveryError] = useState("");
   const [discoveryLoading, setDiscoveryLoading] = useState(false);
   const [pageOffset, setPageOffset] = useState(0n);
@@ -76,6 +83,8 @@ export default function Page() {
     args: [pageOffset, JOB_PAGE_SIZE],
     query: { enabled: !!CONTRACT_ADDRESS, refetchInterval: 8000 },
   });
+  const jobs = useMemo(() => jobsPage?.[0] || [], [jobsPage]);
+  const totalJobs = jobsPage?.[1] || 0n;
 
   useEffect(() => {
     if (!CONTRACT_ADDRESS) return undefined;
@@ -148,6 +157,37 @@ export default function Page() {
     return () => controller.abort();
   }, [discoveryFilters]);
 
+  useEffect(() => {
+    if (!CONTRACT_ADDRESS || jobs.length === 0) {
+      setOnchainAgents([]);
+      return undefined;
+    }
+    let mounted = true;
+    setOnchainAgentsLoading(true);
+    setOnchainAgentsError("");
+    loadOnchainAgentFallback(
+      jobs,
+      (who) => readContract(config, {
+        address: CONTRACT_ADDRESS,
+        abi: MARKETPLACE_ABI,
+        functionName: "getAgent",
+        args: [who],
+        chainId: arcTestnet.id,
+      }),
+      (who) => readContract(config, {
+        address: CONTRACT_ADDRESS,
+        abi: MARKETPLACE_ABI,
+        functionName: "getAgentReputation",
+        args: [who],
+        chainId: arcTestnet.id,
+      }),
+    )
+      .then((result) => { if (mounted) setOnchainAgents(result); })
+      .catch((error) => { if (mounted) setOnchainAgentsError(error.message); })
+      .finally(() => { if (mounted) setOnchainAgentsLoading(false); });
+    return () => { mounted = false; };
+  }, [config, jobs]);
+
   const refreshAll = async () => {
     const refreshes = [refetchJobs(), refetchAgent(), refetchBal(), refetchDisputeTimeout()];
     if (CONTRACT_ADDRESS) {
@@ -166,13 +206,19 @@ export default function Page() {
     }
     await Promise.allSettled(refreshes);
   };
-  const jobs = jobsPage?.[0] || [];
-  const totalJobs = jobsPage?.[1] || 0n;
   const openOnPage = filterAndSortOpenJobs(jobs, discoveryFilters);
   const lifecycleJobs = jobs.filter((job) => Number(job.status) !== 0);
   const jobList = [...lifecycleJobs, ...openOnPage].sort((a, b) => Number(b.id - a.id));
   const pagination = getPaginationState(pageOffset, JOB_PAGE_SIZE, totalJobs);
   const statusCounts = getJobStatusCounts(jobList);
+  const indexedAgents = indexedDiscovery?.agents || [];
+  const recommendedAgents = indexedAgents.length > 0 ? indexedAgents : onchainAgents;
+  const recommendationLoading = discoveryLoading || onchainAgentsLoading;
+  const recommendationError = recommendedAgents.length === 0 ? (discoveryError || onchainAgentsError) : "";
+  const requestConnect = () => {
+    const connector = connectors[0];
+    if (connector) connect({ connector });
+  };
 
   async function run(label, fn) {
     setMsg(null);
@@ -213,55 +259,13 @@ export default function Page() {
     return { job: result?.[0]?.[0], chainTimestamp: block.timestamp };
   };
 
-  if (!isConnected) {
-    return (
-      <Shell>
-        <div className="connect-shell">
-          <div className="connect-hero">
-            <div className="eyebrow">Arc Testnet Marketplace</div>
-            <h1>Hire and pay AI agents with USDC escrow.</h1>
-            <p>
-              Connect a browser wallet to register as an agent, post jobs, lock USDC in escrow,
-              and release payment when the delivery is approved.
-            </p>
-            <div className="connect-stats">
-              <span>USDC escrow</span>
-              <span>Arc Testnet</span>
-              <span>No real funds</span>
-            </div>
-          </div>
-
-          <div className="wallet-card">
-            <div className="wallet-icon" aria-hidden="true">
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
-                <path d="M4 7.5A2.5 2.5 0 0 1 6.5 5H19a1 1 0 0 1 1 1v2H6.5A2.5 2.5 0 0 1 4 5.5v12A2.5 2.5 0 0 0 6.5 20H20a1 1 0 0 0 1-1V9.5a1 1 0 0 0-1-1H6.5A2.5 2.5 0 0 1 4 6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M17 14h.01" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"/>
-              </svg>
-            </div>
-            <h2>Connect wallet</h2>
-            <p className="muted">Use MetaMask, Rabby, or another injected browser wallet.</p>
-            <div className="wallet-actions">
-              {connectors.map((c) => (
-                <button className="connect-button" key={c.uid} onClick={() => connect({ connector: c })} disabled={connecting}>
-                  <span>{connecting ? "Connecting…" : `Connect ${c.name}`}</span>
-                  <span className="arrow">→</span>
-                </button>
-              ))}
-            </div>
-            <div className="wallet-help">
-              New to wallets? <a href="https://metamask.io/download/" target="_blank" rel="noreferrer">Install MetaMask</a>
-            </div>
-          </div>
-        </div>
-      </Shell>
-    );
-  }
-
   return (
     <Shell
-      right={
+      right={isConnected ? (
         <ConnectedWallet address={address} onDisconnect={() => disconnect()} />
-      }
+      ) : (
+        <WalletConnect connectors={connectors} connecting={connecting} onConnect={connect} />
+      )}
     >
       {noContract && (
         <div className="banner err">
@@ -283,11 +287,24 @@ export default function Page() {
         </div>
       )}
 
+      {!isConnected && (
+        <div className="banner info flex-between">
+          <span>Read-only mode. Live jobs, agents, reputation, and deadlines are available without a wallet.</span>
+          <button onClick={requestConnect} disabled={connecting || connectors.length === 0}>
+            {connecting ? "Connecting…" : "Connect wallet to transact"}
+          </button>
+        </div>
+      )}
+
+      <div className="network-note">
+        Contract: <a className="mono" href={`${EXPLORER}/address/${CONTRACT_ADDRESS}`} target="_blank" rel="noreferrer">{CONTRACT_ADDRESS}</a>
+      </div>
+
       <section className="dashboard-grid">
         <div className="card balance-card metric-card metric-card-large">
           <div className="metric-label">Wallet balance</div>
-          <div className="balance-value">{fmt(usdcBalance)} USDC</div>
-          <p className="muted">ERC-20 USDC available for escrow deposits and rewards.</p>
+          <div className="balance-value">{isConnected ? `${fmt(usdcBalance)} USDC` : "Wallet not connected"}</div>
+          <p className="muted">{isConnected ? "ERC-20 USDC available for escrow deposits and rewards." : "Connect only when you want to register, fund, or settle a job."}</p>
           <a href={FAUCET} target="_blank" rel="noreferrer">
             <button className="ghost">Get test USDC</button>
           </a>
@@ -302,7 +319,9 @@ export default function Page() {
       </p>
 
       <section className="action-grid">
-        <RegisterAgent agent={agent} stake={agentStake} busy={busy} disabled={wrongNetwork || noContract || agentStake == null}
+        <RegisterAgent agent={agent} stake={agentStake} busy={busy} connected={isConnected} onConnect={requestConnect}
+          disabled={wrongNetwork || noContract || agentStake == null}
+          onWithdraw={() => run("withdraw", () => write("withdrawStake", []))}
           onRegister={(name, skill, fee) =>
             run("register", async () => {
               if (!agent?.registered) {
@@ -316,7 +335,7 @@ export default function Page() {
             })
           } />
 
-        <PostJob busy={busy} disabled={wrongNetwork || noContract}
+        <PostJob busy={busy} disabled={wrongNetwork || noContract} connected={isConnected} onConnect={requestConnect}
           onPost={async (desc, reward, category) => {
             await run("post", async () => {
               const amount = parseUnits(reward, USDC_DECIMALS);
@@ -378,6 +397,8 @@ export default function Page() {
           <div className="jobs-list">
             {jobList.map((j) => (
               <JobCard key={j.id.toString()} job={j} me={address} agent={agent} busy={busy}
+                connected={isConnected}
+                onConnect={requestConnect}
                 disabled={wrongNetwork || noContract}
                 chainTimestamp={chainTimestamp}
                 disputeTimeout={disputeTimeout}
@@ -401,27 +422,26 @@ export default function Page() {
         </div>
       </section>
 
-      <RankedAgents agents={indexedDiscovery?.agents || []} indexerConfigured={!!DISCOVERY_ENDPOINT} loading={discoveryLoading} />
+      {recommendationError && <div className="banner warn">Agent recommendations temporarily unavailable: {recommendationError}</div>}
+      <RankedAgents agents={recommendedAgents} loading={recommendationLoading} source={indexedAgents.length > 0 ? "Envio index" : "bounded on-chain page"} />
     </Shell>
   );
 }
 
-function RankedAgents({ agents, indexerConfigured, loading }) {
+function RankedAgents({ agents, loading, source }) {
   return (
     <section className="card ranked-agents-panel">
       <div className="section-head">
         <div>
           <div className="eyebrow small-eyebrow">Reputation</div>
           <h2>Recommended agents</h2>
-          <p className="muted">Ranked by distinct approved clients since the latest slash, then approved deliveries.</p>
+          <p className="muted">Ranked by distinct approved clients since the latest slash, then approved deliveries. Source: {source}.</p>
         </div>
       </div>
-      {!indexerConfigured ? (
-        <div className="profile-empty">Connect the Envio GraphQL endpoint to enable current-era agent recommendations.</div>
-      ) : loading && agents.length === 0 ? (
+      {loading && agents.length === 0 ? (
         <div className="profile-empty">Loading ranked agents…</div>
       ) : agents.length === 0 ? (
-        <div className="profile-empty">No approved agent history has been indexed yet.</div>
+        <div className="profile-empty">No approved agent history found in this bounded on-chain page.</div>
       ) : (
         <div className="ranked-agent-list">
           {agents.map((rankedAgent, index) => (
@@ -432,11 +452,11 @@ function RankedAgents({ agents, indexerConfigured, loading }) {
                 <small>{rankedAgent.skill || "No skill summary"}</small>
               </span>
               <span className="ranked-agent-metric">
-                <strong>{rankedAgent.currentDistinctClients}</strong>
+                <strong>{String(rankedAgent.currentDistinctClients ?? 0)}</strong>
                 <small>distinct clients</small>
               </span>
               <span className="ranked-agent-metric">
-                <strong>{rankedAgent.currentApprovedDeliveries}</strong>
+                <strong>{String(rankedAgent.currentApprovedDeliveries ?? 0)}</strong>
                 <small>approved</small>
               </span>
             </a>
@@ -471,6 +491,15 @@ function Shell({ children, right }) {
   );
 }
 
+function WalletConnect({ connectors, connecting, onConnect }) {
+  const connector = connectors[0];
+  return (
+    <button className="ghost" onClick={() => connector && onConnect({ connector })} disabled={!connector || connecting}>
+      {connecting ? "Connecting…" : "Connect wallet"}
+    </button>
+  );
+}
+
 function ConnectedWallet({ address, onDisconnect }) {
   return (
     <div className="connected-wallet">
@@ -484,7 +513,7 @@ function ConnectedWallet({ address, onDisconnect }) {
   );
 }
 
-function RegisterAgent({ agent, stake, onRegister, busy, disabled }) {
+function RegisterAgent({ agent, stake, onRegister, onWithdraw, onConnect, connected, busy, disabled }) {
   const [name, setName] = useState("");
   const [skill, setSkill] = useState("");
   const [proof, setProof] = useState("");
@@ -506,14 +535,19 @@ function RegisterAgent({ agent, stake, onRegister, busy, disabled }) {
       <div className="info-box compact">
         <b>Registration stake:</b> {stake == null ? "Loading from contract…" : `${fmt(stake)} USDC`}. Describe how your AI agent works and what evidence clients can review.
       </div>
-      <button disabled={disabled || busy === "register" || !name} onClick={() => onRegister(name, profile, fee)}>
-        {busy === "register" ? "Registering…" : registered ? "Update profile" : "Register agent"}
+      <button disabled={connected && (disabled || busy === "register" || !name)} onClick={() => connected ? onRegister(name, profile, fee) : onConnect()}>
+        {!connected ? "Connect wallet to register as an agent" : busy === "register" ? "Registering…" : registered ? "Update profile" : "Register agent"}
       </button>
+      {(!connected || registered) && (
+        <button className="ghost" disabled={connected && (disabled || busy === "withdraw")} onClick={() => connected ? onWithdraw() : onConnect()}>
+          {!connected ? "Connect wallet to withdraw stake" : busy === "withdraw" ? "Withdrawing…" : "Withdraw stake"}
+        </button>
+      )}
     </div>
   );
 }
 
-function PostJob({ onPost, busy, disabled }) {
+function PostJob({ onPost, onConnect, connected, busy, disabled }) {
   const [desc, setDesc] = useState("");
   const [criteria, setCriteria] = useState("");
   const [reward, setReward] = useState("");
@@ -535,15 +569,15 @@ function PostJob({ onPost, busy, disabled }) {
       <div className="field"><label>Acceptance criteria</label><textarea rows={3} value={criteria} onChange={(e) => setCriteria(e.target.value)} placeholder="Delivery is accepted if it includes: summary, key takeaways, risks, source references, and an accessible final link." /></div>
       <div className="field"><label>Category</label><input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="research" /></div>
       <div className="field"><label>Reward (USDC)</label><input value={reward} onChange={(e) => setReward(e.target.value)} placeholder="100" /></div>
-      <button disabled={disabled || busy === "post" || !desc || !reward || !category.trim()} onClick={() => onPost(combinedDescription, reward, category.trim())}>
-        {busy === "post" ? "Approving, then posting…" : "Lock USDC and publish job"}
+      <button disabled={connected && (disabled || busy === "post" || !desc || !reward || !category.trim())} onClick={() => connected ? onPost(combinedDescription, reward, category.trim()) : onConnect()}>
+        {!connected ? "Connect wallet to post a job" : busy === "post" ? "Approving, then posting…" : "Lock USDC and publish job"}
       </button>
       <p className="muted" style={{ marginTop: 8 }}>Two signatures are required: first USDC <b>approve</b>, then <b>postJob</b>.</p>
     </div>
   );
 }
 
-function JobCard({ job, me, agent, onAccept, onSubmit, onApprove, onDispute, onClaim, onCancel, busy, disabled, chainTimestamp, disputeTimeout }) {
+function JobCard({ job, me, agent, onAccept, onSubmit, onApprove, onDispute, onClaim, onCancel, onConnect, connected, busy, disabled, chainTimestamp, disputeTimeout }) {
   const [uri, setUri] = useState("");
   const [confirmingDispute, setConfirmingDispute] = useState(false);
   const status = Number(job.status);
@@ -634,31 +668,31 @@ function JobCard({ job, me, agent, onAccept, onSubmit, onApprove, onDispute, onC
           </div>
         )}
         {status === 0 && !isClient && (
-          <button className="ok" disabled={disabled || !registered || busy === "accept" + job.id} onClick={onAccept}>
-            {!registered ? "Register as agent first" : busy === "accept" + job.id ? "Accepting…" : "Accept job"}
+          <button className="ok" disabled={connected && (disabled || !registered || busy === "accept" + job.id)} onClick={connected ? onAccept : onConnect}>
+            {!connected ? "Connect wallet to accept job" : !registered ? "Register as agent first" : busy === "accept" + job.id ? "Accepting…" : "Accept job"}
           </button>
         )}
         {status === 0 && isClient && (
-          <button className="danger" disabled={disabled || busy === "cancel" + job.id} onClick={onCancel}>
-            {busy === "cancel" + job.id ? "Canceling…" : "Cancel and refund"}
+          <button className="danger" disabled={connected && (disabled || busy === "cancel" + job.id)} onClick={connected ? onCancel : onConnect}>
+            {!connected ? "Connect wallet to cancel job" : busy === "cancel" + job.id ? "Canceling…" : "Cancel and refund"}
           </button>
         )}
         {status === 1 && isAgent && (
           <div className="delivery-form">
             <input value={uri} onChange={(e) => setUri(e.target.value)} placeholder="Delivery link (ipfs:// or https://)" />
-            <button disabled={disabled || !uri || busy === "submit" + job.id} onClick={() => onSubmit(uri)}>
-              {busy === "submit" + job.id ? "Submitting…" : "Submit delivery"}
+            <button disabled={connected && (disabled || !uri || busy === "submit" + job.id)} onClick={() => connected ? onSubmit(uri) : onConnect()}>
+              {!connected ? "Connect wallet to submit delivery" : busy === "submit" + job.id ? "Submitting…" : "Submit delivery"}
             </button>
             <p className="delivery-hint">Use a public or client-accessible Google Doc, Notion page, GitHub file, IPFS URI, or HTTPS link.</p>
           </div>
         )}
         {status === 2 && isClient && (
           <div className="submitted-actions">
-            <button className="ok" disabled={disabled || busy === "approve" + job.id} onClick={onApprove}>
-              {busy === "approve" + job.id ? "Approving…" : "Approve and pay"}
+            <button className="ok" disabled={connected && (disabled || busy === "approve" + job.id)} onClick={connected ? onApprove : onConnect}>
+              {!connected ? "Connect wallet to approve and pay" : busy === "approve" + job.id ? "Approving…" : "Approve and pay"}
             </button>
-            <button className="danger" disabled={disabled || disputeTimeout == null || busy === "dispute" + job.id} onClick={() => setConfirmingDispute(true)}>
-              {busy === "dispute" + job.id ? "Starting dispute…" : "Dispute"}
+            <button className="danger" disabled={connected && (disabled || disputeTimeout == null || busy === "dispute" + job.id)} onClick={() => connected ? setConfirmingDispute(true) : onConnect()}>
+              {!connected ? "Connect wallet to dispute job" : busy === "dispute" + job.id ? "Starting dispute…" : "Dispute"}
             </button>
             {confirmingDispute && (
               <div className="modal-backdrop" role="presentation">
@@ -677,8 +711,8 @@ function JobCard({ job, me, agent, onAccept, onSubmit, onApprove, onDispute, onC
           </div>
         )}
         {timeoutState.active && timeoutState.claimable && (
-          <button className="timeout-claim" disabled={disabled || busy === "claim" + job.id} onClick={onClaim}>
-            {busy === "claim" + job.id ? "Revalidating chain state…" : "Settle job"}
+          <button className="timeout-claim" disabled={connected && (disabled || busy === "claim" + job.id)} onClick={connected ? onClaim : onConnect}>
+            {!connected ? "Connect wallet to settle job" : busy === "claim" + job.id ? "Revalidating chain state…" : "Settle job"}
           </button>
         )}
       </div>

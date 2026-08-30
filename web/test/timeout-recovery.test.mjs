@@ -195,6 +195,14 @@ test("each claimable branch uses the exact permissionless outcome copy", () => {
 
 test("terminal timeout outcomes use the exact read-only copy", () => {
   assert.equal(
+    terminalOutcomeCopy({ ...baseJob, status: 4 }),
+    "Completed — client approved the delivery. 12.345678 USDC paid to the agent.",
+  );
+  assert.equal(
+    terminalOutcomeCopy({ ...baseJob, status: 5 }),
+    "Canceled — client canceled before assignment. 12.345678 USDC refunded to the client.",
+  );
+  assert.equal(
     terminalOutcomeCopy({ ...baseJob, status: 6 }),
     "Settled — agent missed the delivery deadline. 12.345678 USDC refunded to the client. Agent's 100.000000 USDC stake was burned.",
   );

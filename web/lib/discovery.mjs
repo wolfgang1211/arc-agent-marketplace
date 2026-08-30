@@ -36,6 +36,49 @@ export function rankAgents(agents = []) {
   });
 }
 
+export const ONCHAIN_AGENT_JOB_LIMIT = 20;
+export const ONCHAIN_AGENT_LIMIT = 8;
+const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+
+export function getBoundedAgentCandidates(jobs = []) {
+  const seen = new Set();
+  const candidates = [];
+  for (const job of jobs.slice(0, ONCHAIN_AGENT_JOB_LIMIT)) {
+    const candidate = String(job?.agent || "");
+    const key = candidate.toLowerCase();
+    if (!candidate || key === ZERO_ADDRESS || seen.has(key)) continue;
+    seen.add(key);
+    candidates.push(candidate);
+    if (candidates.length === ONCHAIN_AGENT_LIMIT) break;
+  }
+  return candidates;
+}
+
+export async function loadOnchainAgentFallback(jobs, readAgent, readReputation) {
+  const candidates = getBoundedAgentCandidates(jobs);
+  const results = await Promise.allSettled(candidates.map(async (address) => {
+    const [profile, reputation] = await Promise.all([
+      readAgent(address),
+      readReputation(address),
+    ]);
+    if (!profile?.registered) return null;
+    const distinctClients = reputation?.distinctClients ?? reputation?.[0];
+    const approvedDeliveries = reputation?.approvedDeliveries ?? reputation?.[2];
+    const totalEarned = reputation?.totalEarned ?? reputation?.[4];
+    return {
+      address,
+      name: profile.name,
+      skill: profile.skill,
+      currentDistinctClients: distinctClients,
+      currentApprovedDeliveries: approvedDeliveries,
+      currentTotalEarned: totalEarned,
+    };
+  }));
+  return rankAgents(results
+    .filter((result) => result.status === "fulfilled" && result.value)
+    .map((result) => result.value));
+}
+
 export function encodeDiscoveryCursor(value) {
   return btoa(JSON.stringify(value));
 }

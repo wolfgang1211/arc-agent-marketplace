@@ -64,6 +64,12 @@ Secondary line under all three, smaller:
 
 Read-only. Says what happened, not what could happen.
 
+**Completed**
+> Completed — client approved the delivery. **{reward} USDC** paid to the agent.
+
+**Canceled**
+> Canceled — client canceled before assignment. **{reward} USDC** refunded to the client.
+
 **Expired refund**
 > Settled — agent missed the delivery deadline. **{reward} USDC** refunded to the client. Agent's **{stake} USDC** stake was burned.
 

@@ -131,6 +131,12 @@ export const PERMISSIONLESS_SETTLEMENT_COPY = "Anyone can settle an expired job.
 export function terminalOutcomeCopy(job) {
   const status = Number(job.status);
   const reward = formatUsdcAmount(job.reward);
+  if (status === 4) {
+    return `Completed — client approved the delivery. ${reward} USDC paid to the agent.`;
+  }
+  if (status === 5) {
+    return `Canceled — client canceled before assignment. ${reward} USDC refunded to the client.`;
+  }
   if (status === 6) {
     return `Settled — agent missed the delivery deadline. ${reward} USDC refunded to the client. Agent's ${formatUsdcAmount(AGENT_STAKE)} USDC stake was burned.`;
   }
