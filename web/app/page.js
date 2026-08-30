@@ -457,7 +457,7 @@ function RankedAgents({ agents, loading, source }) {
               </span>
               <span className="ranked-agent-metric">
                 <strong>{String(rankedAgent.currentApprovedDeliveries ?? 0)}</strong>
-                <small>approved</small>
+                <small>approved deliveries</small>
               </span>
             </a>
           ))}
