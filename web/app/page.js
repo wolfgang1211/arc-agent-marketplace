@@ -26,6 +26,10 @@ import {
   loadOnchainAgentFallback,
 } from "../lib/discovery.mjs";
 import {
+  MarketplaceDataState,
+  resolveCollectionStatus,
+} from "../lib/marketplace-data-state.mjs";
+import {
   assertSuccessfulReceipt,
   formatDuration,
   formatUsdcAmount,
@@ -68,6 +72,7 @@ export default function Page() {
   const [onchainAgents, setOnchainAgents] = useState([]);
   const [onchainAgentsLoading, setOnchainAgentsLoading] = useState(false);
   const [onchainAgentsError, setOnchainAgentsError] = useState("");
+  const [onchainAgentsResolved, setOnchainAgentsResolved] = useState(false);
   const [discoveryError, setDiscoveryError] = useState("");
   const [discoveryLoading, setDiscoveryLoading] = useState(false);
   const [pageOffset, setPageOffset] = useState(0n);
@@ -76,7 +81,7 @@ export default function Page() {
   const wrongNetwork = isConnected && chainId !== arcTestnet.id;
   const noContract = !CONTRACT_ADDRESS;
 
-  const { data: jobsPage, refetch: refetchJobs } = useReadContract({
+  const { data: jobsPage, error: jobsReadError, refetch: refetchJobs } = useReadContract({
     address: CONTRACT_ADDRESS || undefined,
     abi: MARKETPLACE_ABI,
     functionName: "getJobsPaged",
@@ -85,6 +90,11 @@ export default function Page() {
   });
   const jobs = useMemo(() => jobsPage?.[0] || [], [jobsPage]);
   const totalJobs = jobsPage?.[1] || 0n;
+  const jobsStatus = resolveCollectionStatus({
+    hasResponse: jobsPage !== undefined,
+    error: noContract ? new Error("Contract address is missing") : jobsReadError,
+    itemCount: jobs.length,
+  });
 
   useEffect(() => {
     if (!CONTRACT_ADDRESS) return undefined;
@@ -158,11 +168,18 @@ export default function Page() {
   }, [discoveryFilters]);
 
   useEffect(() => {
-    if (!CONTRACT_ADDRESS || jobs.length === 0) {
+    if (!CONTRACT_ADDRESS || jobsStatus === "loading" || jobsStatus === "error") {
       setOnchainAgents([]);
+      setOnchainAgentsResolved(false);
+      return undefined;
+    }
+    if (jobs.length === 0) {
+      setOnchainAgents([]);
+      setOnchainAgentsResolved(true);
       return undefined;
     }
     let mounted = true;
+    setOnchainAgentsResolved(false);
     setOnchainAgentsLoading(true);
     setOnchainAgentsError("");
     loadOnchainAgentFallback(
@@ -184,9 +201,14 @@ export default function Page() {
     )
       .then((result) => { if (mounted) setOnchainAgents(result); })
       .catch((error) => { if (mounted) setOnchainAgentsError(error.message); })
-      .finally(() => { if (mounted) setOnchainAgentsLoading(false); });
+      .finally(() => {
+        if (mounted) {
+          setOnchainAgentsLoading(false);
+          setOnchainAgentsResolved(true);
+        }
+      });
     return () => { mounted = false; };
-  }, [config, jobs]);
+  }, [config, jobs, jobsStatus]);
 
   const refreshAll = async () => {
     const refreshes = [refetchJobs(), refetchAgent(), refetchBal(), refetchDisputeTimeout()];
@@ -213,8 +235,17 @@ export default function Page() {
   const statusCounts = getJobStatusCounts(jobList);
   const indexedAgents = indexedDiscovery?.agents || [];
   const recommendedAgents = indexedAgents.length > 0 ? indexedAgents : onchainAgents;
-  const recommendationLoading = discoveryLoading || onchainAgentsLoading;
-  const recommendationError = recommendedAgents.length === 0 ? (discoveryError || onchainAgentsError) : "";
+  const recommendationResolved = onchainAgentsResolved
+    && (!DISCOVERY_ENDPOINT || indexedDiscovery !== null || Boolean(discoveryError));
+  const recommendationError = recommendedAgents.length === 0
+    ? (jobsStatus === "error" ? jobsReadError || new Error("Job data unavailable") : discoveryError || onchainAgentsError)
+    : null;
+  const recommendationStatus = resolveCollectionStatus({
+    hasResponse: recommendationResolved && !discoveryLoading && !onchainAgentsLoading,
+    error: recommendationError,
+    itemCount: recommendedAgents.length,
+  });
+  const metricValue = (value) => jobsStatus === "loading" ? "…" : jobsStatus === "error" ? "—" : value;
   const requestConnect = () => {
     const connector = connectors[0];
     if (connector) connect({ connector });
@@ -309,9 +340,9 @@ export default function Page() {
             <button className="ghost">Get test USDC</button>
           </a>
         </div>
-        <MetricCard label="Open on page" value={statusCounts.open} tone="blue" />
-        <MetricCard label="Active on page" value={statusCounts.active} tone="yellow" />
-        <MetricCard label="Settled on page" value={statusCounts.settled} tone="green" />
+        <MetricCard label="Open on page" value={metricValue(statusCounts.open)} tone="blue" />
+        <MetricCard label="Active on page" value={metricValue(statusCounts.active)} tone="yellow" />
+        <MetricCard label="Settled on page" value={metricValue(statusCounts.settled)} tone="green" />
       </section>
 
       <p className="network-note">
@@ -382,17 +413,19 @@ export default function Page() {
           </div>
         </div>
         <div className="discovery-summary">
-          <span>{totalJobs.toString()} total on-chain jobs · showing {pagination.start.toString()}–{pagination.end.toString()}</span>
+          <span>
+            {jobsStatus === "loading"
+              ? "Loading bounded on-chain jobs…"
+              : jobsStatus === "error"
+                ? "On-chain job data unavailable"
+                : `${totalJobs.toString()} total on-chain jobs · showing ${pagination.start.toString()}–${pagination.end.toString()}`}
+          </span>
           <span>{discoveryLoading ? "Updating indexed recommendations…" : "Bounded on-chain page"}</span>
         </div>
         {discoveryError && <div className="banner warn">Indexer unavailable: {discoveryError}. Showing the last indexed result.</div>}
 
-        {jobList.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-icon">✦</div>
-            <h3>No jobs posted yet</h3>
-            <p>Create the first escrow-backed request and it will appear here.</p>
-          </div>
+        {jobsStatus !== "ready" ? (
+          <MarketplaceDataState resource="jobs" status={jobsStatus} />
         ) : (
           <div className="jobs-list">
             {jobList.map((j) => (
@@ -415,20 +448,21 @@ export default function Page() {
             ))}
           </div>
         )}
-        <div className="pagination" aria-label="Job pages">
-          <button className="ghost" disabled={!pagination.hasPrevious} onClick={() => setPageOffset(pagination.previousOffset)}>Previous</button>
-          <span>Jobs {pagination.start.toString()}–{pagination.end.toString()} of {totalJobs.toString()}</span>
-          <button className="ghost" disabled={!pagination.hasNext} onClick={() => setPageOffset(pagination.nextOffset)}>Next</button>
-        </div>
+        {(jobsStatus === "ready" || jobsStatus === "empty") && (
+          <div className="pagination" aria-label="Job pages">
+            <button className="ghost" disabled={!pagination.hasPrevious} onClick={() => setPageOffset(pagination.previousOffset)}>Previous</button>
+            <span>Jobs {pagination.start.toString()}–{pagination.end.toString()} of {totalJobs.toString()}</span>
+            <button className="ghost" disabled={!pagination.hasNext} onClick={() => setPageOffset(pagination.nextOffset)}>Next</button>
+          </div>
+        )}
       </section>
 
-      {recommendationError && <div className="banner warn">Agent recommendations temporarily unavailable: {recommendationError}</div>}
-      <RankedAgents agents={recommendedAgents} loading={recommendationLoading} source={indexedAgents.length > 0 ? "Envio index" : "bounded on-chain page"} />
+      <RankedAgents agents={recommendedAgents} status={recommendationStatus} source={indexedAgents.length > 0 ? "Envio index" : "bounded on-chain page"} />
     </Shell>
   );
 }
 
-function RankedAgents({ agents, loading, source }) {
+function RankedAgents({ agents, status, source }) {
   return (
     <section className="card ranked-agents-panel">
       <div className="section-head">
@@ -438,10 +472,8 @@ function RankedAgents({ agents, loading, source }) {
           <p className="muted">Ranked by distinct approved clients since the latest slash, then approved deliveries. Source: {source}.</p>
         </div>
       </div>
-      {loading && agents.length === 0 ? (
-        <div className="profile-empty">Loading ranked agents…</div>
-      ) : agents.length === 0 ? (
-        <div className="profile-empty">No approved agent history found in this bounded on-chain page.</div>
+      {status !== "ready" ? (
+        <MarketplaceDataState resource="agents" status={status} />
       ) : (
         <div className="ranked-agent-list">
           {agents.map((rankedAgent, index) => (
