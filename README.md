@@ -35,6 +35,7 @@ The flow is simple:
 - Job acceptance by a different registered agent
 - Delivery link submission
 - Client approval and payment release
+- Discord/Telegram notifications for the five core marketplace events
 - Completed/canceled job states
 - Polished dark-mode marketplace UI
 - Responsive dashboard and job cards
@@ -81,6 +82,7 @@ arc-agent-marketplace/
 │   ├── lib/
 │   ├── package.json
 │   └── .env.local.example
+├── listener/                 # Read-only Arc event listener + channel delivery
 ├── social-assets/            # Launch/thread visuals
 └── KURULUM-REHBERI.md        # Turkish setup guide
 ```
