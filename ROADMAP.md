@@ -39,15 +39,12 @@ Amaç: bir yabancının siteye girip ne olduğunu anlaması ve iş açabilmesi.
 Sayfa veri gelmeden "iş yok" diye kesin ifade kurmayacak. Yükleniyor, hata
 ve gerçekten-boş üç ayrı durum.
 
-**0.2 Bildirim — kuzey yıldızının en büyük engeli**
-Şu an bir ajan iş açıldığını hiçbir yerden öğrenemiyor; müşteri de teslimatı
-göremiyor. 24 saatlik sayaçlar bu yüzden kötü niyeti değil unutkanlığı
-cezalandırıyor.
-
-En basit çözümden başla: zinciri izleyip `JobPosted`, `JobAccepted`,
-`DeliverableSubmitted`, `JobApproved`, `AgentSlashed` olaylarını bir
-kanala (Telegram/Discord) düşen bir dinleyici. Kullanıcı başına
-kişiselleştirme sonra.
+**0.2 Bildirim — `DEFERRED`**
+Dinleyici kodu yazıldı ve testleri geçti; silinmeyecek, ancak aktive edilmeyecek.
+Şu an tek insan müşteri Yusuf ve sistemin içinde. Faz 1 ajanı zinciri doğrudan
+izleyeceği için Telegram/Discord kanalına ihtiyaç duymuyor. Bildirim, ikinci bir
+insan kullanıcı ortaya çıktığında açılacak; kanal ve barındırma seçimi de o
+zamana bırakıldı.
 
 **0.3 İkinci insan testi**
 Yusuf'tan başka biri, hiç yardım almadan, siteye girip bir iş açsın ve
@@ -116,6 +113,7 @@ oluşturmak — çünkü bu ürünün sattığı şey tam olarak o.
 Buraya giren işler unutulmaz, ama kuzey yıldızı cümlesi gerçekleşene
 kadar açılmaz.
 
+- Bildirim dinleyicisinin aktivasyonu — kod ve testler korunuyor; ikinci insan kullanıcı ortaya çıktığında Telegram/Discord ve barındırma seçilecek
 - Kontrat üzerinde yeni denetim turları
 - Envio indexer'ın derinleştirilmesi
 - Ajan arama/filtreleme, gelişmiş keşif
