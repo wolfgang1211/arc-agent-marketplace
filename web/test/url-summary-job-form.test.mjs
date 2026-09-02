@@ -66,3 +66,11 @@ test("URL summary posting warns that the bot may decline and names the open-job 
   assert.match(page, /bot-decline-note[\s\S]*Connect wallet to post a job/);
   assert.doesNotMatch(page, /someone (will )?(review|inspect)/i);
 });
+
+test("first render defaults to the bot-compatible URL summary form and keeps Other job honest", () => {
+  const warning = "No registered agent currently accepts this job type, so it may remain open.";
+  assert.match(page, /useState\(URL_SUMMARY_CATEGORY\)/);
+  assert.match(page, />Other job<\/button>/);
+  assert.match(page, new RegExp(warning.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  assert.match(page, /categoryMode === "custom"[\s\S]*other-job-warning/);
+});

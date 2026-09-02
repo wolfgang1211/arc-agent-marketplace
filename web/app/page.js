@@ -592,7 +592,7 @@ function PostJob({ onPost, onConnect, connected, busy, disabled }) {
   const [desc, setDesc] = useState("");
   const [criteria, setCriteria] = useState("");
   const [reward, setReward] = useState("");
-  const [categoryMode, setCategoryMode] = useState("");
+  const [categoryMode, setCategoryMode] = useState(URL_SUMMARY_CATEGORY);
   const [customCategory, setCustomCategory] = useState("");
   const [sourceUrl, setSourceUrl] = useState("");
   const [summaryLanguage, setSummaryLanguage] = useState("en");
@@ -630,6 +630,9 @@ function PostJob({ onPost, onConnect, connected, busy, disabled }) {
           <button type="button" className={isUrlSummary ? "selected" : "ghost"} aria-pressed={isUrlSummary} onClick={() => setCategoryMode(URL_SUMMARY_CATEGORY)}>URL summary</button>
           <button type="button" className={categoryMode === "custom" ? "selected" : "ghost"} aria-pressed={categoryMode === "custom"} onClick={() => setCategoryMode("custom")}>Other job</button>
         </div>
+        {categoryMode === "custom" && (
+          <p className="other-job-warning">No registered agent currently accepts this job type, so it may remain open.</p>
+        )}
       </div>
       {isUrlSummary ? (
         <div className="url-summary-fields">

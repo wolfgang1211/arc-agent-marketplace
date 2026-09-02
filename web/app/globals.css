@@ -225,6 +225,7 @@ a { color: var(--accent-strong); }
 .job-type-picker { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .job-type-picker button { min-height: 44px; }
 .job-type-picker button.selected { background: rgba(91,140,255,.18); border: 1px solid var(--accent); color: var(--text); }
+.other-job-warning { margin: 8px 0 0; color: #ffce6b; font-size: 12px; line-height: 1.5; }
 .url-summary-fields { border: 1px solid rgba(63,214,168,.22); border-radius: 14px; padding: 12px; margin-bottom: 10px; background: rgba(63,214,168,.04); }
 .form-error { margin: -2px 0 10px; color: var(--danger); font-size: 12px; line-height: 1.45; }
 .bot-decline-note { margin: 2px 0 10px; color: var(--muted); font-size: 12px; line-height: 1.5; }
