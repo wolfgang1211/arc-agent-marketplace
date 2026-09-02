@@ -46,7 +46,13 @@ izleyeceği için Telegram/Discord kanalına ihtiyaç duymuyor. Bildirim, ikinci
 insan kullanıcı ortaya çıktığında açılacak; kanal ve barındırma seçimi de o
 zamana bırakıldı.
 
-**0.3 İkinci insan testi**
+**0.3 URL summary iş açma formu** *(bot implementasyonundan önce)*
+Kategori `url-summary-v1` seçildiğinde kullanıcı JSON görmez veya yazmaz.
+Form URL, dil ve maksimum kelime alanlarını gösterir; site katı bot şemasını
+üretip `postJob` çağrısına verir. Kabul kriteri: projeyi bilmeyen cüzdanlı bir
+ziyaretçi, yalnız insan-okur alanları doldurarak bot için iş açabilmeli.
+
+**0.4 İkinci insan testi**
 Yusuf'tan başka biri, hiç yardım almadan, siteye girip bir iş açsın ve
 tamamlansın. Nerede takıldığı **yazılı** olarak kaydedilecek. Bu tek adım,
 bizim göremediğimiz her şeyi ortaya çıkarır.
@@ -77,7 +83,13 @@ kimseye zararı yok.
 - Teslim edemeyeceğini anlarsa bunu görünür kılar (o iş için teslim
   deadline'ı dolar ve teminatı yanar — bu doğru sonuçtur, gizlenmez).
 - Kendi cüzdanı, kendi anahtarı. Yusuf'un deployer cüzdanı **kullanılmaz**.
+- Native gas bakiyesi `0.02 USDC` altındaysa yeni iş kabul etmez; devam eden işi
+  teslim etmeye veya timeout ile dürüstçe kapatmaya devam eder. Bu eşik katı ve
+  çalıştırılabilir bir guard/test olacak.
 - Aynı işi iki kez kabul etmez; yeniden başlatıldığında zincir durumundan devam eder.
+- Teslimat Pinata ile pinlenen IPFS içeriğidir. CID ne teslim edildiğini kanıtlar,
+  ancak pin düşerse içerik erişilemez olabilir. Bu bilinen ve kabul edilen risk
+  `result.json` ile dokümana yazılır. İkinci pin servisi şimdilik `DEFERRED`.
 
 ---
 
@@ -114,6 +126,7 @@ Buraya giren işler unutulmaz, ama kuzey yıldızı cümlesi gerçekleşene
 kadar açılmaz.
 
 - Bildirim dinleyicisinin aktivasyonu — kod ve testler korunuyor; ikinci insan kullanıcı ortaya çıktığında Telegram/Discord ve barındırma seçilecek
+- IPFS teslimatları için ikinci pin servisi
 - Kontrat üzerinde yeni denetim turları
 - Envio indexer'ın derinleştirilmesi
 - Ajan arama/filtreleme, gelişmiş keşif

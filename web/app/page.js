@@ -30,6 +30,15 @@ import {
   resolveCollectionStatus,
 } from "../lib/marketplace-data-state.mjs";
 import {
+  buildUrlSummaryDescription,
+  URL_SUMMARY_CATEGORY,
+  URL_SUMMARY_LANGUAGES,
+  URL_SUMMARY_MAX_WORDS,
+  URL_SUMMARY_MIN_WORDS,
+  validateUrlSummaryReward,
+  validateUrlSummaryRequest,
+} from "../lib/url-summary-job.mjs";
+import {
   assertSuccessfulReceipt,
   formatDuration,
   formatUsdcAmount,
@@ -583,8 +592,26 @@ function PostJob({ onPost, onConnect, connected, busy, disabled }) {
   const [desc, setDesc] = useState("");
   const [criteria, setCriteria] = useState("");
   const [reward, setReward] = useState("");
-  const [category, setCategory] = useState("");
+  const [categoryMode, setCategoryMode] = useState("");
+  const [customCategory, setCustomCategory] = useState("");
+  const [sourceUrl, setSourceUrl] = useState("");
+  const [summaryLanguage, setSummaryLanguage] = useState("en");
+  const [maxWords, setMaxWords] = useState("400");
+  const isUrlSummary = categoryMode === URL_SUMMARY_CATEGORY;
+  const category = categoryMode === "custom" ? customCategory.trim() : categoryMode;
   const combinedDescription = criteria ? `${desc}${SECTION_SPLIT}${criteria}` : desc;
+  const summaryValidation = validateUrlSummaryRequest({
+    sourceUrl,
+    language: summaryLanguage,
+    maxWords,
+  });
+  const summaryRewardValid = validateUrlSummaryReward(reward);
+  const canPost = isUrlSummary
+    ? summaryValidation.valid && summaryRewardValid
+    : Boolean(desc && reward && category);
+  const postDescription = isUrlSummary
+    ? () => buildUrlSummaryDescription({ sourceUrl, language: summaryLanguage, maxWords })
+    : () => combinedDescription;
   return (
     <div className="card">
       <h2>2) Post a job (USDC escrow)</h2>
@@ -597,11 +624,50 @@ function PostJob({ onPost, onConnect, connected, busy, disabled }) {
           <li>Set a reward that matches complexity and urgency.</li>
         </ul>
       </div>
-      <div className="field"><label>Job description</label><textarea rows={3} value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="Summarize this PDF into 10 bullet points. Include key risks, numbers, and a final recommendation." /></div>
-      <div className="field"><label>Acceptance criteria</label><textarea rows={3} value={criteria} onChange={(e) => setCriteria(e.target.value)} placeholder="Delivery is accepted if it includes: summary, key takeaways, risks, source references, and an accessible final link." /></div>
-      <div className="field"><label>Category</label><input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="research" /></div>
-      <div className="field"><label>Reward (USDC)</label><input value={reward} onChange={(e) => setReward(e.target.value)} placeholder="100" /></div>
-      <button disabled={connected && (disabled || busy === "post" || !desc || !reward || !category.trim())} onClick={() => connected ? onPost(combinedDescription, reward, category.trim()) : onConnect()}>
+      <div className="field">
+        <label id="job-category-label">Category</label>
+        <div className="job-type-picker" role="group" aria-labelledby="job-category-label">
+          <button type="button" className={isUrlSummary ? "selected" : "ghost"} aria-pressed={isUrlSummary} onClick={() => setCategoryMode(URL_SUMMARY_CATEGORY)}>URL summary</button>
+          <button type="button" className={categoryMode === "custom" ? "selected" : "ghost"} aria-pressed={categoryMode === "custom"} onClick={() => setCategoryMode("custom")}>Other job</button>
+        </div>
+      </div>
+      {isUrlSummary ? (
+        <div className="url-summary-fields">
+          <div className="info-box compact">
+            <b>No JSON required.</b> Enter the source and preferences below. The marketplace creates the bot's strict request automatically.
+          </div>
+          <div className="field">
+            <label htmlFor="summary-source-url">Source URL</label>
+            <input id="summary-source-url" type="url" inputMode="url" value={sourceUrl} onChange={(e) => setSourceUrl(e.target.value)} placeholder="https://example.com/article" autoComplete="url" />
+          </div>
+          <div className="row">
+            <div className="field">
+              <label htmlFor="summary-language">Summary language</label>
+              <select id="summary-language" value={summaryLanguage} onChange={(e) => setSummaryLanguage(e.target.value)}>
+                {URL_SUMMARY_LANGUAGES.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+              </select>
+            </div>
+            <div className="field">
+              <label htmlFor="summary-max-words">Maximum words</label>
+              <input id="summary-max-words" type="number" min={URL_SUMMARY_MIN_WORDS} max={URL_SUMMARY_MAX_WORDS} step="1" value={maxWords} onChange={(e) => setMaxWords(e.target.value)} />
+            </div>
+          </div>
+          <div className="acceptance-note">
+            <b>Fixed acceptance criteria</b>
+            <span>The delivery must be an accessible IPFS page with the source URL and hash, title, summary, key points, limitations, and machine-readable result.json.</span>
+          </div>
+          {sourceUrl && !summaryValidation.valid && <div className="form-error" role="alert">{summaryValidation.error}</div>}
+        </div>
+      ) : (
+        <>
+          <div className="field"><label>Job description</label><textarea rows={3} value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="Summarize this PDF into 10 bullet points. Include key risks, numbers, and a final recommendation." /></div>
+          <div className="field"><label>Acceptance criteria</label><textarea rows={3} value={criteria} onChange={(e) => setCriteria(e.target.value)} placeholder="Delivery is accepted if it includes: summary, key takeaways, risks, source references, and an accessible final link." /></div>
+          {categoryMode === "custom" && <div className="field"><label>Custom category</label><input value={customCategory} onChange={(e) => setCustomCategory(e.target.value)} placeholder="research" /></div>}
+        </>
+      )}
+      <div className="field"><label>Reward (USDC)</label><input inputMode="decimal" value={reward} onChange={(e) => setReward(e.target.value)} placeholder={isUrlSummary ? "5" : "100"} /></div>
+      {isUrlSummary && reward && !summaryRewardValid && <div className="form-error" role="alert">URL summary rewards must be between 5 and 20 USDC.</div>}
+      <button disabled={disabled || busy === "post" || !canPost} onClick={() => connected ? onPost(postDescription(), reward, category) : onConnect()}>
         {!connected ? "Connect wallet to post a job" : busy === "post" ? "Approving, then posting…" : "Lock USDC and publish job"}
       </button>
       <p className="muted" style={{ marginTop: 8 }}>Two signatures are required: first USDC <b>approve</b>, then <b>postJob</b>.</p>
