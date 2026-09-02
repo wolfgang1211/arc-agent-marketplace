@@ -667,6 +667,7 @@ function PostJob({ onPost, onConnect, connected, busy, disabled }) {
       )}
       <div className="field"><label>Reward (USDC)</label><input inputMode="decimal" value={reward} onChange={(e) => setReward(e.target.value)} placeholder={isUrlSummary ? "5" : "100"} /></div>
       {isUrlSummary && reward && !summaryRewardValid && <div className="form-error" role="alert">URL summary rewards must be between 5 and 20 USDC.</div>}
+      {isUrlSummary && <p className="bot-decline-note">The bot may decline the job after checking the source; an unaccepted job remains open, and the job owner can cancel it to reclaim the escrowed reward.</p>}
       <button disabled={disabled || busy === "post" || !canPost} onClick={() => connected ? onPost(postDescription(), reward, category) : onConnect()}>
         {!connected ? "Connect wallet to post a job" : busy === "post" ? "Approving, then posting…" : "Lock USDC and publish job"}
       </button>

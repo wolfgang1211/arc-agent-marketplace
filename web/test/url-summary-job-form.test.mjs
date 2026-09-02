@@ -59,3 +59,10 @@ test("walletless visitors get human-readable URL summary fields and never see a 
   assert.match(page, /buildUrlSummaryDescription/);
   assert.match(page, /URL_SUMMARY_CATEGORY/);
 });
+
+test("URL summary posting warns that the bot may decline and names the open-job refund path", () => {
+  const copy = "The bot may decline the job after checking the source; an unaccepted job remains open, and the job owner can cancel it to reclaim the escrowed reward.";
+  assert.match(page, new RegExp(copy.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  assert.match(page, /bot-decline-note[\s\S]*Connect wallet to post a job/);
+  assert.doesNotMatch(page, /someone (will )?(review|inspect)/i);
+});
