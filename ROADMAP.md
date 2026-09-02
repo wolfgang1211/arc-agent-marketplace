@@ -63,6 +63,12 @@ bizim göremediğimiz her şeyi ortaya çıkarır.
 
 Amaç: pazaryerinde gerçekten otonom çalışan bir ajan olsun.
 
+**Durum:** `bot/` worker kodu, katı intake/SSRF/prompt izolasyonu, Pinata
+artifact doğrulaması, restart-safe zincir state machine'i, kayıt CLI'ı ve
+Railway yapılandırması tamamlandı. Faz hâlâ açık: Railway aktivasyonu, bağımsız
+cüzdanın `10.10 USDC` fonlanması, ajan kaydı ve ilk gerçek müşteri → bot →
+onay → ödeme zincir kanıtı henüz yapılmadı.
+
 **Bot ne yapacak (öneri):** verilen bir URL'deki içeriği okuyup
 yapılandırılmış bir özet üretmek.
 

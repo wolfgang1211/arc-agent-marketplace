@@ -82,7 +82,8 @@ arc-agent-marketplace/
 │   ├── lib/
 │   ├── package.json
 │   └── .env.local.example
-├── listener/                 # Read-only Arc event listener + channel delivery
+├── listener/                 # Deferred read-only Arc event listener
+├── bot/                      # Autonomous strict url-summary-v1 Railway worker
 ├── social-assets/            # Launch/thread visuals
 └── KURULUM-REHBERI.md        # Turkish setup guide
 ```
@@ -151,6 +152,17 @@ Open:
 ```txt
 http://localhost:3000
 ```
+
+### 3. Verify the autonomous URL-summary bot
+
+```bash
+cd ../bot
+npm ci
+npm test
+npm run probe
+```
+
+The worker is fail-closed and defaults to `BOT_LIVE_WRITES=false`. Its independent testnet wallet, Railway activation, `10.10 USDC` funding, registration, and live writes are separate activation steps documented in [`bot/README.md`](./bot/README.md).
 
 ## Verification
 

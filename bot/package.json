@@ -1,0 +1,24 @@
+{
+  "name": "arc-url-summary-agent",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node src/index.mjs",
+    "once": "node src/index.mjs --once",
+    "register": "node src/register.mjs",
+    "status": "node src/status.mjs",
+    "probe": "node src/probe.mjs",
+    "test": "node --test test/*.test.mjs",
+    "check": "node --check src/index.mjs && node --check src/register.mjs && node --check src/status.mjs"
+  },
+  "dependencies": {
+    "cheerio": "1.2.0",
+    "ipaddr.js": "2.5.0",
+    "multiformats": "14.0.5",
+    "viem": "2.56.3"
+  }
+}

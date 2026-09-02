@@ -18,6 +18,7 @@ coverage.json
 typechain/
 typechain-types/
 listener/data/
+bot/data/
 
 # OS / editor
 .DS_Store
