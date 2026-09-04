@@ -11,6 +11,10 @@ import { createFileState } from "./state.mjs";
 
 const envPath = resolve(process.cwd(), ".env");
 if (existsSync(envPath) && typeof process.loadEnvFile === "function") process.loadEnvFile(envPath);
+if (process.env.BOT_MODE === "register") {
+  await import("./register.mjs");
+  process.exit(0);
+}
 const config = loadConfig(process.env, { root: process.cwd() });
 const chain = createLiveChain(config);
 await chain.assertChain();
