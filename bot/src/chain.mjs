@@ -76,6 +76,15 @@ export function createChainAdapter({ publicClient, walletClient, account, contra
     getNativeBalance: () => publicClient.getBalance({ address }),
     getUsdcBalance: () => readUsdc("balanceOf", [address]),
     getAllowance: () => readUsdc("allowance", [address, contract]),
+    async getTransactionStatus(hash) {
+      try {
+        const receipt = await publicClient.getTransactionReceipt({ hash });
+        return receipt.status === "success" ? "success" : "reverted";
+      } catch (error) {
+        if (["TransactionReceiptNotFoundError", "TransactionNotFoundError"].includes(error?.name)) return "pending";
+        throw error;
+      }
+    },
     async getChainTimestamp() {
       return (await publicClient.getBlock({ blockTag: "latest" })).timestamp;
     },

@@ -26,6 +26,7 @@ function clients({ receiptStatus = "success", eventNames = ["JobAccepted", "Deli
     getChainId: async () => 5_042_002,
     getBlock: async () => ({ timestamp: 1234n }),
     simulateContract: async (request) => ({ request }),
+    getTransactionReceipt: async () => ({ status: receiptStatus }),
     waitForTransactionReceipt: async () => ({ status: receiptStatus, eventNames }),
   };
   const walletClient = { writeContract: async (request) => { writes.push(request); return "0x" + "a".repeat(64); } };
@@ -53,6 +54,7 @@ test("live transaction writes are fail-closed and receipts are verified", async 
   const result = await liveChain.submitDeliverable(7n, "https://gateway.example/ipfs/cid/index.html");
   assert.match(result.hash, /^0xa{64}$/);
   assert.equal(enabled.writes.length, 1);
+  assert.equal(await liveChain.getTransactionStatus(result.hash), "success");
 
   let broadcastHash = null;
   await liveChain.acceptJob(7n, { onBroadcast: async (hash) => { broadcastHash = hash; } });
@@ -61,8 +63,25 @@ test("live transaction writes are fail-closed and receipts are verified", async 
   const failed = clients({ receiptStatus: "reverted" });
   const failedChain = createChainAdapter({ ...failed, account, contractAddress, usdcAddress, writeEnabled: true });
   await assert.rejects(() => failedChain.claimTimeout(7n), /claimTimeout_receipt_failed/);
+  assert.equal(await failedChain.getTransactionStatus("0x" + "a".repeat(64)), "reverted");
 
   const missingEvent = clients({ eventNames: [] });
   const missingEventChain = createChainAdapter({ ...missingEvent, account, contractAddress, usdcAddress, writeEnabled: true });
   await assert.rejects(() => missingEventChain.acceptJob(7n), /acceptJob_missing_JobAccepted_event/);
+});
+
+test("transaction status treats only receipt-not-found as pending", async () => {
+  const pending = clients();
+  pending.publicClient.getTransactionReceipt = async () => {
+    const error = new Error("not found");
+    error.name = "TransactionReceiptNotFoundError";
+    throw error;
+  };
+  const pendingChain = createChainAdapter({ ...pending, account, contractAddress, usdcAddress, writeEnabled: false });
+  assert.equal(await pendingChain.getTransactionStatus("0x" + "a".repeat(64)), "pending");
+
+  const unavailable = clients();
+  unavailable.publicClient.getTransactionReceipt = async () => { throw new Error("rpc unavailable"); };
+  const unavailableChain = createChainAdapter({ ...unavailable, account, contractAddress, usdcAddress, writeEnabled: false });
+  await assert.rejects(() => unavailableChain.getTransactionStatus("0x" + "a".repeat(64)), /rpc unavailable/);
 });

@@ -6,8 +6,8 @@ const page = fs.readFileSync(new URL("../app/page.js", import.meta.url), "utf8")
 
 test("walletless visitors render the marketplace instead of an early wallet gate", () => {
   assert.doesNotMatch(page, /if\s*\(!isConnected\)\s*\{\s*return\s*\(/);
-  assert.match(page, /<MetricCard label="Open on page"/);
-  assert.match(page, /<h2>Available jobs<\/h2>/);
+  assert.match(page, /<MetricCard label="Open jobs"/);
+  assert.match(page, /<h2>Jobs and settlements<\/h2>/);
   assert.match(page, /<h2>Recommended agents<\/h2>/);
 });
 

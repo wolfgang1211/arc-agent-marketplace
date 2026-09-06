@@ -12,8 +12,9 @@
     "register": "node src/register.mjs",
     "status": "node src/status.mjs",
     "probe": "node src/probe.mjs",
+    "preflight": "node src/preflight.mjs",
     "test": "node --test test/*.test.mjs",
-    "check": "node --check src/index.mjs && node --check src/register.mjs && node --check src/status.mjs"
+    "check": "node --check src/index.mjs && node --check src/register.mjs && node --check src/status.mjs && node --check src/preflight.mjs"
   },
   "dependencies": {
     "cheerio": "1.2.0",

@@ -6,7 +6,6 @@ const ACTIVE_DEADLINES = {
 
 const USDC_SCALE = 1_000000n;
 const DISPUTE_BPS_SCALE = 10_000n;
-const AGENT_STAKE = 100_000000n;
 
 export const JOB_STATUS_BUCKETS = Object.freeze([
   "open",
@@ -81,10 +80,11 @@ export function formatDuration(seconds) {
   return `${secondsPart}s`;
 }
 
-export function timeoutOutcomeCopy(job, role, remainingSeconds, claimable) {
+export function timeoutOutcomeCopy(job, role, remainingSeconds, claimable, agentStake) {
   const status = Number(job.status);
   const reward = formatUsdcAmount(job.reward);
-  const stake = formatUsdcAmount(AGENT_STAKE);
+  const stake = agentStake == null ? "the agent's registration stake" : `the agent's ${formatUsdcAmount(agentStake)} USDC stake`;
+  const ownStake = agentStake == null ? "your registration stake" : `your ${formatUsdcAmount(agentStake)} USDC stake`;
   const t = formatDuration(remainingSeconds ?? 0n);
 
   if (!claimable) {
@@ -92,7 +92,7 @@ export function timeoutOutcomeCopy(job, role, remainingSeconds, claimable) {
       return `Delivery due in ${t}. If the agent misses it, anyone can settle the job: you get your ${reward} USDC back and the agent's stake is burned.`;
     }
     if (status === 1 && role === "agent") {
-      return `You have ${t} left to deliver. Miss this deadline and your ${stake} USDC stake is burned and the client is refunded. The stake is not recoverable.`;
+      return `You have ${t} left to deliver. Miss this deadline and ${ownStake} is burned and the client is refunded. The stake is not recoverable.`;
     }
     if (status === 1) {
       return `Delivery due in ${t}. If the agent misses it, the client is refunded ${reward} USDC and the agent's stake is burned.`;
@@ -114,7 +114,7 @@ export function timeoutOutcomeCopy(job, role, remainingSeconds, claimable) {
   }
 
   if (status === 1) {
-    return `Delivery deadline passed. Settling refunds ${reward} USDC to the client and burns the agent's ${stake} USDC stake. The stake is not paid to anyone — it stays in the contract permanently.`;
+    return `Delivery deadline passed. Settling refunds ${reward} USDC to the client and burns ${stake}. The stake is not paid to anyone — it stays in the contract permanently.`;
   }
   if (status === 2) {
     return `Approval deadline passed. Settling pays ${reward} USDC to the agent. The client's window to dispute has closed.`;
@@ -128,7 +128,7 @@ export function timeoutOutcomeCopy(job, role, remainingSeconds, claimable) {
 
 export const PERMISSIONLESS_SETTLEMENT_COPY = "Anyone can settle an expired job. You pay only the network fee.";
 
-export function terminalOutcomeCopy(job) {
+export function terminalOutcomeCopy(job, agentStake) {
   const status = Number(job.status);
   const reward = formatUsdcAmount(job.reward);
   if (status === 4) {
@@ -138,7 +138,8 @@ export function terminalOutcomeCopy(job) {
     return `Canceled — client canceled before assignment. ${reward} USDC refunded to the client.`;
   }
   if (status === 6) {
-    return `Settled — agent missed the delivery deadline. ${reward} USDC refunded to the client. Agent's ${formatUsdcAmount(AGENT_STAKE)} USDC stake was burned.`;
+    const stake = agentStake == null ? "The agent's registration stake was burned." : `The agent's ${formatUsdcAmount(agentStake)} USDC stake was burned.`;
+    return `Settled — agent missed the delivery deadline. ${reward} USDC refunded to the client. ${stake}`;
   }
   if (status === 7) {
     return `Settled — client did not approve in time. ${reward} USDC paid to the agent.`;

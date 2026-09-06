@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   useAccount,
   useConnect,
@@ -13,6 +13,7 @@ import {
 } from "wagmi";
 import { getBlock, readContract, waitForTransactionReceipt } from "wagmi/actions";
 import { formatUnits, parseUnits } from "viem";
+import { BrandLogo } from "./brand-logo";
 import { arcTestnet, USDC_ADDRESS, USDC_DECIMALS, EXPLORER, FAUCET } from "../lib/chain";
 import {
   CONTRACT_ADDRESS,
@@ -86,6 +87,7 @@ export default function Page() {
   const [discoveryLoading, setDiscoveryLoading] = useState(false);
   const [pageOffset, setPageOffset] = useState(0n);
   const [chainTimestamp, setChainTimestamp] = useState(null);
+  const discoveryRequestId = useRef(0);
 
   const wrongNetwork = isConnected && chainId !== arcTestnet.id;
   const noContract = !CONTRACT_ADDRESS;
@@ -163,16 +165,22 @@ export default function Page() {
   }), [categoryFilter, rewardMin, rewardMax, jobSort]);
 
   useEffect(() => {
-    if (!DISCOVERY_ENDPOINT) return;
+    if (!DISCOVERY_ENDPOINT) return undefined;
+    const requestId = ++discoveryRequestId.current;
     const controller = new AbortController();
     setDiscoveryLoading(true);
     setDiscoveryError("");
     fetchDiscovery(DISCOVERY_ENDPOINT, discoveryFilters, (url, options) => fetch(url, { ...options, signal: controller.signal }))
-      .then((result) => setIndexedDiscovery(result))
-      .catch((error) => {
-        if (error.name !== "AbortError") setDiscoveryError(error.message);
+      .then((result) => {
+        if (requestId === discoveryRequestId.current) setIndexedDiscovery(result);
       })
-      .finally(() => setDiscoveryLoading(false));
+      .catch((error) => {
+        if (requestId !== discoveryRequestId.current || error.name === "AbortError") return;
+        setDiscoveryError(error.message);
+      })
+      .finally(() => {
+        if (requestId === discoveryRequestId.current && !controller.signal.aborted) setDiscoveryLoading(false);
+      });
     return () => controller.abort();
   }, [discoveryFilters]);
 
@@ -229,11 +237,20 @@ export default function Page() {
       );
     }
     if (DISCOVERY_ENDPOINT) {
+      const requestId = ++discoveryRequestId.current;
       setDiscoveryLoading(true);
       refreshes.push(fetchDiscovery(DISCOVERY_ENDPOINT, discoveryFilters)
-        .then((result) => { setIndexedDiscovery(result); setDiscoveryError(""); })
-        .catch((error) => setDiscoveryError(error.message))
-        .finally(() => setDiscoveryLoading(false)));
+        .then((result) => {
+          if (requestId !== discoveryRequestId.current) return;
+          setIndexedDiscovery(result);
+          setDiscoveryError("");
+        })
+        .catch((error) => {
+          if (requestId === discoveryRequestId.current) setDiscoveryError(error.message);
+        })
+        .finally(() => {
+          if (requestId === discoveryRequestId.current) setDiscoveryLoading(false);
+        }));
     }
     await Promise.allSettled(refreshes);
   };
@@ -321,7 +338,7 @@ export default function Page() {
       )}
 
       {msg && (
-        <div className={`banner ${msg.type}`}>
+        <div className={`banner ${msg.type}`} role={msg.type === "err" ? "alert" : "status"} aria-live="polite">
           {msg.text}{" "}
           {msg.link && <a href={msg.link} target="_blank" rel="noreferrer">View on Explorer →</a>}
         </div>
@@ -336,29 +353,29 @@ export default function Page() {
         </div>
       )}
 
-      <div className="network-note">
-        Contract: <a className="mono" href={`${EXPLORER}/address/${CONTRACT_ADDRESS}`} target="_blank" rel="noreferrer">{CONTRACT_ADDRESS}</a>
+      <div className="network-strip" aria-label="Network details">
+        <span><b>Arc Testnet</b> · Chain 5042002</span>
+        <span>Escrow <a className="mono" href={`${EXPLORER}/address/${CONTRACT_ADDRESS}`} target="_blank" rel="noreferrer" aria-label="View escrow contract on explorer">{short(CONTRACT_ADDRESS)} ↗</a></span>
+        <span className="testnet-copy">Test tokens have no real-world value</span>
       </div>
 
       <section className="dashboard-grid">
         <div className="card balance-card metric-card metric-card-large">
           <div className="metric-label">Wallet balance</div>
           <div className="balance-value">{isConnected ? `${fmt(usdcBalance)} USDC` : "Wallet not connected"}</div>
-          <p className="muted">{isConnected ? "ERC-20 USDC available for escrow deposits and rewards." : "Connect only when you want to register, fund, or settle a job."}</p>
-          <a href={FAUCET} target="_blank" rel="noreferrer">
-            <button className="ghost">Get test USDC</button>
-          </a>
+          <p className="muted">{isConnected ? "Test USDC available for escrow deposits and rewards." : "Connect only when you want to register, fund, or settle a job."}</p>
+          <a className="button-link ghost" href={FAUCET} target="_blank" rel="noreferrer">Get test USDC ↗</a>
         </div>
-        <MetricCard label="Open on page" value={metricValue(statusCounts.open)} tone="blue" />
-        <MetricCard label="Active on page" value={metricValue(statusCounts.active)} tone="yellow" />
-        <MetricCard label="Settled on page" value={metricValue(statusCounts.settled)} tone="green" />
+        <MetricCard label="Open jobs" value={metricValue(statusCounts.open)} tone="blue" />
+        <MetricCard label="In progress" value={metricValue(statusCounts.active)} tone="yellow" />
+        <MetricCard label="Settled records" value={metricValue(statusCounts.settled)} tone="green" />
       </section>
 
       <p className="network-note">
         Arc gas uses <b>native USDC</b> with 18 decimals. Escrow uses <b>ERC-20 USDC</b> with 6 decimals.
       </p>
 
-      <section className="action-grid">
+      <section className="action-grid" id="actions" aria-label="Marketplace actions">
         <RegisterAgent agent={agent} stake={agentStake} busy={busy} connected={isConnected} onConnect={requestConnect}
           disabled={wrongNetwork || noContract || agentStake == null}
           onWithdraw={() => run("withdraw", () => write("withdrawStake", []))}
@@ -389,12 +406,12 @@ export default function Page() {
           }} />
       </section>
 
-      <section className="card jobs-panel">
+      <section className="card jobs-panel" id="jobs">
         <div className="section-head">
           <div>
             <div className="eyebrow small-eyebrow">Marketplace</div>
-            <h2>Available jobs</h2>
-            <p className="muted">Track open requests, chain-confirmed deadlines, and terminal settlements in bounded pages.</p>
+            <h2>Jobs and settlements</h2>
+            <p className="muted">Open work, active delivery windows, and final outcomes from the latest on-chain records.</p>
           </div>
           <button className="ghost" onClick={refreshAll}>Refresh</button>
         </div>
@@ -429,7 +446,7 @@ export default function Page() {
                 ? "On-chain job data unavailable"
                 : `${totalJobs.toString()} total on-chain jobs · showing ${pagination.start.toString()}–${pagination.end.toString()}`}
           </span>
-          <span>{discoveryLoading ? "Updating indexed recommendations…" : "Bounded on-chain page"}</span>
+          <span>{discoveryLoading ? "Updating agent data…" : "Latest on-chain records"}</span>
         </div>
         {discoveryError && <div className="banner warn">Indexer unavailable: {discoveryError}. Showing the last indexed result.</div>}
 
@@ -439,6 +456,7 @@ export default function Page() {
           <div className="jobs-list">
             {jobList.map((j) => (
               <JobCard key={j.id.toString()} job={j} me={address} agent={agent} busy={busy}
+                agentStake={agentStake}
                 connected={isConnected}
                 onConnect={requestConnect}
                 disabled={wrongNetwork || noContract}
@@ -466,14 +484,14 @@ export default function Page() {
         )}
       </section>
 
-      <RankedAgents agents={recommendedAgents} status={recommendationStatus} source={indexedAgents.length > 0 ? "Envio index" : "bounded on-chain page"} />
+      <RankedAgents agents={recommendedAgents} status={recommendationStatus} source={indexedAgents.length > 0 ? "marketplace index" : "latest on-chain records"} />
     </Shell>
   );
 }
 
 function RankedAgents({ agents, status, source }) {
   return (
-    <section className="card ranked-agents-panel">
+    <section className="card ranked-agents-panel" id="agents">
       <div className="section-head">
         <div>
           <div className="eyebrow small-eyebrow">Reputation</div>
@@ -519,16 +537,29 @@ function MetricCard({ label, value, tone }) {
 
 function Shell({ children, right }) {
   return (
-    <div className="container">
-      <div className="header">
-        <div>
-          <div className="brand">Arc <span>AI Agent</span> Marketplace</div>
-          <p className="sub">Arc Testnet • USDC escrow • gas is paid with USDC</p>
+    <main className="container">
+      <header className="header">
+        <div className="brand-lockup">
+          <a className="brand" href="/" aria-label="AlphaBoard Agents home"><BrandLogo /></a>
+          <span className="environment-badge">Testnet</span>
         </div>
-        {right}
-      </div>
+        <nav className="primary-nav" aria-label="Primary navigation">
+          <a href="#jobs">Jobs</a>
+          <a href="#agents">Agents</a>
+          <a href="#actions">Post or register</a>
+        </nav>
+        <div className="header-wallet">{right}</div>
+      </header>
+      <section className="product-intro" aria-labelledby="marketplace-title">
+        <div>
+          <p className="eyebrow">Escrow-backed work on Arc</p>
+          <h1 id="marketplace-title">Hire agents. Verify outcomes.</h1>
+          <p>Browse public jobs, fund work in test USDC, and follow every settlement directly on-chain.</p>
+        </div>
+        <a className="button-link primary" href="#actions">Post a job</a>
+      </section>
       {children}
-    </div>
+    </main>
   );
 }
 
@@ -562,16 +593,17 @@ function RegisterAgent({ agent, stake, onRegister, onWithdraw, onConnect, connec
   const registered = agent && agent.registered;
   const profile = proof ? `${skill}\nAI agent verification: ${proof}` : skill;
   return (
-    <div className="card">
-      <h2>1) Register as an agent {registered && <span className="pill done">Registered: {agent.name}</span>}</h2>
+    <div className="card action-card">
+      <div className="eyebrow small-eyebrow">For operators</div>
+      <h2>Register an agent {registered && <span className="pill done">Registered: {agent.name}</span>}</h2>
       <div className="row">
-        <div className="field"><label>Agent name</label><input value={name} onChange={(e) => setName(e.target.value)} placeholder="Aria" /></div>
-        <div className="field"><label>Skills</label><input value={skill} onChange={(e) => setSkill(e.target.value)} placeholder="summaries, translation, research…" /></div>
-        <div className="field"><label>Suggested fee (USDC)</label><input value={fee} onChange={(e) => setFee(e.target.value)} placeholder="50" /></div>
+        <div className="field"><label htmlFor="agent-name">Agent name</label><input id="agent-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Aria" /></div>
+        <div className="field"><label htmlFor="agent-skills">Skills</label><input id="agent-skills" value={skill} onChange={(e) => setSkill(e.target.value)} placeholder="Summaries, translation, research" /></div>
+        <div className="field"><label htmlFor="agent-fee">Suggested fee (USDC)</label><input id="agent-fee" inputMode="decimal" value={fee} onChange={(e) => setFee(e.target.value)} placeholder="50" /></div>
       </div>
       <div className="field">
-        <label>AI agent verification note</label>
-        <input value={proof} onChange={(e) => setProof(e.target.value)} placeholder="Model/workflow used, demo link, portfolio, or operating rules…" />
+        <label htmlFor="agent-proof">Profile evidence</label>
+        <input id="agent-proof" value={proof} onChange={(e) => setProof(e.target.value)} placeholder="Workflow, demo, portfolio, or operating rules" />
       </div>
       <div className="info-box compact">
         <b>Registration stake:</b> {stake == null ? "Loading from contract…" : `${fmt(stake)} USDC`}. Describe how your AI agent works and what evidence clients can review.
@@ -613,17 +645,18 @@ function PostJob({ onPost, onConnect, connected, busy, disabled }) {
     ? () => buildUrlSummaryDescription({ sourceUrl, language: summaryLanguage, maxWords })
     : () => combinedDescription;
   return (
-    <div className="card">
-      <h2>2) Post a job (USDC escrow)</h2>
-      <div className="info-box">
-        <b>Tips for a good job post</b>
+    <div className="card action-card">
+      <div className="eyebrow small-eyebrow">For clients</div>
+      <h2>Post a job with escrow</h2>
+      <details className="info-box guidance">
+        <summary>What makes a good job post?</summary>
         <ul>
           <li>Describe the expected output and format.</li>
           <li>Add links, files, context, or source material.</li>
           <li>Define clear acceptance criteria before locking funds.</li>
           <li>Set a reward that matches complexity and urgency.</li>
         </ul>
-      </div>
+      </details>
       <div className="field">
         <label id="job-category-label">Category</label>
         <div className="job-type-picker" role="group" aria-labelledby="job-category-label">
@@ -637,7 +670,7 @@ function PostJob({ onPost, onConnect, connected, busy, disabled }) {
       {isUrlSummary ? (
         <div className="url-summary-fields">
           <div className="info-box compact">
-            <b>No JSON required.</b> Enter the source and preferences below. The marketplace creates the bot's strict request automatically.
+            <b>No JSON required.</b> Enter the source and preferences below. The marketplace creates the bot&apos;s strict request automatically.
           </div>
           <div className="field">
             <label htmlFor="summary-source-url">Source URL</label>
@@ -663,12 +696,12 @@ function PostJob({ onPost, onConnect, connected, busy, disabled }) {
         </div>
       ) : (
         <>
-          <div className="field"><label>Job description</label><textarea rows={3} value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="Summarize this PDF into 10 bullet points. Include key risks, numbers, and a final recommendation." /></div>
-          <div className="field"><label>Acceptance criteria</label><textarea rows={3} value={criteria} onChange={(e) => setCriteria(e.target.value)} placeholder="Delivery is accepted if it includes: summary, key takeaways, risks, source references, and an accessible final link." /></div>
-          {categoryMode === "custom" && <div className="field"><label>Custom category</label><input value={customCategory} onChange={(e) => setCustomCategory(e.target.value)} placeholder="research" /></div>}
+          <div className="field"><label htmlFor="job-description">Job description</label><textarea id="job-description" rows={3} value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="Summarize this PDF into 10 bullet points. Include key risks, numbers, and a final recommendation." /></div>
+          <div className="field"><label htmlFor="job-criteria">Acceptance criteria</label><textarea id="job-criteria" rows={3} value={criteria} onChange={(e) => setCriteria(e.target.value)} placeholder="Delivery is accepted if it includes: summary, key takeaways, risks, source references, and an accessible final link." /></div>
+          {categoryMode === "custom" && <div className="field"><label htmlFor="job-custom-category">Custom category</label><input id="job-custom-category" value={customCategory} onChange={(e) => setCustomCategory(e.target.value)} placeholder="research" /></div>}
         </>
       )}
-      <div className="field"><label>Reward (USDC)</label><input inputMode="decimal" value={reward} onChange={(e) => setReward(e.target.value)} placeholder={isUrlSummary ? "5" : "100"} /></div>
+      <div className="field"><label htmlFor="job-reward">Reward (test USDC)</label><input id="job-reward" inputMode="decimal" value={reward} onChange={(e) => setReward(e.target.value)} placeholder={isUrlSummary ? "5" : "100"} /></div>
       {isUrlSummary && reward && !summaryRewardValid && <div className="form-error" role="alert">URL summary rewards must be between 5 and 20 USDC.</div>}
       {isUrlSummary && <p className="bot-decline-note">The bot may decline the job after checking the source; an unaccepted job remains open, and the job owner can cancel it to reclaim the escrowed reward.</p>}
       <button disabled={disabled || busy === "post" || !canPost} onClick={() => connected ? onPost(postDescription(), reward, category) : onConnect()}>
@@ -679,9 +712,48 @@ function PostJob({ onPost, onConnect, connected, busy, disabled }) {
   );
 }
 
-function JobCard({ job, me, agent, onAccept, onSubmit, onApprove, onDispute, onClaim, onCancel, onConnect, connected, busy, disabled, chainTimestamp, disputeTimeout }) {
+function JobCard({ job, me, agent, agentStake, onAccept, onSubmit, onApprove, onDispute, onClaim, onCancel, onConnect, connected, busy, disabled, chainTimestamp, disputeTimeout }) {
   const [uri, setUri] = useState("");
   const [confirmingDispute, setConfirmingDispute] = useState(false);
+  const disputeTriggerRef = useRef(null);
+  const disputeDialogRef = useRef(null);
+  useEffect(() => {
+    if (!confirmingDispute) return undefined;
+    const dialog = disputeDialogRef.current;
+    const trigger = disputeTriggerRef.current;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    dialog?.querySelector("[data-modal-initial]")?.focus();
+
+    const handleDialogKey = (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setConfirmingDispute(false);
+        return;
+      }
+      if (event.key !== "Tab" || !dialog) return;
+      const focusable = [...dialog.querySelectorAll("button:not(:disabled), a[href], input:not(:disabled), [tabindex]:not([tabindex='-1'])")];
+      if (focusable.length === 0) {
+        event.preventDefault();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    window.addEventListener("keydown", handleDialogKey);
+    return () => {
+      window.removeEventListener("keydown", handleDialogKey);
+      document.body.style.overflow = previousOverflow;
+      trigger?.focus();
+    };
+  }, [confirmingDispute]);
   const status = Number(job.status);
   const isClient = me && me.toLowerCase() === job.client.toLowerCase();
   const isAgent = me && me.toLowerCase() === job.agent.toLowerCase();
@@ -691,9 +763,9 @@ function JobCard({ job, me, agent, onAccept, onSubmit, onApprove, onDispute, onC
   const role = isClient ? "You are the client" : isAgent ? "Assigned to you" : "Observer";
   const { task, criteria } = parseJobDetails(job.description);
   const timeoutState = getTimeoutState(job, chainTimestamp);
-  const terminalCopy = terminalOutcomeCopy(job);
+  const terminalCopy = terminalOutcomeCopy(job, agentStake);
   const timeoutCopy = timeoutState.active && !timeoutState.chainTimePending
-    ? timeoutOutcomeCopy(job, timeoutRole, timeoutState.remainingSeconds, timeoutState.claimable)
+    ? timeoutOutcomeCopy(job, timeoutRole, timeoutState.remainingSeconds, timeoutState.claimable, agentStake)
     : "";
   const { clientAmount, agentAmount } = splitAmounts(job);
 
@@ -781,7 +853,8 @@ function JobCard({ job, me, agent, onAccept, onSubmit, onApprove, onDispute, onC
         )}
         {status === 1 && isAgent && (
           <div className="delivery-form">
-            <input value={uri} onChange={(e) => setUri(e.target.value)} placeholder="Delivery link (ipfs:// or https://)" />
+            <label className="sr-only" htmlFor={`delivery-uri-${job.id}`}>Deliverable URI</label>
+            <input id={`delivery-uri-${job.id}`} value={uri} onChange={(e) => setUri(e.target.value)} placeholder="Delivery link (ipfs:// or https://)" />
             <button disabled={connected && (disabled || !uri || busy === "submit" + job.id)} onClick={() => connected ? onSubmit(uri) : onConnect()}>
               {!connected ? "Connect wallet to submit delivery" : busy === "submit" + job.id ? "Submitting…" : "Submit delivery"}
             </button>
@@ -793,19 +866,19 @@ function JobCard({ job, me, agent, onAccept, onSubmit, onApprove, onDispute, onC
             <button className="ok" disabled={connected && (disabled || busy === "approve" + job.id)} onClick={connected ? onApprove : onConnect}>
               {!connected ? "Connect wallet to approve and pay" : busy === "approve" + job.id ? "Approving…" : "Approve and pay"}
             </button>
-            <button className="danger" disabled={connected && (disabled || disputeTimeout == null || busy === "dispute" + job.id)} onClick={() => connected ? setConfirmingDispute(true) : onConnect()}>
+            <button ref={disputeTriggerRef} className="danger" disabled={connected && (disabled || disputeTimeout == null || busy === "dispute" + job.id)} onClick={() => connected ? setConfirmingDispute(true) : onConnect()}>
               {!connected ? "Connect wallet to dispute job" : busy === "dispute" + job.id ? "Starting dispute…" : "Dispute"}
             </button>
             {confirmingDispute && (
               <div className="modal-backdrop" role="presentation">
-                <div className="dispute-confirmation" role="dialog" aria-modal="true" aria-labelledby={`dispute-title-${job.id}`}>
+                <div ref={disputeDialogRef} className="dispute-confirmation" role="dialog" aria-modal="true" aria-labelledby={`dispute-title-${job.id}`} aria-describedby={`dispute-description-${job.id}`}>
                   <h3 id={`dispute-title-${job.id}`}>Disputing does not get your money back.</h3>
-                  <p>No one reviews a dispute — there is no arbiter, no appeal, and no support team. Disputing only changes how the escrow is split when the dispute window closes.</p>
+                  <p id={`dispute-description-${job.id}`}>No one reviews a dispute — there is no arbiter, no appeal, and no support team. Disputing only changes how the escrow is split when the dispute window closes.</p>
                   <p>If you dispute, in {formatDuration(disputeTimeout)} the escrow splits automatically: {formatUsdcAmount(clientAmount)} USDC to you, {formatUsdcAmount(agentAmount)} USDC to the agent. That split is fixed and cannot be changed.</p>
                   <p>If you approve instead, the agent is paid in full. If you do nothing, the agent is paid in full when the approval window closes.</p>
                   <div className="confirmation-actions">
                     <button className="danger" onClick={() => { setConfirmingDispute(false); onDispute(); }}>Dispute and accept the split</button>
-                    <button className="ghost" onClick={() => setConfirmingDispute(false)}>Go back</button>
+                    <button className="ghost" data-modal-initial autoFocus onClick={() => setConfirmingDispute(false)}>Go back</button>
                   </div>
                 </div>
               </div>

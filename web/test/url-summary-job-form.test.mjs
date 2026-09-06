@@ -39,9 +39,29 @@ test("URL summary form rejects invalid public inputs before wallet actions", () 
   }
 });
 
-test("URL summary reward guard accepts only the bot's fixed 5–20 USDC range", () => {
-  for (const value of [5, "5", 12.5, 20, "20"]) assert.equal(validateUrlSummaryReward(value), true);
-  for (const value of ["", 0, 4.999999, 20.000001, 21, "not-a-number"]) assert.equal(validateUrlSummaryReward(value), false);
+test("URL summary reward guard accepts only values viem can encode exactly", () => {
+  for (const value of [5, "5", 12.5, "12.500001", 20, "20.000000"]) assert.equal(validateUrlSummaryReward(value), true);
+  for (const value of ["", 0, 4.999999, 20.000001, 21, "not-a-number", "5e0", "5.0000001", "05"]) {
+    assert.equal(validateUrlSummaryReward(value), false);
+  }
+});
+
+test("URL summary form rejects literal local and private network sources before escrow", () => {
+  for (const sourceUrl of [
+    "https://localhost/article",
+    "https://api.localhost/article",
+    "https://127.0.0.1/article",
+    "https://10.0.0.8/article",
+    "https://172.16.0.1/article",
+    "https://192.168.1.1/article",
+    "https://169.254.169.254/latest/meta-data",
+    "https://[::1]/article",
+  ]) {
+    assert.deepEqual(
+      validateUrlSummaryRequest({ sourceUrl, language: "en", maxWords: 400 }),
+      { valid: false, error: "URL must use a public hostname." },
+    );
+  }
 });
 
 test("walletless visitors get human-readable URL summary fields and never see a JSON editor", () => {

@@ -1,6 +1,15 @@
 export const CONTRACT_ADDRESS =
   process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || "";
 
+// Verified via eth_getCode binary search: no code at 59,319,766; code present at 59,319,767.
+const VERIFIED_DEPLOYMENT_BLOCKS = Object.freeze({
+  "0xfc7de289e02fcfb4268ae8f0e49991d2eafe5c87": 59319767n,
+});
+const configuredDeploymentBlock = process.env.NEXT_PUBLIC_CONTRACT_DEPLOYMENT_BLOCK || "";
+export const CONTRACT_DEPLOYMENT_BLOCK = /^\d+$/.test(configuredDeploymentBlock)
+  ? BigInt(configuredDeploymentBlock)
+  : VERIFIED_DEPLOYMENT_BLOCKS[CONTRACT_ADDRESS.toLowerCase()] ?? null;
+
 // Minimal ABI for the functions and events the UI uses.
 export const MARKETPLACE_ABI = [
   {

@@ -5,11 +5,12 @@ import { useQuery } from "@tanstack/react-query";
 import { usePublicClient, useReadContract, useReadContracts } from "wagmi";
 import { formatUnits, getAddress, isAddress } from "viem";
 import { EXPLORER, USDC_DECIMALS } from "../../../lib/chain";
-import { CONTRACT_ADDRESS, JOB_STATUS, MARKETPLACE_ABI } from "../../../lib/contract";
+import { CONTRACT_ADDRESS, CONTRACT_DEPLOYMENT_BLOCK, JOB_STATUS, MARKETPLACE_ABI } from "../../../lib/contract";
 import { categoryDistinctClients, currentEraCopy } from "../../../lib/profile.mjs";
+import { BrandLogo } from "../../brand-logo";
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
-const PAGE_LIMIT = 100n;
+const PROFILE_JOB_LIMIT = 100n;
 const SECTION_SPLIT = "\n\nAcceptance criteria:\n";
 
 const short = (address) => `${address.slice(0, 6)}…${address.slice(-4)}`;
@@ -63,14 +64,14 @@ export default function AgentProfilePage({ params }) {
     error: slashError,
     refetch: refetchSlashes,
   } = useQuery({
-    queryKey: ["agent-slashes", CONTRACT_ADDRESS, address],
-    enabled: canRead && Boolean(publicClient),
+    queryKey: ["agent-slashes", CONTRACT_ADDRESS, CONTRACT_DEPLOYMENT_BLOCK?.toString(), address],
+    enabled: canRead && Boolean(publicClient) && CONTRACT_DEPLOYMENT_BLOCK !== null,
     refetchInterval: 12000,
     queryFn: () => publicClient.getLogs({
       address: CONTRACT_ADDRESS,
       event: MARKETPLACE_ABI.find((item) => item.type === "event" && item.name === "AgentSlashed"),
       args: { agent: address },
-      fromBlock: 0n,
+      fromBlock: CONTRACT_DEPLOYMENT_BLOCK,
       toBlock: "latest",
     }),
   });
@@ -82,23 +83,22 @@ export default function AgentProfilePage({ params }) {
     query: { enabled: canRead, refetchInterval: 12000 },
   });
 
-  const pageContracts = useMemo(() => {
-    const count = Number(jobCount || 0n);
-    return Array.from({ length: Math.ceil(count / Number(PAGE_LIMIT)) }, (_, index) => ({
-      address: CONTRACT_ADDRESS || undefined,
-      abi: MARKETPLACE_ABI,
-      functionName: "getJobsPaged",
-      args: [BigInt(index) * PAGE_LIMIT, PAGE_LIMIT],
-    }));
-  }, [jobCount]);
-  const { data: pageResults, isLoading: pagesLoading, refetch: refetchJobPages } = useReadContracts({
-    contracts: pageContracts,
-    query: { enabled: canRead && pageContracts.length > 0, refetchInterval: 12000 },
+  const recentOffset = typeof jobCount === "bigint" && jobCount > PROFILE_JOB_LIMIT
+    ? jobCount - PROFILE_JOB_LIMIT
+    : 0n;
+  const {
+    data: jobsPage,
+    isLoading: jobsPageLoading,
+    error: jobsPageError,
+    refetch: refetchJobPage,
+  } = useReadContract({
+    address: CONTRACT_ADDRESS || undefined,
+    abi: MARKETPLACE_ABI,
+    functionName: "getJobsPaged",
+    args: [recentOffset, PROFILE_JOB_LIMIT],
+    query: { enabled: canRead && typeof jobCount === "bigint", refetchInterval: 12000 },
   });
-  const allJobs = useMemo(
-    () => pageResults?.flatMap((page) => page.result?.[0] || []) || [],
-    [pageResults]
-  );
+  const allJobs = useMemo(() => jobsPage?.[0] || [], [jobsPage]);
   const agentJobs = useMemo(
     () => allJobs
       .filter((job) => job.agent.toLowerCase() === address.toLowerCase())
@@ -129,17 +129,16 @@ export default function AgentProfilePage({ params }) {
   const slashCount = slashLogs?.length;
   const slashHistoryReady = typeof slashCount === "number";
   const [skills, verificationNote] = String(agent?.skill || "").split("\nAI agent verification: ");
-  const isLoading = agentLoading || reputationLoading || jobCountLoading || slashLoading || (pageContracts.length > 0 && pagesLoading);
-  const pageReadFailed = pageResults?.some((page) => page.status === "failure");
+  const isLoading = agentLoading || reputationLoading || jobCountLoading || slashLoading || jobsPageLoading;
   const categoryReadFailed = categoryResults?.some((result) => result.status === "failure");
-  const readError = agentError || reputationError || jobsError || pageReadFailed || categoryReadFailed;
+  const readError = agentError || reputationError || jobsError || jobsPageError || categoryReadFailed;
 
   const refresh = () => {
     refetchAgent();
     refetchReputation();
     refetchSlashes();
     refetchJobCount();
-    if (pageContracts.length > 0) refetchJobPages();
+    if (typeof jobCount === "bigint") refetchJobPage();
     if (categoryContracts.length > 0) refetchCategories();
   };
 
@@ -153,8 +152,9 @@ export default function AgentProfilePage({ params }) {
 
   return (
     <main className="profile-container">
-      <nav className="profile-nav">
-        <a href="/" className="profile-back">← Marketplace</a>
+      <nav className="profile-nav" aria-label="Profile navigation">
+        <a href="/" className="profile-back" aria-label="AlphaBoard Agents home"><BrandLogo compact /></a>
+        <span className="environment-badge">Testnet</span>
         <button className="ghost small" onClick={refresh}>Refresh contract data</button>
       </nav>
 
@@ -169,7 +169,7 @@ export default function AgentProfilePage({ params }) {
         <div className="profile-identity">
           <div className="profile-avatar" aria-hidden="true">{agent?.name?.slice(0, 2).toUpperCase() || "AI"}</div>
           <div>
-            <div className="profile-kicker">AI agent profile</div>
+            <div className="profile-kicker">On-chain agent record</div>
             <h1>{isLoading ? "Loading agent…" : agent?.name || "Unregistered agent"}</h1>
             <a className="profile-address mono" href={`${EXPLORER}/address/${address}`} target="_blank" rel="noreferrer">
               {short(address)} ↗
@@ -210,12 +210,12 @@ export default function AgentProfilePage({ params }) {
         <TrustCard
           label="Lifetime slashes"
           value={slashHistoryReady ? slashCount.toString() : "—"}
-          copy={slashHistoryReady ? `Slashed ${slashCount} time${slashCount === 1 ? "" : "s"} · Events from block 0 to latest` : "History unavailable"}
+          copy={slashHistoryReady ? `Slashed ${slashCount} time${slashCount === 1 ? "" : "s"} · Events since deployment block ${CONTRACT_DEPLOYMENT_BLOCK?.toString()}` : "History unavailable"}
         />
       </section>
 
       <div className="profile-disclosure">
-        <b>How to read this profile:</b> distinct-client and category client counts are the primary trust signals. Slash history is lifetime event history; contract counters reset after a slash. Data reflects the configured contract, and Arc deployment behavior has not been independently verified here.
+        <b>How to read this profile:</b> distinct-client and category client counts are the primary trust signals. Slash history is lifetime event history from the verified deployment block; contract counters reset after a slash. Category and job lists are derived from the latest 100 marketplace jobs. Data reflects the configured contract, and Arc deployment behavior has not been independently verified here.
       </div>
 
       <section className="profile-columns">

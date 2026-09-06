@@ -14,8 +14,8 @@ import {
   PERMISSIONLESS_SETTLEMENT_COPY,
   revalidateTimeoutClaim,
   splitDisputedReward,
-  terminalOutcomeCopy,
-  timeoutOutcomeCopy,
+  terminalOutcomeCopy as buildTerminalOutcomeCopy,
+  timeoutOutcomeCopy as buildTimeoutOutcomeCopy,
 } from "../lib/timeout-recovery.mjs";
 
 const baseJob = {
@@ -26,6 +26,10 @@ const baseJob = {
   disputeDeadline: 3_000n,
   clientShareOnDispute: 3333n,
 };
+const deployedAgentStake = 10_000000n;
+const timeoutOutcomeCopy = (job, role, remainingSeconds, claimable) =>
+  buildTimeoutOutcomeCopy(job, role, remainingSeconds, claimable, deployedAgentStake);
+const terminalOutcomeCopy = (job) => buildTerminalOutcomeCopy(job, deployedAgentStake);
 
 const marketplaceSourcePath = fileURLToPath(new URL("../../contract/contracts/AgentMarketplace.sol", import.meta.url));
 
@@ -137,7 +141,7 @@ test("countdown copy is exact and role-scoped", () => {
   );
   assert.equal(
     timeoutOutcomeCopy(inProgress, "agent", 61n, false),
-    "You have 1m 1s left to deliver. Miss this deadline and your 100.000000 USDC stake is burned and the client is refunded. The stake is not recoverable.",
+    "You have 1m 1s left to deliver. Miss this deadline and your 10.000000 USDC stake is burned and the client is refunded. The stake is not recoverable.",
   );
   assert.equal(
     timeoutOutcomeCopy(inProgress, "observer", 61n, false),
@@ -180,7 +184,7 @@ test("observer financial outcomes are third-person while caller fee copy may use
 test("each claimable branch uses the exact permissionless outcome copy", () => {
   assert.equal(
     timeoutOutcomeCopy({ ...baseJob, status: 1 }, "observer", 0n, true),
-    "Delivery deadline passed. Settling refunds 12.345678 USDC to the client and burns the agent's 100.000000 USDC stake. The stake is not paid to anyone — it stays in the contract permanently.",
+    "Delivery deadline passed. Settling refunds 12.345678 USDC to the client and burns the agent's 10.000000 USDC stake. The stake is not paid to anyone — it stays in the contract permanently.",
   );
   assert.equal(
     timeoutOutcomeCopy({ ...baseJob, status: 2 }, "observer", 0n, true),
@@ -204,7 +208,7 @@ test("terminal timeout outcomes use the exact read-only copy", () => {
   );
   assert.equal(
     terminalOutcomeCopy({ ...baseJob, status: 6 }),
-    "Settled — agent missed the delivery deadline. 12.345678 USDC refunded to the client. Agent's 100.000000 USDC stake was burned.",
+    "Settled — agent missed the delivery deadline. 12.345678 USDC refunded to the client. The agent's 10.000000 USDC stake was burned.",
   );
   assert.equal(
     terminalOutcomeCopy({ ...baseJob, status: 7 }),

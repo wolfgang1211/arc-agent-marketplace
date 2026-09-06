@@ -23,7 +23,7 @@ It rejects unknown fields and accepts only:
 - at most 2 MB and `500–100,000` extracted characters
 - content without password/login forms, paywall, login-required, cookie-wall, or access-denied signals
 
-The validated DNS address is pinned into the TLS connection to close the DNS-rebinding gap. Source content is untrusted data for summarization only. It cannot authorize tools, browsing, wallet use, credentials, or transactions. Transaction hashes are written to the durable state file immediately after broadcast and before receipt waiting; an ambiguous broadcast is reconciled from chain state and is never resent blindly.
+The validated DNS address is pinned into the TLS connection to close the DNS-rebinding gap. Source content is untrusted data for summarization only. It cannot authorize tools, browsing, wallet use, credentials, or transactions. Transaction hashes are written to the durable state file immediately after broadcast and before receipt waiting. An ambiguous pending broadcast is never resent blindly; only a proven reverted receipt reopens retry, while a still-pending submit advances to timeout handling at the delivery deadline.
 
 ## Economic guard
 
@@ -31,6 +31,8 @@ The validated DNS address is pinned into the TLS connection to close the DNS-reb
 - Initial wallet target: `10.10 USDC`.
 - New jobs are not accepted when native gas is below `0.02 USDC` (`20_000_000_000_000_000` native base units).
 - Existing accepted work is still submitted or honestly timed out below that guard.
+- Permanent post-accept failures become terminal immediately. Transient failures retry on the normal poll cadence while more than `300` seconds remain before the delivery deadline; no additional backoff is applied.
+- `submitAttempts` persists across restarts as diagnostic evidence only. It does not consume or shorten the deadline-based retry budget.
 - A slash halts the worker. It never funds itself, re-registers, or submits a fake deliverable.
 
 ## Delivery

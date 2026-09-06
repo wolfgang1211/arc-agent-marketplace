@@ -54,7 +54,8 @@ test("profile source avoids overstated rate and raw point claims", async () => {
   assert.doesNotMatch(source, /reputation score/i);
   assert.doesNotMatch(source, /points per distinct client/i);
   assert.doesNotMatch(source, /<[^>]+>\s*\{\s*score(?:\.toString\(\))?\s*\}/);
-  assert.match(source, /fromBlock: 0n/);
+  assert.match(source, /fromBlock: CONTRACT_DEPLOYMENT_BLOCK/);
+  assert.doesNotMatch(source, /fromBlock: 0n/);
   assert.match(source, /Slashed \$\{slashCount\} time/);
   assert.match(source, /categoryDistinctClients\(score\)/);
   assert.doesNotMatch(source, /Category counters are unavailable after a slash/);

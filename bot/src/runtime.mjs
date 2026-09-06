@@ -1,7 +1,8 @@
 import { hasGasReserve, parseEligibleJob } from "./eligibility.mjs";
 
 const STATE_VERSION = 1;
-const MAX_POST_ACCEPT_ATTEMPTS = 3;
+// Reserve five minutes for bounded RPC retries and receipt confirmation; do not start a new submit inside this window.
+export const MIN_SUBMIT_ATTEMPT_WINDOW_SECONDS = 300n;
 
 export async function runCycle({ chain, state, prepareJob }) {
   await chain.assertChain();
@@ -63,6 +64,9 @@ export async function runCycle({ chain, state, prepareJob }) {
   });
   if (ambiguousBroadcast) {
     const record = snapshot.jobs[String(ambiguousBroadcast.id)];
+    if (record.phase === "submitting") {
+      return reconcileAmbiguousSubmit({ chain, state, snapshot, job: ambiguousBroadcast, record });
+    }
     return { action: "broadcast_reconciliation_wait", jobId: String(ambiguousBroadcast.id), phase: record.phase, txHash: record.acceptTxHash || record.submitTxHash || record.timeoutTxHash };
   }
 
@@ -201,7 +205,7 @@ async function handleOwnedInProgress({ chain, state, snapshot, job, prepareJob }
       snapshot.jobs[jobId] = record;
       await state.save(snapshot);
     } catch (error) {
-      return handlePostAcceptError({ state, snapshot, job, error });
+      return handlePostAcceptError({ chain, state, snapshot, job, error });
     }
   }
   return submitPrepared({ chain, state, snapshot, job });
@@ -212,6 +216,9 @@ async function submitPrepared({ chain, state, snapshot, job }) {
   const chainTimestamp = await chain.getChainTimestamp();
   if (chainTimestamp >= BigInt(job.deliveryDeadline)) {
     return markTerminalFailure({ state, snapshot, job, reason: "delivery_deadline_reached" });
+  }
+  if (BigInt(job.deliveryDeadline) - chainTimestamp <= MIN_SUBMIT_ATTEMPT_WINDOW_SECONDS) {
+    return markTerminalFailure({ state, snapshot, job, reason: "delivery_deadline_imminent" });
   }
   try {
     const submitted = await chain.submitDeliverable(job.id, snapshot.jobs[jobId].deliveryUri, {
@@ -239,21 +246,47 @@ async function submitPrepared({ chain, state, snapshot, job }) {
       submitTxHash: submitted.hash,
     };
   } catch (error) {
-    return handlePostAcceptError({ state, snapshot, job, error });
+    return handlePostAcceptError({ chain, state, snapshot, job, error });
   }
 }
 
-async function handlePostAcceptError({ state, snapshot, job, error }) {
+async function handlePostAcceptError({ chain, state, snapshot, job, error }) {
   const jobId = String(job.id);
   const record = snapshot.jobs[jobId] || { phase: "accepted", submitAttempts: 0 };
   record.submitAttempts = Number(record.submitAttempts || 0) + 1;
   record.reason = safeReason(error);
   snapshot.jobs[jobId] = record;
-  if (error?.permanent === true || record.submitAttempts >= MAX_POST_ACCEPT_ATTEMPTS) {
+  if (error?.permanent === true) {
     return markTerminalFailure({ state, snapshot, job, reason: record.reason });
+  }
+  const chainTimestamp = await chain.getChainTimestamp();
+  if (BigInt(job.deliveryDeadline) - chainTimestamp <= MIN_SUBMIT_ATTEMPT_WINDOW_SECONDS) {
+    return markTerminalFailure({ state, snapshot, job, reason: "delivery_deadline_imminent" });
   }
   await state.save(snapshot);
   return { action: "post_accept_retry_later", jobId, attempt: record.submitAttempts, reason: record.reason };
+}
+
+async function reconcileAmbiguousSubmit({ chain, state, snapshot, job, record }) {
+  const jobId = String(job.id);
+  const txHash = record.submitTxHash;
+  if (!txHash) return { action: "broadcast_reconciliation_wait", jobId, phase: record.phase };
+  const transactionStatus = await chain.getTransactionStatus(txHash);
+  if (transactionStatus === "reverted") {
+    const chainTimestamp = await chain.getChainTimestamp();
+    if (BigInt(job.deliveryDeadline) - chainTimestamp <= MIN_SUBMIT_ATTEMPT_WINDOW_SECONDS) {
+      return markTerminalFailure({ state, snapshot, job, reason: "delivery_deadline_imminent" });
+    }
+    record.phase = "accepted";
+    record.reason = "submit_transaction_reverted";
+    await state.save(snapshot);
+    return { action: "submit_reverted_retry_later", jobId, txHash };
+  }
+  const chainTimestamp = await chain.getChainTimestamp();
+  if (chainTimestamp >= BigInt(job.deliveryDeadline)) {
+    return markTerminalFailure({ state, snapshot, job, reason: "delivery_deadline_reached" });
+  }
+  return { action: "broadcast_reconciliation_wait", jobId, phase: record.phase, txHash };
 }
 
 async function markTerminalFailure({ state, snapshot, job, reason }) {
