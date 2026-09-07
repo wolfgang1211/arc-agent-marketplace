@@ -5,7 +5,6 @@ import {
   useAccount,
   useConnect,
   useDisconnect,
-  useChainId,
   useSwitchChain,
   useReadContract,
   useWriteContract,
@@ -64,11 +63,10 @@ const parseJobDetails = (description = "") => {
 };
 
 export default function Page() {
-  const { address, isConnected } = useAccount();
+  const { address, isConnected, chainId } = useAccount();
   const { connect, connectors, isPending: connecting } = useConnect();
   const { disconnect } = useDisconnect();
-  const chainId = useChainId();
-  const { switchChain } = useSwitchChain();
+  const { switchChain, isPending: switchingChain } = useSwitchChain();
   const config = useConfig();
   const { writeContractAsync } = useWriteContract();
 
@@ -274,7 +272,10 @@ export default function Page() {
   const metricValue = (value) => jobsStatus === "loading" ? "…" : jobsStatus === "error" ? "—" : value;
   const requestConnect = () => {
     const connector = connectors[0];
-    if (connector) connect({ connector });
+    setMsg(null);
+    if (connector) connect({ connector, chainId: arcTestnet.id }, {
+      onError: (error) => setMsg({ type: "err", text: humanError(error) }),
+    });
   };
 
   async function run(label, fn) {
@@ -321,7 +322,7 @@ export default function Page() {
       right={isConnected ? (
         <ConnectedWallet address={address} onDisconnect={() => disconnect()} />
       ) : (
-        <WalletConnect connectors={connectors} connecting={connecting} onConnect={connect} />
+        <WalletConnect connectors={connectors} connecting={connecting} onConnect={requestConnect} />
       )}
     >
       {noContract && (
@@ -333,7 +334,12 @@ export default function Page() {
       {wrongNetwork && (
         <div className="banner warn flex-between">
           <span>You are on the wrong network. Switch to Arc Testnet to continue.</span>
-          <button onClick={() => switchChain({ chainId: arcTestnet.id })}>Switch to Arc Testnet</button>
+          <button disabled={switchingChain} onClick={() => {
+            setMsg(null);
+            switchChain({ chainId: arcTestnet.id }, {
+              onError: (error) => setMsg({ type: "err", text: humanError(error) }),
+            });
+          }}>{switchingChain ? "Switching…" : "Switch to Arc Testnet"}</button>
         </div>
       )}
 
@@ -566,7 +572,7 @@ function Shell({ children, right }) {
 function WalletConnect({ connectors, connecting, onConnect }) {
   const connector = connectors[0];
   return (
-    <button className="ghost" onClick={() => connector && onConnect({ connector })} disabled={!connector || connecting}>
+    <button className="ghost" onClick={onConnect} disabled={!connector || connecting}>
       {connecting ? "Connecting…" : "Connect wallet"}
     </button>
   );
