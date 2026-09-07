@@ -1,5 +1,7 @@
 # Timeout recovery screenshot evidence
 
+> Historical evidence from the verification-contract run, not a snapshot of the current public website. The current frontend supports walletless browsing. Addresses, screenshots, and setup observations below describe that earlier capture only.
+
 The evidence is intentionally split by what it proves. Every capture used the already-running Brave DevTools endpoint; no isolated browser, contract write, wallet signature, gas spend, deployment, Vercel action, or push was used.
 
 ## Live Arc chain integration

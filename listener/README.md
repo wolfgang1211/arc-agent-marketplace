@@ -1,4 +1,4 @@
-# Marketplace event listener
+# AlphaBoard Agents: Event Listener
 
 This read-only service watches the attested Arc Testnet marketplace and sends these events to Discord and/or Telegram:
 
@@ -12,8 +12,10 @@ It never signs transactions and does not need a wallet or private key.
 
 ## Setup (Windows CMD)
 
+Run from the repository root. Starting this service with configured destinations can send external messages; obtain the destination owner's approval first. Code in this repository does not establish that a notification service is currently active.
+
 ```cmd
-cd C:\Users\wolfgang\arc-agent-marketplace\arc-agent-marketplace\listener
+cd listener
 npm install
 copy .env.example .env
 ```

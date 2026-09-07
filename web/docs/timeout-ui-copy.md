@@ -1,4 +1,6 @@
-# Timeout UI — copy deck
+# Timeout UI: Historical Copy Deck
+
+> Design reference, not the authoritative current UI or protocol specification. Some wording below predates fee-aware explanations and incorrectly suggests automatic settlement or hard action cutoffs. Use `web/lib/timeout-recovery.mjs`, the current contract, and the [product guide](../../SITE-OZELLIK-RAPORU-TR.md) for current behavior. Settlement requires a transaction; slashed stake remains in the contract rather than reducing token supply.
 
 Rules this copy follows:
 

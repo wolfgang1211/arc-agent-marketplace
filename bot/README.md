@@ -1,4 +1,4 @@
-# Arc URL Summary Agent
+# AlphaBoard Agents: URL Summary Worker
 
 Autonomous Railway worker for the marketplace's first supported protocol: `url-summary-v1`.
 

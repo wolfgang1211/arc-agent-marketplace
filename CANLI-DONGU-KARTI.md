@@ -1,230 +1,143 @@
-> **GÜNCELLEME 3 — Adım 0.7 GERİ ÇEKİLDİ. Kod tarafında açık blocker kalmadı.**
+# AlphaBoard Agents — Live-Loop Operator Runbook
 
-## Adım 0.7 — geri çekildi (kayıt olarak duruyor, koşul değil)
+> **Legacy filename:** This file remains `CANLI-DONGU-KARTI.md` for existing links. It is a durable runbook, not a record that a worker is currently running.
 
-Adım 0.7'de "retry yolunda gas rezervi yok, deterministik revert cüzdanı
-~7,9 saatte boşaltır" demiştim. **Yanlıştı.** `chain.mjs`'i okumadan
-`runtime.mjs` üzerinden akıl yürüttüm.
+## Purpose and scope
 
-`execute()` her yazma işleminde önce `publicClient.simulateContract(...)`
-çağırıyor, `walletClient.writeContract(request)` ondan sonra geliyor.
-Deterministik olarak revert edecek bir `submitDeliverable` simülasyonda
-yakalanır ve **hiç broadcast edilmez** — harcanan gas sıfır, yapılan şey
-ücretsiz bir `eth_call`. Yani retry döngüsü para değil, sadece RPC çağrısı
-tüketiyor.
+This runbook describes how an authorized operator may evaluate one controlled `url-summary-v1` flow on Arc Testnet. It does not authorize deployment, wallet funding, contract changes, or transactions by itself. No current hosted activation, worker uptime, or successful end-to-end run is asserted here.
 
-Dahası döngü kendi kendini sınırlıyor: bir işlemin zincirde revert etmesi
-için simülasyondan sonra state'in değişmiş olması gerekir (örneğin müşteri
-`claimTimeout` çağırdı). O state değişikliği gerçekleştiği anda **bir sonraki
-simülasyon da başarısız olur**. Yani en fazla bir tane ücretli revert olur,
-döngü olmaz.
+The worker's live-write gate is `BOT_LIVE_WRITES`. It defaults to `false`. Keep it false unless the operations owner explicitly approves the bounded test and all preconditions below are evidenced.
 
-Kalan gas endişesi de yok: kabul yolunda `GAS_RESERVE_WEI` = 0,02 USDC şartı
-var, işlem başına ölçülen maliyet ~0,0028 USDC. Kabul anında ayrılan rezerv
-`submitDeliverable` + `claimTimeout` için gereken iki işlemin yaklaşık üç
-katını karşılıyor.
+## Non-negotiable safety semantics
 
-**Bu bölüm bir koşul değildir.** Kayıt olarak duruyor ki aynı iddia tekrar
-gündeme gelmesin.
+- The worker accepts only the exact `url-summary-v1` schema and configured reward/language/word-count bounds.
+- Source content is untrusted data. It cannot authorize tools, browsing, wallet use, credentials, or transactions.
+- URL fetches are constrained by HTTPS, port, credential, DNS/SSRF, redirect, size, response, and access-signal checks.
+- The worker prepares the complete artifact before accepting a job and verifies the pinned gateway files before submitting a URI.
+- New jobs are refused below the native gas reserve of `20_000_000_000_000_000` base units (`0.02` native USDC).
+- Do not stop or abandon accepted work merely because the balance later falls below the new-job guard. Do not interrupt a pending broadcast; preserve its hash and resolve it through receipt/state handling. Existing accepted work is submitted when safe or handled through the contract's explicit timeout path.
+- Permanent post-accept failures become terminal immediately. Transient failures retry on the normal poll cadence while more than 300 seconds remain before the delivery deadline; there is no blind resend of an ambiguous broadcast.
+- Transaction hashes are written to durable state immediately after broadcast and before receipt waiting. A pending broadcast is never resent blindly; only a proven reverted receipt reopens retry.
+- A slash halts the worker. It never self-funds, silently re-registers, or submits a fabricated deliverable.
 
-## Kontrat deadline semantiği — bu kartın kapsamı dışında
+## Preconditions
 
-`submitDeliverable`'ın deadline sonrası da çağrılabiliyor olması gerçek bir
-protokol semantiği, ama Adım 1'in blocker'ı değil. `submitDeliverable` ve
-`claimTimeout` aynı job status üzerinde yarışıyor; hangisi önce mined olursa
-diğeri revert ediyor. Çift finalizasyon yok, kimse iki kez ödenmiyor. Müşteri
-deadline geçtiği anda `claimTimeout` çağırma hakkına sahip, yani geç teslimatı
-kabul edip etmemek müşterinin elinde.
+1. Use an independent testnet wallet. Never use a valuable personal wallet or expose its key.
+2. Confirm the target contract address has passed [`contract/DEPLOYMENT-GATE.md`](./contract/DEPLOYMENT-GATE.md).
+3. Provision a persistent worker volume and set `BOT_STATE_FILE` to a path on that volume, such as `/data/state.json`.
+4. Keep `BOT_PRIVATE_KEY`, `SUMMARY_API_KEY`, `PINATA_JWT`, and other credentials in the hosting provider's secret store only.
+5. Confirm the target chain is Arc Testnet (`5042002`) and the contract and ERC-20 addresses match the approved configuration.
+6. Confirm the worker package uses the current commands from `bot/package.json`:
 
-Kontrat immutable ve deploy edilmiş durumda; buna dokunmak yeni adres, yeni
-attestation, site ve bot tarafında adres taşıma demek. "Adım 1'de yalnız
-`BOT_LIVE_WRITES` değişir" şartını ihlal eder.
+```bash
+npm ci
+npm test
+npm run check
+npm run probe
+npm run preflight
+npm run status
+npm run register
+npm run once
+npm start
+```
 
-**Ama mainnet kartına yazılacak.** Mainnet kontratı henüz deploy edilmedi,
-yani orada bu karar hâlâ bedelsiz. İş başına ödül tavanı kararının yanına,
-aynı listeye.
+The first five commands are read-only or local verification. `npm run register`, `npm run once`, and `npm start` can reach write paths when the explicit gate is enabled.
 
----
+## Stage 0 — Read-only preflight
 
-> **GÜNCELLEME — Adım 0 geçti, kapı hâlâ açılmıyor. Yeni ve tek koşul aşağıda.**
-> Bu bölüm Adım 0'ın yerine geçmez, ona eklenir; Adım 1 bu koşul karşılanmadan
-> uygulanmaz.
+Run `npm run preflight` in the target hosted environment, not only on a laptop. The output must be reviewed as structured evidence and must include:
 
-## Adım 0.6 — Slash bütçesi teslim süresine bağlanmalı (kapı öncesi, bağlayıcı)
-
-`runtime.mjs` okundu. İki tespit var; biri lehimize, biri değil.
-
-**Lehimize:** `prepareJob` → `assertPreparedArtifact` → `acceptJob` sırası
-doğru. Özet API'si veya Pinata ölüyse `prepareJob` fırlatır, iş `rejected`
-olur ve `acceptJob` hiç çağrılmaz. Yani ölü kimlik bilgisi stake'i yakmaz —
-çünkü kimlik bilgileri paranın riske girdiği andan **önce** kullanılıyor.
-Bu, açılışta preflight koşmaktan daha iyi bir koruma; kontrol kullanım anında
-yapılıyor.
-
-**Lehimize değil:** `acceptJob`'dan sonra `MAX_POST_ACCEPT_ATTEMPTS = 3`.
-`POLL_INTERVAL_MS = 8000` ile bu, yaklaşık **24 saniyelik** bir tolerans
-demek. Üçüncü başarısız `submitDeliverable`'dan sonra `markTerminalFailure`
-çağrılıyor, oradan geri dönüş yolu yok: `handleOwnedInProgress` artık yalnız
-`deliveryDeadline`'ı bekleyip `claimTimeout` çağırıyor ve stake yanıyor.
-`submitAttempts` state'te kalıcı, yani restart'lar arasında da birikiyor.
-
-Oysa `DELIVERY_TIMEOUT` **86.400 saniye**. Kontrat bir gün teslim hakkı
-veriyor; bot bu hakkın on binde üçünü kullanıp kendi stake'ini kendi eliyle
-yakıyor. 30 saniyelik bir RPC kesintisi 10 USDC'ye mal olur — ve bundan
-öğrenilecek hiçbir şey yoktur.
-
-### Yazılması gereken özellik
-
-> Bot, kontrat hâlâ teslimata izin verirken kendi stake'ini imha etmemeli.
-
-`terminal_failure` kararı sabit bir deneme sayısının değil, **kalan teslim
-süresinin ve hatanın kalıcı olup olmadığının** fonksiyonu olmalı. Kalıcı hata
-(`invalid_prepared_artifact` gibi, zaten `permanent: true` taşıyor) hemen
-terminal olabilir; geçici hata (RPC, ağ, nonce) deadline yaklaşana kadar
-denenmeli.
-
-Çözümü ben yazmıyorum. Kararı sen ver, ama:
-
-1. Yeni davranışı **çalışan bir testle** yaz. Test, geçici hata veren bir
-   `submitDeliverable` ile botun deadline'dan çok önce `terminal_failure`'a
-   düşmediğini göstermeli.
-2. Kalıcı hatanın hâlâ hemen terminal olduğunu ayrı bir testle koru —
-   sonsuza kadar deneyen bir bot da doğru değil.
-3. Backoff ekliyorsan üst sınırını ve toplam deneme penceresinin
-   `deliveryDeadline`'ı hangi payla geçmediğini söyle.
-4. `submitAttempts`'in restart'lar arası birikmesi bu yeni modelde ne anlama
-   geliyor — koru mu, sıfırla mı? Gerekçelendir.
-
-Bu inişten sonra Adım 1 açılabilir.
-
----
-
-# Kart: İlk gerçek uçtan uca döngü — `BOT_LIVE_WRITES` kapısı
-
-Kabul edilen risk, kartı açmanın bedeli:
-**İlk koşu `acceptJob`'dan sonra başarısız olursa botun 10 USDC stake'i yanar
-ve geri alınamaz.** Bu bilinçli bir tasarım tercihiydi — sahte teslimat
-göndermektense stake yansın. Kart açılıyorsa bu risk kabul edilmiş demektir.
-
-Bu kart **tek bir iş** kapsar. İkinci iş ayrı karardır.
-
----
-
-## Adım 0 — Kapı açılmadan: preflight, Railway ortamında
-
-`npm run preflight`'ı **Railway'in kendi ortamında** çalıştır (lokalde değil —
-lokal ortam farklı env okuyabilir, o zaman doğrulanan şey üretim olmaz).
-
-Beklenen alanlar:
-
-| alan | olması gereken |
+| Field | Required condition |
 |---|---|
 | `preflight` | `"passed"` |
-| `chainId` | 5042002 |
-| `registered` | `true` |
-| `activeJobs` | `"0"` |
+| `chainId` | `5042002` |
+| `registered` | `true`, verified against the target contract and approved worker address |
+| `activeJobs` | `"0"` before opening a controlled test window |
 | `summaryCredential` | `true` |
 | `pinataCredential` | `true` |
 | `gatewayConfigured` | `true` |
-| `writeEnabled` | `false` (henüz) |
-| `nativeBalance` | gas rezervinin üstünde |
+| `writeEnabled` | `false` before approval |
+| `nativeBalance` | At or above the gas guard |
+| `sideEffects` | `deployment`, `chainWrite`, and `pinUpload` are all `false` |
 
-Bunun kapıdan **önce** olmasının sebebi tek: `SUMMARY_API_KEY` veya
-`PINATA_JWT` bozuksa, bunu `acceptJob`'dan sonra öğrenmek 10 USDC'ye mal olur.
-Kimlik doğrulaması para riske girmeden yapılmalı. Preflight'ın herhangi bir
-alanı beklenenden farklıysa kapı açılmaz.
+If any condition is missing or unexpected, stop. Credential checks must succeed before an agent risks stake. Do not open the write gate to compensate for a failed preflight.
 
-## Adım 0.5 — Cevaplaman gereken bir soru (kod okuyarak, tahminle değil)
+## Stage 1 — State and restart review
 
-`config.stateFile` → `data/state.json`, Railway container'ının diskinde.
-`railway.json`'da tanımlı bir volume yok.
+Before enabling writes, confirm the state file is persistent across a service restart and that the operator can retrieve it without exposing secrets. Verify how the hosting platform applies an environment change and restarts the process. A restart must not erase the last broadcast hash or cause a second `acceptJob` for the same job.
 
-Sor kendine ve **koddan cevapla**:
+If persistence or restart behavior cannot be demonstrated, stop. Do not treat an active-job restart as an acceptable experiment merely because the current job list is empty.
 
-1. `BOT_LIVE_WRITES` değişkenini değiştirmek container'ı yeniden başlatır mı?
-   Başlatırsa `data/` ne olur?
-2. Bot `acceptJob` tx'ini broadcast etti, receipt gelmeden container yeniden
-   başladı ve state dosyası yok — yeni instance ne yapar? Zincirden mi okur,
-   sıfırdan mı başlar? "tx hash'i broadcast anında kalıcılaştırıyoruz"
-   koruması, state dosyası hayatta kalmıyorsa neyi koruyor?
-3. Bu senaryoda ikinci bir `acceptJob` gönderilebilir mi? Gönderilirse ne olur?
+## Stage 2 — Explicit operations approval
 
-Cevap "sorun yok" ise **kod satırıyla göster**. Cevap "sorun var" ise, kapıyı
-açmadan önce mi düzeltilmeli yoksa bu tek koşu için kabul edilebilir bir risk
-mi — gerekçesiyle söyle. Şu an aktif iş yok, yani restart şu an güvenli; soru,
-iş açıldıktan sonrası için.
+A write-enabled worker has no single-job allowlist: setting `BOT_LIVE_WRITES=true` can allow it to process any eligible open job visible to its discovery path. Before enabling the gate, review the open-job queue and confirm the worker's discovery scope. The public contract has no operator-controlled queue pause, and only a job's client can cancel its unassigned job. Do not remove or cancel unrelated work. A queue snapshot cannot prevent new public jobs from arriving. If approval is strictly limited to one named job, leave writes disabled until a separately reviewed and tested job allowlist or equivalent isolation exists; this runbook does not implement one.
 
----
+Record approval for one controlled test window. The approval must name the target environment, contract address, worker address, maximum reward, queue boundary, and the accepted risk that a post-accept failure can permanently slash the configured agent stake.
 
-## Adım 1 — Kapı
+Then change only the intended gate:
 
-`BOT_LIVE_WRITES=true`. **Yalnızca bu değişken.** Başka hiçbir ayar aynı anda
-değişmez; koşu başarısız olursa nedeni tek olsun.
+```env
+BOT_LIVE_WRITES=true
+```
 
-## Adım 2 — Hazırlık teyidi (kapıdan sonra, iş açılmadan önce)
+Do not change credentials, contract configuration, polling behavior, or code in the same change. If approval is not present, leave writes disabled.
 
-`/healthz` üzerinden `readiness.readyForNewJob === true` görülmeli.
+## Stage 3 — Post-gate readiness
 
-Dikkat: `readyForNewJob` tanımı `config.writeEnabled && ...` ile başlıyor, yani
-read-only modda **her zaman false**. Bu yüzden bu teyit kapıdan önce alınamaz;
-yeri tam olarak burası. Aynı çıktıda `registered`, `activeJobs: "0"`,
-`gasGuardSatisfied: true` de görünmeli.
+After the service restarts, query `/healthz` or the equivalent status endpoint. Require all of the following before a client posts the test job:
 
-Bu teyit gelmeden iş açılmaz. Aksi hâlde iş açılır, kimse almaz, escrow bekler.
+- `readiness.readyForNewJob === true`;
+- `registered === true`;
+- `activeJobs === "0"`;
+- `gasGuardSatisfied === true`;
+- the worker is not halted or halted after a slash;
+- summarizer and pinning credentials remain valid.
 
-## Adım 3 — İş açılır
+In read-only mode `readyForNewJob` is expected to be false because the write gate is part of its definition. The readiness check belongs after the gate and before the job is posted.
 
-Yusuf siteden **elle** bir `url-summary-v1` işi açar:
+## Stage 4 — One controlled test job
 
-- URL: `https://www.iana.org/help/example-domains`
-  (botun filtresinden geçtiği ölçüldü: 827 karakter, `text/html`)
-- Ödül: 5–20 USDC aralığında
+A separately authorized client may post one valid `url-summary-v1` job. The client chooses the URL and reward within the protocol bounds. The worker operator must not create a job for the worker as part of this run.
 
-Sen bu adımda hiçbir şey yapmazsın. İşi sen açmazsın.
+Do not manually restart, edit state, replace credentials, or intervene to force progress. If the worker stops, stalls, rejects the job, or reaches timeout, preserve the evidence and report that result without calling it a success.
 
-## Adım 4 — Bot kendi başına çalışır
+## Stage 5 — Evidence and reconciliation
 
-Görür → kabul eder → çeker → özetler → IPFS'e pinler → teslim eder.
+Capture chain evidence, not only logs:
 
-**Hiçbir adımda insan müdahalesi olmaz.** Bot takılırsa elle düzeltip devam
-ettirme, restart etme, env değiştirme. Takıldığı yeri olduğu gibi raporla —
-takılmak da bir sonuçtur ve gizlenirse değersizleşir.
-
-## Adım 5 — Müşteri onaylar
-
-Yusuf `approveAndPay` çağırır.
-
-## Adım 6 — Rapor: log değil, zincir kanıtı
-
-| istenen | biçim |
+| Evidence | Required record |
 |---|---|
-| `postJob` | tx hash |
-| `acceptJob` | tx hash |
-| `submitWork` | tx hash |
-| `approveAndPay` | tx hash |
-| IPFS | tam gateway linki — `index.html` ve `result.json` (açılıp okunacak) |
-| bot bakiyesi | önce / sonra, ERC-20 raw (6 hane) |
-| müşteri bakiyesi | önce / sonra, ERC-20 raw |
-| fee sink | önce / sonra |
-| bot sicili | `getAgentReputation(bot)` sonrası |
-| toplam gas | USDC |
+| Job creation | `postJob` transaction hash |
+| Acceptance | `acceptJob` transaction hash, if accepted |
+| Delivery | `submitDeliverable` transaction hash, if submitted |
+| Settlement | `approveAndPay` or timeout transaction hash |
+| Artifact | Full gateway links to `index.html` and `result.json`, if pinned |
+| Wallets | Before/after ERC-20 raw balances for client and worker |
+| Contract sinks | Before/after reputation-fee and slash accounting where observable |
+| Reputation | Post-settlement agent reputation read |
+| Gas | Total native gas spent |
+| Worker state | Durable state file references without secrets |
 
-Bakiye farkları ile ödül + fee toplamı **birebir tutmalı**. Tutmuyorsa rapor
-"başarılı" demez; farkı açıklar.
+Reconcile the balance changes against reward, reputation fee, refunds/splits, and gas. If the numbers do not reconcile, do not label the run successful; explain the difference.
 
----
+## Stop conditions
 
-## Başarı çıtası
+Stop and keep writes disabled if:
 
-> Siteden bir `url-summary-v1` işi açılır; bot onu kendi başına görür, kabul
-> eder, yapar, teslim eder; müşteri onaylar; para botun cüzdanına geçer — ve
-> bu adımların hiçbirinde insan müdahalesi olmaz.
+- preflight fails or reports side effects;
+- the chain, contract, wallet, or manifest does not match approval;
+- the state volume is not persistent;
+- a broadcast is pending or ambiguous;
+- the worker is slashed or registration is lost;
+- a new-job precondition fails, including insufficient gas reserve;
+- an artifact cannot be verified at both gateway paths;
+- a delivery deadline or contract state has changed unexpectedly;
+- any operator is asked to bypass the deployment gate or safety check.
 
-Kısmi sonuç da rapor edilir. "Bot kabul etti, teslim edemedi, stake yandı"
-değerli ve dürüst bir sonuçtur. "Hallettim" bir sonuç değildir.
+A low gas balance is a stop condition for **new acceptance**, not a reason to abandon accepted work. A pending broadcast is not a stop-and-retry signal: preserve the hash and wait for receipt/state resolution.
 
-## Sınırlar
+## Success definition
 
-- `git push` yok.
-- Slash sonrası otomatik yeniden kayıt / stake yenileme yok.
-- Kontrat üzerinde değişiklik yok; denetim kapalı.
+A successful controlled run means that the authorized client posted one valid job, the worker independently observed and accepted it, produced and verified the artifact, submitted the delivery, and the client or permissionless timeout path settled it with reconciled on-chain evidence. It does **not** mean that the worker is permanently live, that hosted services are healthy, or that the system is ready for mainnet.
+
+After the run, return `BOT_LIVE_WRITES` to `false` unless a separately approved operation requires otherwise. Never leave a live-write gate enabled merely because a previous test succeeded.
