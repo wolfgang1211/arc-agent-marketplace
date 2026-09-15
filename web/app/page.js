@@ -1,5 +1,7 @@
 "use client";
 
+import "./workflows.css";
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   useAccount,
@@ -29,15 +31,8 @@ import {
   MarketplaceDataState,
   resolveCollectionStatus,
 } from "../lib/marketplace-data-state.mjs";
-import {
-  buildUrlSummaryDescription,
-  URL_SUMMARY_CATEGORY,
-  URL_SUMMARY_LANGUAGES,
-  URL_SUMMARY_MAX_WORDS,
-  URL_SUMMARY_MIN_WORDS,
-  validateUrlSummaryReward,
-  validateUrlSummaryRequest,
-} from "../lib/url-summary-job.mjs";
+import { PostJob, WorkflowGallery, WorkflowExample } from "./components/workflows";
+import { createTemplateDraft, validateTemplateDraft, assertJobTextBounds, validateWorkflowReward } from "../lib/workflow-templates.mjs";
 import {
   assertSuccessfulReceipt,
   formatDuration,
@@ -71,6 +66,15 @@ export default function Page() {
   const { writeContractAsync } = useWriteContract();
 
   const [busy, setBusy] = useState("");
+  const [workflowDraft, setWorkflowDraft] = useState(() => createTemplateDraft("url-summary-v1"));
+  const selectWorkflow = (id) => {
+    setWorkflowDraft((current) => current?.templateId === id ? current : createTemplateDraft(id));
+    requestAnimationFrame(() => {
+      const heading = document.getElementById("post-job-heading");
+      heading?.focus({ preventScroll: true });
+      heading?.scrollIntoView({ behavior: "auto", block: "start" });
+    });
+  };
   const [msg, setMsg] = useState(null); // {type, text}
   const [categoryFilter, setCategoryFilter] = useState("");
   const [rewardMin, setRewardMin] = useState("");
@@ -381,6 +385,7 @@ export default function Page() {
         Arc gas uses <b>native USDC</b> with 18 decimals. Escrow uses <b>ERC-20 USDC</b> with 6 decimals.
       </p>
 
+      <WorkflowGallery onSelect={selectWorkflow} />
       <section className="action-grid" id="actions" aria-label="Marketplace actions">
         <RegisterAgent agent={agent} stake={agentStake} busy={busy} connected={isConnected} onConnect={requestConnect}
           disabled={wrongNetwork || noContract || agentStake == null}
@@ -398,9 +403,15 @@ export default function Page() {
             })
           } />
 
-        <PostJob busy={busy} disabled={wrongNetwork || noContract} connected={isConnected} onConnect={requestConnect}
-          onPost={async (desc, reward, category) => {
+        <PostJob key={workflowDraft?.templateId || "custom"} draft={workflowDraft} setDraft={setWorkflowDraft} busy={busy} disabled={wrongNetwork || noContract} connected={isConnected} onConnect={requestConnect}
+          onPost={async (desc, reward, category, draft) => {
             await run("post", async () => {
+              assertJobTextBounds(desc, category);
+              if (!validateWorkflowReward(reward)) throw new Error("Invalid test USDC reward.");
+              if (draft) {
+                const checked = validateTemplateDraft(draft);
+                if (!checked.valid || checked.value.description !== desc || checked.value.reward !== reward || checked.value.category !== category) throw new Error("Review the current workflow draft before posting.");
+              } else if (category === "url-summary-v1") throw new Error("Use the strict URL-summary template.");
               const amount = parseUnits(reward, USDC_DECIMALS);
               const approveHash = await writeContractAsync({
                 address: USDC_ADDRESS, abi: ERC20_ABI, functionName: "approve",
@@ -412,6 +423,7 @@ export default function Page() {
           }} />
       </section>
 
+      <WorkflowExample onSelect={selectWorkflow} />
       <section className="card jobs-panel" id="jobs">
         <div className="section-head">
           <div>
@@ -550,6 +562,7 @@ function Shell({ children, right }) {
           <span className="environment-badge">Testnet</span>
         </div>
         <nav className="primary-nav" aria-label="Primary navigation">
+          <a href="/#workflows">Workflows</a>
           <a href="#jobs">Jobs</a>
           <a href="#agents">Agents</a>
           <a href="#actions">Post or register</a>
@@ -626,97 +639,6 @@ function RegisterAgent({ agent, stake, onRegister, onWithdraw, onConnect, connec
   );
 }
 
-function PostJob({ onPost, onConnect, connected, busy, disabled }) {
-  const [desc, setDesc] = useState("");
-  const [criteria, setCriteria] = useState("");
-  const [reward, setReward] = useState("");
-  const [categoryMode, setCategoryMode] = useState(URL_SUMMARY_CATEGORY);
-  const [customCategory, setCustomCategory] = useState("");
-  const [sourceUrl, setSourceUrl] = useState("");
-  const [summaryLanguage, setSummaryLanguage] = useState("en");
-  const [maxWords, setMaxWords] = useState("400");
-  const isUrlSummary = categoryMode === URL_SUMMARY_CATEGORY;
-  const category = categoryMode === "custom" ? customCategory.trim() : categoryMode;
-  const combinedDescription = criteria ? `${desc}${SECTION_SPLIT}${criteria}` : desc;
-  const summaryValidation = validateUrlSummaryRequest({
-    sourceUrl,
-    language: summaryLanguage,
-    maxWords,
-  });
-  const summaryRewardValid = validateUrlSummaryReward(reward);
-  const canPost = isUrlSummary
-    ? summaryValidation.valid && summaryRewardValid
-    : Boolean(desc && reward && category);
-  const postDescription = isUrlSummary
-    ? () => buildUrlSummaryDescription({ sourceUrl, language: summaryLanguage, maxWords })
-    : () => combinedDescription;
-  return (
-    <div className="card action-card">
-      <div className="eyebrow small-eyebrow">For clients</div>
-      <h2>Post a job with escrow</h2>
-      <details className="info-box guidance">
-        <summary>What makes a good job post?</summary>
-        <ul>
-          <li>Describe the expected output and format.</li>
-          <li>Add links, files, context, or source material.</li>
-          <li>Define clear acceptance criteria before locking funds.</li>
-          <li>Set a reward that matches complexity and urgency.</li>
-        </ul>
-      </details>
-      <div className="field">
-        <label id="job-category-label">Category</label>
-        <div className="job-type-picker" role="group" aria-labelledby="job-category-label">
-          <button type="button" className={isUrlSummary ? "selected" : "ghost"} aria-pressed={isUrlSummary} onClick={() => setCategoryMode(URL_SUMMARY_CATEGORY)}>URL summary</button>
-          <button type="button" className={categoryMode === "custom" ? "selected" : "ghost"} aria-pressed={categoryMode === "custom"} onClick={() => setCategoryMode("custom")}>Other job</button>
-        </div>
-        {categoryMode === "custom" && (
-          <p className="other-job-warning">No registered agent currently accepts this job type, so it may remain open.</p>
-        )}
-      </div>
-      {isUrlSummary ? (
-        <div className="url-summary-fields">
-          <div className="info-box compact">
-            <b>No JSON required.</b> Enter the source and preferences below. The marketplace creates the bot&apos;s strict request automatically.
-          </div>
-          <div className="field">
-            <label htmlFor="summary-source-url">Source URL</label>
-            <input id="summary-source-url" type="url" inputMode="url" value={sourceUrl} onChange={(e) => setSourceUrl(e.target.value)} placeholder="https://example.com/article" autoComplete="url" />
-          </div>
-          <div className="row">
-            <div className="field">
-              <label htmlFor="summary-language">Summary language</label>
-              <select id="summary-language" value={summaryLanguage} onChange={(e) => setSummaryLanguage(e.target.value)}>
-                {URL_SUMMARY_LANGUAGES.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-              </select>
-            </div>
-            <div className="field">
-              <label htmlFor="summary-max-words">Maximum words</label>
-              <input id="summary-max-words" type="number" min={URL_SUMMARY_MIN_WORDS} max={URL_SUMMARY_MAX_WORDS} step="1" value={maxWords} onChange={(e) => setMaxWords(e.target.value)} />
-            </div>
-          </div>
-          <div className="acceptance-note">
-            <b>Fixed acceptance criteria</b>
-            <span>The delivery must be an accessible IPFS page with the source URL and hash, title, summary, key points, limitations, and machine-readable result.json.</span>
-          </div>
-          {sourceUrl && !summaryValidation.valid && <div className="form-error" role="alert">{summaryValidation.error}</div>}
-        </div>
-      ) : (
-        <>
-          <div className="field"><label htmlFor="job-description">Job description</label><textarea id="job-description" rows={3} value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="Summarize this PDF into 10 bullet points. Include key risks, numbers, and a final recommendation." /></div>
-          <div className="field"><label htmlFor="job-criteria">Acceptance criteria</label><textarea id="job-criteria" rows={3} value={criteria} onChange={(e) => setCriteria(e.target.value)} placeholder="Delivery is accepted if it includes: summary, key takeaways, risks, source references, and an accessible final link." /></div>
-          {categoryMode === "custom" && <div className="field"><label htmlFor="job-custom-category">Custom category</label><input id="job-custom-category" value={customCategory} onChange={(e) => setCustomCategory(e.target.value)} placeholder="research" /></div>}
-        </>
-      )}
-      <div className="field"><label htmlFor="job-reward">Reward (test USDC)</label><input id="job-reward" inputMode="decimal" value={reward} onChange={(e) => setReward(e.target.value)} placeholder={isUrlSummary ? "5" : "100"} /></div>
-      {isUrlSummary && reward && !summaryRewardValid && <div className="form-error" role="alert">URL summary rewards must be between 5 and 20 USDC.</div>}
-      {isUrlSummary && <p className="bot-decline-note">The bot may decline the job after checking the source; an unaccepted job remains open, and the job owner can cancel it to reclaim the escrowed reward.</p>}
-      <button disabled={disabled || busy === "post" || !canPost} onClick={() => connected ? onPost(postDescription(), reward, category) : onConnect()}>
-        {!connected ? "Connect wallet to post a job" : busy === "post" ? "Approving, then posting…" : "Lock USDC and publish job"}
-      </button>
-      <p className="muted" style={{ marginTop: 8 }}>Two signatures are required: first USDC <b>approve</b>, then <b>postJob</b>.</p>
-    </div>
-  );
-}
 
 function JobCard({ job, me, agent, agentStake, onAccept, onSubmit, onApprove, onDispute, onClaim, onCancel, onConnect, connected, busy, disabled, chainTimestamp, disputeTimeout }) {
   const [uri, setUri] = useState("");

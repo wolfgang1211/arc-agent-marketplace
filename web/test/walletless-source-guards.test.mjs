@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import test from "node:test";
 
-const page = fs.readFileSync(new URL("../app/page.js", import.meta.url), "utf8");
+const page = ["../app/page.js", "../app/components/workflows.js"].map((path) => fs.readFileSync(new URL(path, import.meta.url), "utf8")).join("\n");
 
 test("walletless visitors render the marketplace instead of an early wallet gate", () => {
   assert.doesNotMatch(page, /if\s*\(!isConnected\)\s*\{\s*return\s*\(/);

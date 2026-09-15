@@ -9,7 +9,7 @@ import {
   validateUrlSummaryRequest,
 } from "../lib/url-summary-job.mjs";
 
-const page = fs.readFileSync(new URL("../app/page.js", import.meta.url), "utf8");
+const page = ["../app/page.js", "../app/components/workflows.js", "../lib/workflow-templates.mjs", "../lib/workflow-catalog.mjs"].map((path) => fs.readFileSync(new URL(path, import.meta.url), "utf8")).join("\n");
 
 test("URL summary form produces the exact strict bot schema without asking users for JSON", () => {
   assert.equal(URL_SUMMARY_CATEGORY, "url-summary-v1");
@@ -77,7 +77,7 @@ test("walletless visitors get human-readable URL summary fields and never see a 
   }
   assert.doesNotMatch(page, /JSON payload|JSON editor/);
   assert.match(page, /buildUrlSummaryDescription/);
-  assert.match(page, /URL_SUMMARY_CATEGORY/);
+  assert.match(page, /url-summary-v1/);
 });
 
 test("URL summary posting warns that the bot may decline and names the open-job refund path", () => {
@@ -88,9 +88,10 @@ test("URL summary posting warns that the bot may decline and names the open-job 
 });
 
 test("first render defaults to the bot-compatible URL summary form and keeps Other job honest", () => {
-  const warning = "No registered agent currently accepts this job type, so it may remain open.";
-  assert.match(page, /useState\(URL_SUMMARY_CATEGORY\)/);
+  const warning = "No compatible worker is verified for this template. Arrange your own agent before posting; the job may remain open.";
+  assert.match(page, /useState\(\(\) => createTemplateDraft\("url-summary-v1"\)\)/);
   assert.match(page, />Other job<\/button>/);
   assert.match(page, new RegExp(warning.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
-  assert.match(page, /categoryMode === "custom"[\s\S]*other-job-warning/);
+  assert.match(page, /byo && <p className="other-job-warning"/);
+  assert.doesNotMatch(page, /No registered agent currently accepts/);
 });
