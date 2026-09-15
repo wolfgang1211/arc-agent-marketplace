@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alphaboard:verifier-report-v1",
+  "title": "Advisory verifier report preview v1",
+  "description": "Transport shape only. Runtime validation is mandatory for duplicate keys, byte budget, semantics, expected bindings and EOA signature recovery. Not a protocol-v0 AdvisoryRecord.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "chainId", "marketplace", "jobId", "client", "producer", "requestHash", "artifactURI", "artifactSha256", "criteriaHash", "verifier", "verdict", "signatureScheme", "signature"],
+  "properties": {
+    "schemaVersion": { "const": "verifier-report-v1" },
+    "chainId": { "$ref": "#/$defs/uint256" },
+    "marketplace": { "$ref": "#/$defs/address" },
+    "jobId": { "$ref": "#/$defs/uint256" },
+    "client": { "$ref": "#/$defs/address" },
+    "producer": { "$ref": "#/$defs/address" },
+    "requestHash": { "$ref": "#/$defs/hash" },
+    "artifactURI": { "type": "string", "maxLength": 2048, "pattern": "^https://", "description": "Runtime enforces 2048 UTF-8 bytes, no credentials, fragment, whitespace, controls or backslash. Never fetched." },
+    "artifactSha256": { "$ref": "#/$defs/hash" },
+    "criteriaHash": { "$ref": "#/$defs/hash" },
+    "verifier": { "$ref": "#/$defs/address" },
+    "verdict": { "enum": ["checks_passed", "checks_failed", "inconclusive"] },
+    "signatureScheme": { "const": "eip712-eoa-preview-v1" },
+    "signature": { "type": "string", "pattern": "^0x[0-9a-fA-F]{128}1[bBcC]$", "description": "Runtime requires valid r, canonical low-s and EOA typed-data recovery matching the selected verifier." }
+  },
+  "$defs": {
+    "uint256": { "type": "string", "pattern": "^(0|[1-9][0-9]{0,77})$", "description": "Runtime also enforces uint256 maximum; chainId must be positive." },
+    "address": { "type": "string", "pattern": "^0x[0-9a-fA-F]{40}$", "description": "Runtime rejects zero addresses and requires verifier distinct from client and producer." },
+    "hash": { "type": "string", "pattern": "^0x[0-9a-fA-F]{64}$", "description": "Runtime rejects zero digests. requestHash and criteriaHash are keccak256; artifactSha256 is SHA-256." }
+  }
+}

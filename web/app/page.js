@@ -1,6 +1,7 @@
 "use client";
 
 import "./workflows.css";
+import "./verifier-evidence.css";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -32,6 +33,7 @@ import {
   resolveCollectionStatus,
 } from "../lib/marketplace-data-state.mjs";
 import { PostJob, WorkflowGallery, WorkflowExample } from "./components/workflows";
+import { VerifierEvidence } from "./components/verifier-evidence";
 import { createTemplateDraft, validateTemplateDraft, assertJobTextBounds, validateWorkflowReward } from "../lib/workflow-templates.mjs";
 import {
   assertSuccessfulReceipt,
@@ -752,6 +754,10 @@ function JobCard({ job, me, agent, agentStake, onAccept, onSubmit, onApprove, on
             </div>
           )}
           {terminalCopy && <div className="timeout-panel terminal"><strong>Final timeout outcome</strong><p>{terminalCopy}</p></div>}
+          {job.deliverableURI && <VerifierEvidence
+            key={JSON.stringify([job.id.toString(), job.client, job.agent, job.description, job.deliverableURI, status, CONTRACT_ADDRESS, arcTestnet.id])}
+            job={job} chainId={arcTestnet.id} marketplace={CONTRACT_ADDRESS}
+          />}
         </div>
 
         <div className="job-side">
