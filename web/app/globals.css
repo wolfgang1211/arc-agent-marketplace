@@ -290,14 +290,15 @@ a { color: var(--accent-strong); }
 .profile-proof { display: grid; gap: 4px; max-width: 720px; margin-top: 15px; padding: 11px 13px; border: 1px solid rgba(91,140,255,.22); border-radius: 12px; background: rgba(91,140,255,.06); font-size: 13px; }
 .profile-proof b { color: var(--accent-strong); }
 .profile-proof span { color: var(--muted); line-height: 1.5; }
-.profile-trust-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+.profile-trust-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 .profile-trust-card { min-height: 156px; margin-bottom: 0; display: flex; flex-direction: column; }
 .profile-trust-card.primary { background: linear-gradient(180deg, rgba(63,214,168,.11), rgba(20,25,35,.94)); border-color: rgba(63,214,168,.22); }
 .profile-trust-card > span { color: var(--muted); font-size: 11px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
-.profile-trust-card strong { margin-top: auto; font-size: 30px; letter-spacing: -.045em; }
+.profile-trust-card strong { margin-top: 18px; font-size: 25px; letter-spacing: -.045em; overflow-wrap: anywhere; }
 .profile-trust-card p { min-height: 32px; margin: 5px 0 0; color: var(--muted); font-size: 11px; line-height: 1.45; }
 .profile-disclosure { margin: 12px 0 18px; padding: 11px 13px; border: 1px solid var(--border); border-radius: 12px; background: rgba(255,255,255,.025); color: var(--muted); font-size: 12px; line-height: 1.55; }
 .profile-disclosure b { color: #cad5e9; }
+.profile-disclosure { overflow-wrap: anywhere; }
 .profile-columns { display: grid; grid-template-columns: minmax(0, .82fr) minmax(0, 1.18fr); gap: 16px; }
 .profile-panel { padding: 20px; }
 .profile-section-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 15px; }
@@ -366,7 +367,7 @@ a { color: var(--accent-strong); }
   .profile-nav button { width: 100%; }
   .profile-hero { padding: 20px; }
   .profile-avatar { width: 58px; height: 58px; flex-basis: 58px; border-radius: 17px; font-size: 19px; }
-  .profile-trust-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .profile-trust-grid { grid-template-columns: 1fr; gap: 8px; }
   .profile-trust-card { min-height: 142px; padding: 14px; }
   .profile-trust-card strong { font-size: 24px; }
   .profile-panel { padding: 16px; }

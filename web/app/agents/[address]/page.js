@@ -7,6 +7,7 @@ import { formatUnits, getAddress, isAddress } from "viem";
 import { EXPLORER, USDC_DECIMALS } from "../../../lib/chain";
 import { CONTRACT_ADDRESS, CONTRACT_DEPLOYMENT_BLOCK, JOB_STATUS, MARKETPLACE_ABI } from "../../../lib/contract";
 import { categoryDistinctClients, currentEraCopy } from "../../../lib/profile.mjs";
+import { machineTrust } from "../../../lib/machine-trust.mjs";
 import { BrandLogo } from "../../brand-logo";
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
@@ -59,7 +60,7 @@ export default function AgentProfilePage({ params }) {
   });
 
   const {
-    data: slashLogs,
+    data: trustSnapshot,
     isLoading: slashLoading,
     error: slashError,
     refetch: refetchSlashes,
@@ -67,13 +68,26 @@ export default function AgentProfilePage({ params }) {
     queryKey: ["agent-slashes", CONTRACT_ADDRESS, CONTRACT_DEPLOYMENT_BLOCK?.toString(), address],
     enabled: canRead && Boolean(publicClient) && CONTRACT_DEPLOYMENT_BLOCK !== null,
     refetchInterval: 12000,
-    queryFn: () => publicClient.getLogs({
+    queryFn: async () => {
+      const block = await publicClient.getBlock({ blockTag: "latest" });
+      const [logs, counters] = await Promise.all([publicClient.getLogs({
       address: CONTRACT_ADDRESS,
       event: MARKETPLACE_ABI.find((item) => item.type === "event" && item.name === "AgentSlashed"),
       args: { agent: address },
       fromBlock: CONTRACT_DEPLOYMENT_BLOCK,
-      toBlock: "latest",
-    }),
+      toBlock: block.number,
+      strict: true,
+      }), publicClient.readContract({
+        address: CONTRACT_ADDRESS,
+        abi: MARKETPLACE_ABI,
+        functionName: "getAgentReputation",
+        args: [address],
+        blockNumber: block.number,
+      })]);
+      const check = await publicClient.getBlock({ blockNumber: block.number });
+      if (check.hash !== block.hash) throw new Error("Snapshot block changed; retry");
+      return { logs, reputation: counters, fromBlock: CONTRACT_DEPLOYMENT_BLOCK, toBlock: block.number, blockHash: block.hash, chainId: publicClient.chain.id };
+    },
   });
 
   const { data: jobCount, isLoading: jobCountLoading, error: jobsError, refetch: refetchJobCount } = useReadContract({
@@ -126,7 +140,8 @@ export default function AgentProfilePage({ params }) {
     .filter(({ score }) => typeof score === "bigint")
     .sort((a, b) => Number(b.score - a.score));
   const verifiedDeliveries = agentJobs.filter((job) => Number(job.status) === 4 && job.deliverableURI);
-  const slashCount = slashLogs?.length;
+  const trust = slashError ? null : machineTrust(trustSnapshot);
+  const slashCount = trust?.integrity.slashEvents;
   const slashHistoryReady = typeof slashCount === "number";
   const [skills, verificationNote] = String(agent?.skill || "").split("\nAI agent verification: ");
   const isLoading = agentLoading || reputationLoading || jobCountLoading || slashLoading || jobsPageLoading;
@@ -185,37 +200,37 @@ export default function AgentProfilePage({ params }) {
         )}
       </section>
 
-      <section className="profile-trust-grid" aria-label="Agent trust signals">
+      <section className="profile-trust-grid" aria-label="Four-part machine trust profile">
         <TrustCard
-          label="Independent clients"
-          value={slashHistoryReady ? reputation?.[0]?.toString() || "0" : "—"}
-          copy={slashHistoryReady ? currentEraCopy("Clients with an approved delivery", slashCount) : "Waiting for reset history"}
-          primary
+          label="Delivery quality"
+          value={trust ? `${trust.deliveryQuality.approved} approvals` : "Unavailable"}
+          copy="Client-approved settlements in the counter window below. Approval is client consent, not independently verified content quality."
         />
         <TrustCard
-          label="Approved deliveries"
-          value={slashHistoryReady ? reputation?.[2]?.toString() || "0" : "—"}
-          copy={slashHistoryReady ? currentEraCopy("Client-approved settlements", slashCount) : "Waiting for reset history"}
+          label="Reliability"
+          value="Unavailable"
+          copy="On-time history is not tracked by this reader. Current statuses and absence of slashes cannot prove delivery before a deadline."
         />
         <TrustCard
-          label="Disputes"
-          value={slashHistoryReady ? reputation?.[3]?.toString() || "0" : "—"}
-          copy={slashHistoryReady ? currentEraCopy("Recorded dispute starts", slashCount) : "Waiting for reset history"}
+          label="Integrity"
+          value={trust ? `${trust.integrity.disputes} disputes` : "Unavailable"}
+          copy={trust ? `Dispute starts in the counter window, not findings of fault. Lifetime slashes: ${slashCount}. Slashed ${slashCount} time${slashCount === 1 ? "" : "s"}; ${trust.integrity.stakeLossEvents} positive-value losses, ${formatUsdc(trust.integrity.totalSlashed)} USDC total. No content-integrity verification.` : "Disputes and lifetime slashes require a complete snapshot; no clean-history claim is available."}
         />
         <TrustCard
-          label="Total earned"
-          value={slashHistoryReady ? `${formatUsdc(reputation?.[4])} USDC` : "—"}
-          copy={slashHistoryReady ? currentEraCopy("Net approved payouts", slashCount) : "Waiting for reset history"}
-        />
-        <TrustCard
-          label="Lifetime slashes"
-          value={slashHistoryReady ? slashCount.toString() : "—"}
-          copy={slashHistoryReady ? `Slashed ${slashCount} time${slashCount === 1 ? "" : "s"} · Events since deployment block ${CONTRACT_DEPLOYMENT_BLOCK?.toString()}` : "History unavailable"}
+          label="Demand"
+          value={trust ? `${trust.demand.distinctClients} distinct clients` : "Unavailable"}
+          copy="Distinct approving client addresses in the counter window. Repeat approvals do not add clients; addresses do not prove independent people or organic demand."
         />
       </section>
 
       <div className="profile-disclosure">
-        <b>How to read this profile:</b> distinct-client and category client counts are the primary trust signals. Slash history is lifetime event history from the verified deployment block; contract counters reset after a slash. Category and job lists are derived from the latest 100 marketplace jobs. Data reflects the configured contract, and Arc deployment behavior has not been independently verified here.
+        <b>Data windows:</b> {trust ? <>
+          Four-part snapshot on chain {trustSnapshot.chainId}, contract {CONTRACT_ADDRESS}, for this agent address only.
+          {" "}Through block {trust.window.toBlock.toString()} ({trustSnapshot.blockHash}). Latest-block observation, no confirmation delay; not a finality guarantee.
+          {" "}Approval, dispute and distinct-client counters: {trust.window.afterSlash ? "Since last slash (after the last slash transaction" : "Since deployment (starting"} in block {trust.window.counterFromBlock.toString()}).
+          {" "}Lifetime slash events: deployment block {trust.window.fromBlock.toString()} through {trust.window.toBlock.toString()}, inclusive. Lifetime means this address on this deployment, not operator history.
+        </> : "Four-part snapshot unavailable or loading; unknown observations are not zero."}
+        {" "}Category and delivery/job lists below are separate rolling reads of the latest 100 marketplace jobs, not this agent’s latest 100 or its complete history. Category counters reset after a slash. No combined trust rating is calculated. Arc deployment behavior has not been independently verified here.
       </div>
 
       <section className="profile-columns">
@@ -245,7 +260,7 @@ export default function AgentProfilePage({ params }) {
 
         <div className="card profile-panel">
           <div className="profile-section-head">
-            <div><div className="eyebrow small-eyebrow">Delivery quality</div><h2>Verified deliveries</h2></div>
+            <div><div className="eyebrow small-eyebrow">Approval evidence</div><h2>Client-approved delivery links</h2></div>
             <span className="pill done">{verifiedDeliveries.length}</span>
           </div>
           {verifiedDeliveries.length === 0 ? (

@@ -58,6 +58,14 @@ test("profile source avoids overstated rate and raw point claims", async () => {
   assert.doesNotMatch(source, /fromBlock: 0n/);
   assert.match(source, /Slashed \$\{slashCount\} time/);
   assert.match(source, /categoryDistinctClients\(score\)/);
+  assert.match(source, /blockNumber: block.number/);
+  assert.match(source, /toBlock: block.number/);
+  assert.match(source, /check.hash !== block.hash/);
+  assert.match(source, /slashError \? null : machineTrust\(trustSnapshot\)/);
+  for (const label of ["Delivery quality", "Reliability", "Integrity", "Demand"]) {
+    assert.match(source, new RegExp(`label="${label}"`));
+  }
+  assert.doesNotMatch(source, /Independent clients|Verified deliveries/);
   assert.doesNotMatch(source, /Category counters are unavailable after a slash/);
   assert.doesNotMatch(source, /\) : slashCount > 0 \? \(/);
 });
@@ -73,4 +81,8 @@ test("compiled profile artifacts cannot reintroduce forbidden trust claims", asy
   assert.doesNotMatch(compiled, /400 points/i);
   assert.match(compiled, /Since last slash/);
   assert.match(compiled, /distinct client/);
+  for (const label of ["Delivery quality", "Reliability", "Integrity", "Demand", "Data windows:", "On-time history is not tracked", "Lifetime slashes:"]) {
+    assert.ok(compiled.includes(label), `Missing compiled trust label: ${label}`);
+  }
+  assert.doesNotMatch(compiled, /Independent clients|Verified deliveries/);
 });
