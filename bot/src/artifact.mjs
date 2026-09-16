@@ -1,12 +1,17 @@
 import { File } from "node:buffer";
 import { isValidCid } from "./cid.mjs";
+import { parseUrlSummaryDescription } from "./url-summary-schema.mjs";
 
 export const PINNING_RISK = "If pinning is lost, this CID still identifies what was delivered, but the content may become unavailable.";
 
 export function buildArtifact({ jobId, sourceUrl, source, request, summary, fetchedAt }) {
+  const parsed = parseUrlSummaryDescription(JSON.stringify(request));
+  if (!parsed.ok) throw new Error("invalid_artifact_request");
+  if (sourceUrl !== parsed.request.sourceUrl) throw new Error("request_source_mismatch");
+  request = parsed.request;
   const result = {
-    schemaVersion: 1,
-    generatorVersion: "arc-url-summary-agent/1.0.0",
+    schemaVersion: request.schemaVersion,
+    generatorVersion: request.schemaVersion === 2 ? "arc-url-summary-agent/2.0.0" : "arc-url-summary-agent/1.0.0",
     jobId: String(jobId),
     sourceUrl,
     finalUrl: source.finalUrl,
@@ -20,6 +25,11 @@ export function buildArtifact({ jobId, sourceUrl, source, request, summary, fetc
     keyPoints: summary.keyPoints,
     limitations: summary.limitations,
     pinningRisk: PINNING_RISK,
+    ...(request.schemaVersion === 2 ? {
+      requestSchemaVersion: 2,
+      request,
+      acceptanceCriteria: [...request.acceptanceCriteria],
+    } : {}),
   };
   const resultJson = `${JSON.stringify(result, null, 2)}\n`;
   const indexHtml = renderHtml(result);
@@ -33,7 +43,7 @@ export async function pinArtifact({ artifact, pinataJwt, gatewayBase, fetchImpl 
   const form = new FormData();
   form.append("file", new File([artifact.indexHtml], "index.html", { type: "text/html; charset=utf-8" }), `${folder}/index.html`);
   form.append("file", new File([artifact.resultJson], "result.json", { type: "application/json" }), `${folder}/result.json`);
-  form.append("pinataMetadata", JSON.stringify({ name: folder, keyvalues: { jobId: artifact.result.jobId, schema: "url-summary-v1" } }));
+  form.append("pinataMetadata", JSON.stringify({ name: folder, keyvalues: { jobId: artifact.result.jobId, schema: `url-summary-v${artifact.result.schemaVersion}` } }));
   form.append("pinataOptions", JSON.stringify({ cidVersion: 1 }));
 
   let upload;
@@ -103,6 +113,9 @@ function validateGateway(value) {
 }
 
 function renderHtml(result) {
+  const criteria = result.schemaVersion === 2
+    ? `<h2>Acceptance criteria recorded on-chain</h2><ol>${result.acceptanceCriteria.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ol><p>Compare this request with the on-chain job. These requirements are not a verification verdict.</p>`
+    : "<p>Legacy request v1: acceptance criteria were not recorded in the request. No v2 criteria are inferred.</p>";
   const points = result.keyPoints.map((item) => `<li>${escapeHtml(item)}</li>`).join("");
   const limitations = result.limitations.length
     ? `<ul>${result.limitations.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`
@@ -112,7 +125,7 @@ function renderHtml(result) {
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(result.title)}</title>
 <style>body{font-family:system-ui,sans-serif;max-width:760px;margin:40px auto;padding:0 20px;line-height:1.6;color:#18202b}code{overflow-wrap:anywhere}.meta{color:#536070;font-size:.9rem}.risk{border-left:4px solid #d99b18;padding:8px 12px;background:#fff8e8}</style></head>
 <body><main><h1>${escapeHtml(result.title)}</h1><p class="meta">Job ${escapeHtml(result.jobId)} · fetched ${escapeHtml(result.fetchedAt)}</p>
-<h2>Summary</h2><p>${escapeHtml(result.summary)}</p><h2>Key points</h2><ul>${points}</ul><h2>Limitations</h2>${limitations}
+<h2>Summary</h2><p>${escapeHtml(result.summary)}</p><h2>Key points</h2><ul>${points}</ul><h2>Limitations</h2>${limitations}${criteria}
 <h2>Provenance</h2><p>Source: <a href="${escapeAttribute(result.finalUrl)}">${escapeHtml(result.finalUrl)}</a></p><p>SHA-256: <code>${escapeHtml(result.sourceSha256)}</code></p>
 <p class="risk">${escapeHtml(result.pinningRisk)}</p><p><a href="result.json">View machine-readable result.json</a></p></main></body></html>\n`;
 }

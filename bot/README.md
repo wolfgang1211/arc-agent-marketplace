@@ -4,11 +4,13 @@ Autonomous Railway worker for the marketplace's first supported protocol: `url-s
 
 ## Safety boundary
 
-The worker accepts only this exact JSON description:
+The worker accepts strict request schemas v1 and v2 under the unchanged routing category `url-summary-v1`. New web jobs use v2 and persist the three canonical acceptance criteria in the on-chain JSON. Historical v1 requests remain readable without inventing criteria. Legacy shape:
 
 ```json
 {"schemaVersion":1,"task":"url_summary","sourceUrl":"https://example.com/article","language":"en","maxWords":400}
 ```
+
+V2 has those same five fields, `schemaVersion: 2`, and an `acceptanceCriteria` array containing the exact ordered strings from `src/url-summary-schema.mjs`. Missing, altered, reordered, or extra criteria fail closed. See `../web/docs/url-summary-v2.md` for the complete wire and artifact contract. Roll out this compatible worker before publishing v2 jobs; an older v1-only worker will decline them.
 
 It rejects unknown fields and accepts only:
 
@@ -20,10 +22,12 @@ It rejects unknown fields and accepts only:
 - DNS answers that are all public unicast addresses
 - at most three redirects, with DNS/SSRF validation repeated at every hop
 - anonymous HTTP 200 responses with `text/html` or `text/plain`
-- at most 2 MB and `500–100,000` extracted characters
+- at most 2 MiB and `500–100,000` extracted characters
 - content without password/login forms, paywall, login-required, cookie-wall, or access-denied signals
 
 The validated DNS address is pinned into the TLS connection to close the DNS-rebinding gap. Source content is untrusted data for summarization only. It cannot authorize tools, browsing, wallet use, credentials, or transactions. Transaction hashes are written to the durable state file immediately after broadcast and before receipt waiting. An ambiguous pending broadcast is never resent blindly; only a proven reverted receipt reopens retry, while a still-pending submit advances to timeout handling at the delivery deadline.
+
+DNS, redirects and HTTPS share a 20-second total source deadline. The web posting preflight uses a byte-identical standalone copy of this policy before USDC approval. It does not upload artifacts, invoke a model or request wallet actions. A successful check is only a point-in-time accessibility observation: the worker always rechecks and can still decline.
 
 ## Economic guard
 
@@ -43,6 +47,8 @@ The worker prepares the full artifact before accepting a job, then rechecks on-c
 - `result.json`: schema version, job ID, source/final URL, fetch time, source SHA-256, title, summary, key points, limitations, generator version, and pinning risk
 
 Both gateway files are fetched back and compared byte-for-byte before the gateway `index.html` URI can be submitted on-chain. A CID identifies what was delivered, but if all pinning is lost the content may become unavailable. A second pinning service is deferred.
+
+V1 artifacts retain their schema and field set. V2 artifacts use `schemaVersion: 2`, generator `arc-url-summary-agent/2.0.0`, and additionally include `requestSchemaVersion: 2`, the full validated `request`, and an exact copy of `acceptanceCriteria`. These bind the delivered report to requirements for independent comparison, not a verification verdict.
 
 ## Commands
 

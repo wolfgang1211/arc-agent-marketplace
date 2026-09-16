@@ -12,7 +12,7 @@ const input = {
     sourceSha256: "a".repeat(64),
     sourceBytes: 1234,
   },
-  request: { language: "en", maxWords: 400 },
+  request: { schemaVersion: 1, task: "url_summary", sourceUrl: "https://example.com/article", language: "en", maxWords: 400 },
   summary: {
     summary: "Grounded summary.",
     keyPoints: ["Point one", "Point two"],

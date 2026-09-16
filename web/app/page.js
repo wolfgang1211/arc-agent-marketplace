@@ -2,6 +2,8 @@
 
 import "./workflows.css";
 import "./verifier-evidence.css";
+import "./job-lifecycle.css";
+import "./job-views.css";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -33,8 +35,15 @@ import {
   resolveCollectionStatus,
 } from "../lib/marketplace-data-state.mjs";
 import { PostJob, WorkflowGallery, WorkflowExample } from "./components/workflows";
+import { JobDescription } from "./components/job-description";
 import { VerifierEvidence } from "./components/verifier-evidence";
+import { JobLifecycle } from "./components/job-lifecycle";
+import { settlementOutcomeCopy } from "../lib/job-lifecycle.mjs";
+import { RecentActivity } from "./components/recent-activity";
+import { JobViewControls, JobViewEmpty, useJobView } from "./components/job-views";
+import { selectJobView } from "../lib/job-views.mjs";
 import { createTemplateDraft, validateTemplateDraft, assertJobTextBounds, validateWorkflowReward } from "../lib/workflow-templates.mjs";
+import { withSourcePreflight } from "../lib/source-preflight.mjs";
 import {
   assertSuccessfulReceipt,
   formatDuration,
@@ -45,19 +54,16 @@ import {
   PERMISSIONLESS_SETTLEMENT_COPY,
   revalidateTimeoutClaim,
   splitDisputedReward,
-  terminalOutcomeCopy,
+
   timeoutOutcomeCopy,
 } from "../lib/timeout-recovery.mjs";
 
 const short = (a) => (a ? a.slice(0, 6) + "…" + a.slice(-4) : "");
 const fmt = (v) => (v == null ? "0" : formatUnits(v, USDC_DECIMALS));
-const SECTION_SPLIT = "\n\nAcceptance criteria:\n";
+
 const DISCOVERY_ENDPOINT = process.env.NEXT_PUBLIC_ENVIO_GRAPHQL_URL || "";
 const JOB_PAGE_SIZE = 20n;
-const parseJobDetails = (description = "") => {
-  const [task, criteria] = String(description).split(SECTION_SPLIT);
-  return { task: task || description, criteria: criteria || "" };
-};
+
 
 export default function Page() {
   const { address, isConnected, chainId } = useAccount();
@@ -89,7 +95,9 @@ export default function Page() {
   const [onchainAgentsResolved, setOnchainAgentsResolved] = useState(false);
   const [discoveryError, setDiscoveryError] = useState("");
   const [discoveryLoading, setDiscoveryLoading] = useState(false);
-  const [pageOffset, setPageOffset] = useState(0n);
+  const [jobView, updateJobView] = useJobView();
+  const pageOffset = BigInt(jobView.page) * JOB_PAGE_SIZE;
+  const setPageOffset = (offset) => updateJobView({ page: Number(offset / JOB_PAGE_SIZE) });
   const [chainTimestamp, setChainTimestamp] = useState(null);
   const discoveryRequestId = useRef(0);
 
@@ -100,6 +108,7 @@ export default function Page() {
     address: CONTRACT_ADDRESS || undefined,
     abi: MARKETPLACE_ABI,
     functionName: "getJobsPaged",
+    chainId: arcTestnet.id,
     args: [pageOffset, JOB_PAGE_SIZE],
     query: { enabled: !!CONTRACT_ADDRESS, refetchInterval: 8000 },
   });
@@ -263,6 +272,8 @@ export default function Page() {
   const jobList = [...lifecycleJobs, ...openOnPage].sort((a, b) => Number(b.id - a.id));
   const pagination = getPaginationState(pageOffset, JOB_PAGE_SIZE, totalJobs);
   const statusCounts = getJobStatusCounts(jobList);
+  const selectedJobs = selectJobView(jobList, jobView, isConnected ? address : undefined);
+  const needsViewWallet = jobView.view !== "marketplace" && !isConnected;
   const indexedAgents = indexedDiscovery?.agents || [];
   const recommendedAgents = indexedAgents.length > 0 ? indexedAgents : onchainAgents;
   const recommendationResolved = onchainAgentsResolved
@@ -414,13 +425,15 @@ export default function Page() {
                 const checked = validateTemplateDraft(draft);
                 if (!checked.valid || checked.value.description !== desc || checked.value.reward !== reward || checked.value.category !== category) throw new Error("Review the current workflow draft before posting.");
               } else if (category === "url-summary-v1") throw new Error("Use the strict URL-summary template.");
-              const amount = parseUnits(reward, USDC_DECIMALS);
-              const approveHash = await writeContractAsync({
-                address: USDC_ADDRESS, abi: ERC20_ABI, functionName: "approve",
-                args: [CONTRACT_ADDRESS, amount],
+              return withSourcePreflight(category, desc, async () => {
+                const amount = parseUnits(reward, USDC_DECIMALS);
+                const approveHash = await writeContractAsync({
+                  address: USDC_ADDRESS, abi: ERC20_ABI, functionName: "approve",
+                  args: [CONTRACT_ADDRESS, amount],
+                });
+                assertSuccessfulReceipt(await waitForTransactionReceipt(config, { hash: approveHash }));
+                return write("postJob", [desc, amount, category]);
               });
-              assertSuccessfulReceipt(await waitForTransactionReceipt(config, { hash: approveHash }));
-              return write("postJob", [desc, amount, category]);
             });
           }} />
       </section>
@@ -431,7 +444,7 @@ export default function Page() {
           <div>
             <div className="eyebrow small-eyebrow">Marketplace</div>
             <h2>Jobs and settlements</h2>
-            <p className="muted">Open work, active delivery windows, and final outcomes from the latest on-chain records.</p>
+            <p className="muted">Open work, active delivery windows, and final outcomes from this bounded on-chain page.</p>
           </div>
           <button className="ghost" onClick={refreshAll}>Refresh</button>
         </div>
@@ -458,6 +471,8 @@ export default function Page() {
             </select>
           </div>
         </div>
+        <JobViewControls state={jobView} onChange={updateJobView} counts={selectedJobs.counts}
+          dataStatus={jobsStatus} connected={isConnected} />
         <div className="discovery-summary">
           <span>
             {jobsStatus === "loading"
@@ -466,15 +481,25 @@ export default function Page() {
                 ? "On-chain job data unavailable"
                 : `${totalJobs.toString()} total on-chain jobs · showing ${pagination.start.toString()}–${pagination.end.toString()}`}
           </span>
-          <span>{discoveryLoading ? "Updating agent data…" : "Latest on-chain records"}</span>
+          <span>{discoveryLoading ? "Updating agent data…" : "Bounded on-chain page"}</span>
         </div>
-        {discoveryError && <div className="banner warn">Indexer unavailable: {discoveryError}. Showing the last indexed result.</div>}
+        {discoveryError && <div className="banner warn">Indexer unavailable. Jobs still use bounded on-chain reads; agent recommendations use the last indexed result or the on-chain fallback.</div>}
 
-        {jobsStatus !== "ready" ? (
+        {needsViewWallet ? (
+          <JobViewEmpty state={jobView} connected={isConnected} onConnect={requestConnect}
+            connectDisabled={connecting || connectors.length === 0} />
+        ) : jobsStatus === "loading" || jobsStatus === "error" ? (
           <MarketplaceDataState resource="jobs" status={jobsStatus} />
+        ) : selectedJobs.jobs.length === 0 ? (
+          <JobViewEmpty state={jobView} connected={isConnected} onReset={() => {
+            updateJobView({ status: "all" });
+            setCategoryFilter("");
+            setRewardMin("");
+            setRewardMax("");
+          }} />
         ) : (
           <div className="jobs-list">
-            {jobList.map((j) => (
+            {selectedJobs.jobs.map((j) => (
               <JobCard key={j.id.toString()} job={j} me={address} agent={agent} busy={busy}
                 agentStake={agentStake}
                 connected={isConnected}
@@ -504,6 +529,7 @@ export default function Page() {
         )}
       </section>
 
+      <RecentActivity />
       <RankedAgents agents={recommendedAgents} status={recommendationStatus} source={indexedAgents.length > 0 ? "marketplace index" : "latest on-chain records"} />
     </Shell>
   );
@@ -691,9 +717,9 @@ function JobCard({ job, me, agent, agentStake, onAccept, onSubmit, onApprove, on
   const pillClass = ["open", "progress", "submitted", "disputed", "done", "cancel", "expired-refund", "expired-payout", "expired-split"][status];
   const timeoutRole = isClient ? "client" : isAgent ? "agent" : "observer";
   const role = isClient ? "You are the client" : isAgent ? "Assigned to you" : "Observer";
-  const { task, criteria } = parseJobDetails(job.description);
+
   const timeoutState = getTimeoutState(job, chainTimestamp);
-  const terminalCopy = terminalOutcomeCopy(job, agentStake);
+  const terminalCopy = settlementOutcomeCopy(job, agentStake);
   const timeoutCopy = timeoutState.active && !timeoutState.chainTimePending
     ? timeoutOutcomeCopy(job, timeoutRole, timeoutState.remainingSeconds, timeoutState.claimable, agentStake)
     : "";
@@ -708,13 +734,7 @@ function JobCard({ job, me, agent, agentStake, onAccept, onSubmit, onApprove, on
             <span className="pill">{job.category}</span>
             <span className={`pill ${pillClass}`}>{JOB_STATUS[status]}</span>
           </div>
-          <h3>{task}</h3>
-          {criteria && (
-            <div className="criteria-box">
-              <span>Acceptance criteria</span>
-              <p>{criteria}</p>
-            </div>
-          )}
+          <JobDescription description={job.description} category={job.category} />
           <div className="job-meta-grid">
             <div className="job-meta-item">
               <span>Client</span>
@@ -753,7 +773,8 @@ function JobCard({ job, me, agent, agentStake, onAccept, onSubmit, onApprove, on
               {timeoutState.claimable && <small>{PERMISSIONLESS_SETTLEMENT_COPY}</small>}
             </div>
           )}
-          {terminalCopy && <div className="timeout-panel terminal"><strong>Final timeout outcome</strong><p>{terminalCopy}</p></div>}
+          {terminalCopy && <div className="timeout-panel terminal"><strong>Final settlement outcome</strong><p>{terminalCopy}</p></div>}
+          <JobLifecycle job={job} chainTimestamp={chainTimestamp} explorer={EXPLORER} marketplace={CONTRACT_ADDRESS} />
           {job.deliverableURI && <VerifierEvidence
             key={JSON.stringify([job.id.toString(), job.client, job.agent, job.description, job.deliverableURI, status, CONTRACT_ADDRESS, arcTestnet.id])}
             job={job} chainId={arcTestnet.id} marketplace={CONTRACT_ADDRESS}

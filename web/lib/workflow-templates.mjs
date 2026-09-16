@@ -82,7 +82,7 @@ export function previewTemplateDraft(draft) {
   if (!validateWorkflowReward(draft.reward) || (summary && !validateUrlSummaryReward(draft.reward))) errors.reward = summary ? "URL summary rewards must be between 5 and 20 USDC." : "Enter 5 to 100 test USDC with at most 6 decimal places.";
   if (Object.keys(errors).length) return { valid: false, errors };
   const interpolate = (text) => text.replace(/\{(\w+)\}/g, (_, key) => values[key]);
-  const acceptanceCriteria = template.criteria.map(interpolate);
+  const acceptanceCriteria = summary ? validateUrlSummaryRequest(values).value.acceptanceCriteria : template.criteria.map(interpolate);
   const description = summary ? buildUrlSummaryDescription(values) : `${interpolate(template.task)}${SECTION_SPLIT}${acceptanceCriteria.map((criterion, index) => `${index + 1}. ${criterion}`).join("\n")}`;
   try { assertJobTextBounds(description, template.category); } catch (error) { return { valid: false, errors: { _form: error.message } }; }
   return { valid: true, value: { templateId: template.id, capability: template.capability, category: template.category, description, acceptanceCriteria, reward: draft.reward.trim(), descriptionBytes: bytes(description) } };

@@ -19,7 +19,7 @@ test("URL summary form produces the exact strict bot schema without asking users
       language: "en",
       maxWords: "400",
     }),
-    '{"schemaVersion":1,"task":"url_summary","sourceUrl":"https://example.com/article","language":"en","maxWords":400}',
+    '{"schemaVersion":2,"task":"url_summary","sourceUrl":"https://example.com/article","language":"en","maxWords":400,"acceptanceCriteria":["Summarize only the supplied source in en, with no more than 400 whitespace-separated words in the summary.","Include 1 to 8 key points and 0 to 8 limitations; state uncertainty rather than inventing facts.","Deliver an accessible IPFS page and result.json containing the source URL, final URL, fetch time, source hash, title, summary, key points, and limitations."]}',
   );
 });
 

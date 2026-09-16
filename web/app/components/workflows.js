@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { buildUrlSummaryDescription } from "../../lib/url-summary-job.mjs";
 import { WORKFLOW_TEMPLATES, CAPABILITY_COPY, PUBLIC_COPY, REWARD_COPY, previewTemplateDraft, validateTemplateDraft, assertJobTextBounds, validateWorkflowReward, SECTION_SPLIT } from "../../lib/workflow-templates.mjs";
 
 export function Capability({ capability }) {
@@ -34,7 +35,7 @@ export function WorkflowExample({ onSelect }) {
     <p className="workflow-capability"><b>Illustrative walkthrough · Not a real on-chain job</b></p>
     <h2 id="example-heading">Example: a URL-summary job</h2><p>This example explains the flow. No source was fetched, no worker ran, and no funds moved.</p>
     <ol>{EXAMPLE_STEPS.map(([title, copy], index) => <li key={title}><h3>{title}</h3><p>{copy}</p>
-      {index === 0 && <details><summary>Illustrative request</summary><pre>{'{"schemaVersion":1,"task":"url_summary","sourceUrl":"https://example.com/article","language":"en","maxWords":400}'}</pre></details>}
+      {index === 0 && <details><summary>Illustrative request</summary><pre>{buildUrlSummaryDescription({ sourceUrl: "https://example.com/article", language: "en", maxWords: 400 })}</pre></details>}
       {index === 3 && <div className="info-box"><b>Expected output structure, not generated content</b><ul><li>Source URL and fetch provenance</li><li>Title and summary</li><li>Key points and limitations</li><li>Machine-readable result.json</li></ul></div>}
     </li>)}</ol>
     <details className="info-box"><summary>What if the job does not finish normally?</summary><p>While a job is Open, the client can cancel. If an InProgress job reaches its delivery deadline, anyone can settle it to refund the reward to the client and slash the agent&apos;s stake. The slashed stake stays in the contract. If a Submitted job reaches its approval deadline, anyone can settle it to pay the agent. A Disputed job can be settled after its dispute deadline using the split fixed when it was posted. No arbiter reviews the dispute. Deadlines make settlement eligible; the current contract does not make them hard cutoffs for every competing action. Always recheck the current on-chain state before acting.</p></details>
@@ -99,19 +100,19 @@ export function PostJob({ draft, setDraft, onPost, onConnect, connected, busy, d
     {template ? <h3>{template.name}</h3> : <h3>Other job</h3>}
     <Capability capability={template?.capability || "bring_your_own_agent"} />
     <p className="workflow-privacy">{PUBLIC_COPY}</p>
-    {template?.id === "url-summary-v1" && <p className="info-box">No JSON required. Enter the source and preferences below. The marketplace creates the bot&apos;s strict request automatically.</p>}
+    {template?.id === "url-summary-v1" && <p className="info-box">No JSON required. Enter the source and preferences below. Request v2 includes all three fixed acceptance criteria in the on-chain job text. Legacy v1 jobs are not upgraded.</p>}
     {template ? template.fields.map(field) : [{ key: "description", label: "Job description", kind: "textarea" }, { key: "criteria", label: "Acceptance criteria", kind: "textarea" }, { key: "category", label: "Custom category", kind: "text" }].map(field)}
     <div className="field"><label htmlFor="workflow-reward">Reward (test USDC)</label><input id="workflow-reward" inputMode="decimal" value={value.reward} onChange={(event) => update("reward", event.target.value)} onBlur={announce} aria-invalid={Boolean(errors.reward)} aria-describedby="reward-help" /><span id="reward-help" className={errors.reward ? "form-error" : "muted"}>{errors.reward || REWARD_COPY}</span></div>
     <div className="workflow-preview"><h3>Job preview</h3>{preview.valid ? <><p>Job text: {preview.value.descriptionBytes} / 8,192 bytes</p><b>{template?.id === "url-summary-v1" ? "Fixed acceptance criteria" : "Acceptance criteria"}</b><ol>{preview.value.acceptanceCriteria.map((criterion) => <li key={criterion}>{criterion}</li>)}</ol><details><summary>View exact on-chain text</summary><pre>{preview.value.description}</pre></details></> : <p>Complete the required fields to preview this job.</p>}</div>
     <p role="status" aria-live="polite">{status}</p>
     {errors._form && <p className="form-error" role="alert">{errors._form}</p>}
-    <p className="muted">Form validation does not check source access. A worker can still decline the job.</p>
+    <p className="muted">URL-summary sources are checked for public access before USDC approval. This read-only check does not upload content or call an AI model. Source access can change; a worker can still decline the job.</p>
     {!byo && <p className="bot-decline-note">The bot may decline the job after checking the source; an unaccepted job remains open, and the job owner can cancel it to reclaim the escrowed reward.</p>}
     {byo && <p className="other-job-warning">{CAPABILITY_COPY.bring_your_own_agent.explanation}</p>}
     <p className="workflow-privacy">{PUBLIC_COPY}</p>
     {["acknowledgedPublic", ...(byo ? ["acknowledgedUnsupported"] : [])].map((key) => <div key={key}><label className="workflow-check" htmlFor={`workflow-${key}`}><input id={`workflow-${key}`} type="checkbox" checked={value[key]} onChange={(event) => update(key, event.target.checked)} aria-invalid={Boolean(errors[key])} aria-describedby={errors[key] ? `${key}-error` : undefined} /><span>{key === "acknowledgedPublic" ? "I understand that this job text will be public on-chain." : "I understand that this template has no verified compatible worker and may remain open."}</span></label>{errors[key] && <p id={`${key}-error`} className="form-error">{errors[key]}</p>}</div>)}
     <p>Posting locks the reward in escrow. A compatible worker is not guaranteed to accept it.</p>
-    <button type="submit" disabled={Boolean(busy) || (connected && disabled)}>{!connected ? "Connect wallet to post a job" : busy === "post" ? "Approving, then posting…" : "Lock USDC and publish job"}</button>
+    <button type="submit" disabled={Boolean(busy) || (connected && disabled)}>{!connected ? "Connect wallet to post a job" : busy === "post" ? "Checking, approving, then posting…" : "Lock USDC and publish job"}</button>
     <p className="muted">Two signatures are required: first USDC <b>approve</b>, then <b>postJob</b>.</p>
     <p className="muted">The job owner can cancel an unaccepted Open job to reclaim its escrowed reward. Network fees are not refunded.</p>
   </form>;

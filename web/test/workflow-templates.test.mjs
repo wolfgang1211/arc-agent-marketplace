@@ -43,7 +43,7 @@ test("six frozen starter definitions have exact names, categories, defaults and 
   assert.equal(createTemplateDraft(ids[0]).fields.sourceUrl, "");
 });
 
-test("summary retains exact five-field wire format and is eligible; all BYO posts are unsupported", () => {
+test("summary persists six-field v2 wire format and is eligible; all BYO posts are unsupported", () => {
   for (let index = 0; index < ids.length; index++) {
     const draft = fixture(index);
     const result = validateTemplateDraft(draft);
@@ -52,7 +52,9 @@ test("summary retains exact five-field wire format and is eligible; all BYO post
     const eligibility = parseEligibleJob({ ...job, status: 0, reward: parseUnits(job.reward, 6) });
     if (index === 0) {
       assert.equal(job.description, buildUrlSummaryDescription(draft.fields));
-      assert.equal(Object.keys(JSON.parse(job.description)).length, 5);
+      assert.equal(Object.keys(JSON.parse(job.description)).length, 6);
+      assert.equal(JSON.parse(job.description).schemaVersion, 2);
+      assert.deepEqual(JSON.parse(job.description).acceptanceCriteria, job.acceptanceCriteria);
       assert.equal(job.description.includes(SECTION_SPLIT), false);
       assert.equal(eligibility.ok, true);
     } else {

@@ -1,4 +1,5 @@
-export const URL_SUMMARY_CATEGORY = "url-summary-v1";
+import { buildUrlSummaryCriteria } from "./url-summary-schema.mjs";
+export { URL_SUMMARY_CATEGORY } from "./url-summary-schema.mjs";
 export const URL_SUMMARY_LANGUAGES = Object.freeze([
   Object.freeze({ value: "en", label: "English" }),
   Object.freeze({ value: "tr", label: "Turkish" }),
@@ -52,11 +53,12 @@ export function validateUrlSummaryRequest({ sourceUrl, language, maxWords }) {
   return {
     valid: true,
     value: {
-      schemaVersion: 1,
+      schemaVersion: 2,
       task: "url_summary",
       sourceUrl: parsed.toString(),
       language,
       maxWords: words,
+      acceptanceCriteria: buildUrlSummaryCriteria({ language, maxWords: words }),
     },
   };
 }

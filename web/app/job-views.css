@@ -1,0 +1,11 @@
+.job-view-controls { margin-top: 18px; min-width: 0; }
+.job-view-options { display: flex; flex-wrap: wrap; gap: 8px; }
+.job-view-options button { min-height: 44px; max-width: 100%; }
+.job-view-options button[aria-pressed="true"] { background: #252a38; border-color: #7f91dc; color: #fff; }
+.job-view-count { font-variant-numeric: tabular-nums; margin-left: 6px; }
+.job-view-scope { font-size: 12px; line-height: 1.6; margin: 10px 0; }
+@media (max-width: 480px) {
+  .job-view-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .job-view-options button { padding: 10px 8px; overflow-wrap: anywhere; }
+  .job-view-options[aria-label="Job ownership"] button:first-child { grid-column: 1 / -1; }
+}

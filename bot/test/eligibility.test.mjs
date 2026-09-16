@@ -46,7 +46,7 @@ test("rejects malformed JSON, unknown fields, and every schema boundary", () => 
   const cases = [
     ["{", "invalid_json"],
     [{ schemaVersion: 1, task: "url_summary", sourceUrl: "https://example.com", language: "en", maxWords: 400, extra: true }, "schema_fields_mismatch"],
-    [{ schemaVersion: 2, task: "url_summary", sourceUrl: "https://example.com", language: "en", maxWords: 400 }, "unsupported_schema"],
+    [{ schemaVersion: 3, task: "url_summary", sourceUrl: "https://example.com", language: "en", maxWords: 400 }, "unsupported_schema"],
     [{ schemaVersion: 1, task: "browse", sourceUrl: "https://example.com", language: "en", maxWords: 400 }, "unsupported_task"],
     [{ schemaVersion: 1, task: "url_summary", sourceUrl: "http://example.com", language: "en", maxWords: 400 }, "unsafe_url"],
     [{ schemaVersion: 1, task: "url_summary", sourceUrl: "https://u:p@example.com", language: "en", maxWords: 400 }, "unsafe_url"],

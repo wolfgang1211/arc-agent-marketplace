@@ -1,5 +1,7 @@
 # Workflow template specification v1
 
+Historical baseline notice: the URL-summary five-field request and artifact rules below describe v1. They are superseded for new URL-summary jobs by [URL-summary request v2](url-summary-v2.md), which persists canonical criteria and requires source preflight before allowance approval. Existing v1 jobs are not migrated or reinterpreted. The other five template contracts remain unchanged.
+
 Status: frozen implementation contract. This document specifies future frontend work; it does not announce shipped templates, worker activation, or verified usage. Scope: exactly six starter templates on AlphaBoard Agents, on Arc Testnet. Product copy is English. Output language is independently selectable where specified.
 
 ## 1. Evidence and boundaries
