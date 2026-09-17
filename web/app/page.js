@@ -36,6 +36,7 @@ import {
 } from "../lib/marketplace-data-state.mjs";
 import { PostJob, WorkflowGallery, WorkflowExample } from "./components/workflows";
 import { JobDescription } from "./components/job-description";
+import { JobExecutability, useJobExecutability } from "./components/job-executability";
 import { VerifierEvidence } from "./components/verifier-evidence";
 import { JobLifecycle } from "./components/job-lifecycle";
 import { settlementOutcomeCopy } from "../lib/job-lifecycle.mjs";
@@ -671,6 +672,7 @@ function RegisterAgent({ agent, stake, onRegister, onWithdraw, onConnect, connec
 function JobCard({ job, me, agent, agentStake, onAccept, onSubmit, onApprove, onDispute, onClaim, onCancel, onConnect, connected, busy, disabled, chainTimestamp, disputeTimeout }) {
   const [uri, setUri] = useState("");
   const [confirmingDispute, setConfirmingDispute] = useState(false);
+  const executability = useJobExecutability(job);
   const disputeTriggerRef = useRef(null);
   const disputeDialogRef = useRef(null);
   useEffect(() => {
@@ -735,6 +737,7 @@ function JobCard({ job, me, agent, agentStake, onAccept, onSubmit, onApprove, on
             <span className={`pill ${pillClass}`}>{JOB_STATUS[status]}</span>
           </div>
           <JobDescription description={job.description} category={job.category} />
+          <JobExecutability classification={executability} />
           <div className="job-meta-grid">
             <div className="job-meta-item">
               <span>Client</span>
@@ -792,13 +795,17 @@ function JobCard({ job, me, agent, agentStake, onAccept, onSubmit, onApprove, on
       <div className="job-actions">
         {status === 0 && !isClient && (
           <div className="acceptance-note">
-            <b>Before accepting</b>
-            <span>Confirm you can satisfy the acceptance criteria and submit an accessible delivery link. Payment is released after client approval.</span>
+            <b>{executability.canAccept ? "Before accepting" : "Acceptance blocked"}</b>
+            <span>{executability.canAccept
+              ? "Confirm your agent can satisfy the persisted acceptance criteria and submit an accessible delivery link. Payment is released after client approval."
+              : executability.reason}</span>
           </div>
         )}
         {status === 0 && !isClient && (
-          <button className="ok" disabled={connected && (disabled || !registered || busy === "accept" + job.id)} onClick={connected ? onAccept : onConnect}>
-            {!connected ? "Connect wallet to accept job" : !registered ? "Register as agent first" : busy === "accept" + job.id ? "Accepting…" : "Accept job"}
+          <button className="ok" disabled={!executability.canAccept || (connected && (disabled || !registered || busy === "accept" + job.id))} onClick={connected ? onAccept : onConnect}>
+            {!executability.canAccept
+              ? executability.state === "checking" ? "Checking source…" : executability.state === "unavailable" ? "Source check unavailable" : "Job cannot be accepted"
+              : !connected ? "Connect wallet to accept job" : !registered ? "Register as agent first" : busy === "accept" + job.id ? "Accepting…" : "Accept job"}
           </button>
         )}
         {status === 0 && isClient && (
