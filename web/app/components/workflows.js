@@ -3,16 +3,45 @@
 import { useState } from "react";
 import { buildUrlSummaryDescription } from "../../lib/url-summary-job.mjs";
 import { WORKFLOW_TEMPLATES, CAPABILITY_COPY, PUBLIC_COPY, REWARD_COPY, previewTemplateDraft, validateTemplateDraft, assertJobTextBounds, validateWorkflowReward, SECTION_SPLIT } from "../../lib/workflow-templates.mjs";
+import { BRIEF_EXAMPLES, compileConstrainedBrief } from "../../lib/brief-compiler.mjs";
 
 export function Capability({ capability }) {
   const copy = CAPABILITY_COPY[capability];
   return <div className="workflow-capability"><b>{copy.badge}</b><p>{copy.explanation}</p></div>;
 }
 
-export function WorkflowGallery({ onSelect }) {
+export function BriefCompiler({ onCompile }) {
+  const [brief, setBrief] = useState("");
+  const [result, setResult] = useState(null);
+  const compile = () => {
+    const next = compileConstrainedBrief(brief);
+    setResult(next);
+    if (next.valid) onCompile(next.draft);
+  };
+  return <div className="brief-compiler">
+    <div className="brief-compiler-copy">
+      <div><span className="eyebrow small-eyebrow">Deterministic brief compiler</span><h3>Describe a supported job in one line</h3></div>
+      <p>No AI guesses and no arbitrary prompt execution. Your brief must match one of six fixed workflow grammars, then it is compiled into the editable structured form below.</p>
+    </div>
+    <div className="field">
+      <label htmlFor="constrained-brief">Job brief</label>
+      <textarea id="constrained-brief" rows={3} maxLength={4096} value={brief} onChange={(event) => { setBrief(event.target.value); setResult(null); }} placeholder={BRIEF_EXAMPLES[0]} aria-invalid={result?.valid === false} aria-describedby="constrained-brief-help" />
+      <span id="constrained-brief-help" className={result?.valid === false ? "form-error" : "muted"}>{result?.valid === false ? result.message : "Public data only. Compilation never posts, connects a wallet, fetches a URL, or runs an agent."}</span>
+    </div>
+    <div className="brief-compiler-actions">
+      <button type="button" onClick={compile}>Compile to form</button>
+      <details><summary>Supported patterns</summary><ul>{BRIEF_EXAMPLES.map((example) => <li key={example}><button className="text-button" type="button" onClick={() => { setBrief(example); setResult(null); }}>{example}</button></li>)}</ul></details>
+    </div>
+    {result?.valid && <p className="compiler-success" role="status">Compiled as <b>{result.preview.templateId}</b>. Review every field and acceptance criterion before posting.</p>}
+    {result?.valid === false && result.errors && Object.keys(result.errors).length > 0 && <ul className="compiler-errors">{Object.entries(result.errors).map(([field, message]) => <li key={field}><b>{field}</b>: {message}</li>)}</ul>}
+  </div>;
+}
+
+export function WorkflowGallery({ onSelect, onCompile }) {
   return <section id="workflows" className="workflow-section" aria-labelledby="workflow-heading">
     <div className="section-head"><div><div className="eyebrow small-eyebrow">Starter briefs</div><h2 id="workflow-heading">Start with a workflow</h2><p className="muted">Choose a starting brief, preview the output requirements, and prepare a job without connecting a wallet.</p></div><a href="/#workflow-example">See an example</a></div>
     <p className="network-note">Arc Testnet · Rewards use test USDC, not real-dollar earnings.</p>
+    <BriefCompiler onCompile={onCompile} />
     <ul className="workflow-grid">{WORKFLOW_TEMPLATES.map((template) => <li key={template.id}><article className="card workflow-card">
       <span className="eyebrow small-eyebrow">{template.group}</span><h3>{template.name}</h3><p>{template.blurb}</p>
       <Capability capability={template.capability} />

@@ -77,13 +77,22 @@ export default function Page() {
 
   const [busy, setBusy] = useState("");
   const [workflowDraft, setWorkflowDraft] = useState(() => createTemplateDraft("url-summary-v1"));
-  const selectWorkflow = (id) => {
-    setWorkflowDraft((current) => current?.templateId === id ? current : createTemplateDraft(id));
+  const [workflowRevision, setWorkflowRevision] = useState(0);
+  const focusPostJob = () => {
     requestAnimationFrame(() => {
       const heading = document.getElementById("post-job-heading");
       heading?.focus({ preventScroll: true });
       heading?.scrollIntoView({ behavior: "auto", block: "start" });
     });
+  };
+  const selectWorkflow = (id) => {
+    setWorkflowDraft((current) => current?.templateId === id ? current : createTemplateDraft(id));
+    focusPostJob();
+  };
+  const compileWorkflow = (draft) => {
+    setWorkflowDraft(draft);
+    setWorkflowRevision((current) => current + 1);
+    focusPostJob();
   };
   const [msg, setMsg] = useState(null); // {type, text}
   const [categoryFilter, setCategoryFilter] = useState("");
@@ -400,7 +409,7 @@ export default function Page() {
         Arc gas uses <b>native USDC</b> with 18 decimals. Escrow uses <b>ERC-20 USDC</b> with 6 decimals.
       </p>
 
-      <WorkflowGallery onSelect={selectWorkflow} />
+      <WorkflowGallery onSelect={selectWorkflow} onCompile={compileWorkflow} />
       <section className="action-grid" id="actions" aria-label="Marketplace actions">
         <RegisterAgent agent={agent} stake={agentStake} busy={busy} connected={isConnected} onConnect={requestConnect}
           disabled={wrongNetwork || noContract || agentStake == null}
@@ -418,7 +427,7 @@ export default function Page() {
             })
           } />
 
-        <PostJob key={workflowDraft?.templateId || "custom"} draft={workflowDraft} setDraft={setWorkflowDraft} busy={busy} disabled={wrongNetwork || noContract} connected={isConnected} onConnect={requestConnect}
+        <PostJob key={`${workflowDraft?.templateId || "custom"}:${workflowRevision}`} draft={workflowDraft} setDraft={setWorkflowDraft} busy={busy} disabled={wrongNetwork || noContract} connected={isConnected} onConnect={requestConnect}
           onPost={async (desc, reward, category, draft) => {
             await run("post", async () => {
               assertJobTextBounds(desc, category);
