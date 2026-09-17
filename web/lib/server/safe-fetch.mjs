@@ -6,6 +6,7 @@ import * as cheerio from "cheerio";
 import ipaddr from "ipaddr.js";
 
 const MAX_RESPONSE_BYTES = 2 * 1024 * 1024;
+const MAX_JSON_BYTES = 256 * 1024;
 const MIN_TEXT_CHARS = 500;
 const MAX_TEXT_CHARS = 100_000;
 const REDIRECT_CODES = new Set([301, 302, 303, 307, 308]);
@@ -35,6 +36,17 @@ export async function fetchEligibleSource(sourceUrl, options = {}) {
   const timer = setTimeout(() => controller.abort(), options.timeoutMs ?? 20_000);
   try {
     return await fetchSource(sourceUrl, options, controller.signal);
+  } finally {
+    clearTimeout(timer);
+    controller.abort();
+  }
+}
+
+export async function fetchBoundedJson(sourceUrl, options = {}) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), options.timeoutMs ?? 15_000);
+  try {
+    return await fetchJson(sourceUrl, options, controller.signal);
   } finally {
     clearTimeout(timer);
     controller.abort();
@@ -112,6 +124,49 @@ async function fetchSource(sourceUrl, options, signal) {
   }
 }
 
+async function fetchJson(sourceUrl, options, signal) {
+  const resolveHost = options.resolveHost || defaultResolveHost;
+  const request = options.request || requestPinnedHttps;
+  const maxRedirects = options.maxRedirects ?? 3;
+  let current = validateHttpsUrl(sourceUrl);
+
+  for (let redirects = 0; ; redirects += 1) {
+    const answers = await bounded(() => resolveAnswers(current.hostname, resolveHost), signal);
+    const selected = answers[0];
+    const response = await bounded(() => request({
+      url: current,
+      address: selected.address,
+      family: selected.family,
+      maxBytes: MAX_JSON_BYTES,
+      signal,
+      accept: "application/json",
+    }), signal);
+
+    if (REDIRECT_CODES.has(Number(response.statusCode))) {
+      if (redirects >= maxRedirects) throw new IntakeError("too_many_redirects");
+      const location = header(response.headers, "location");
+      if (!location) throw new IntakeError("redirect_without_location");
+      try {
+        current = validateHttpsUrl(new URL(location, current).toString());
+      } catch {
+        throw new IntakeError("unsafe_url");
+      }
+      continue;
+    }
+    if (Number(response.statusCode) !== 200) throw new IntakeError("http_status", `HTTP ${response.statusCode}`);
+    const contentType = String(header(response.headers, "content-type") || "").split(";", 1)[0].trim().toLowerCase();
+    if (contentType !== "application/json" && !/^application\/[a-z0-9.+-]+\+json$/.test(contentType)) {
+      throw new IntakeError("unsupported_content_type");
+    }
+    const declaredLength = Number(header(response.headers, "content-length") || 0);
+    if (Number.isFinite(declaredLength) && declaredLength > MAX_JSON_BYTES) throw new IntakeError("response_too_large");
+    const rawBody = await bounded(() => materializeBody(response.body, MAX_JSON_BYTES), signal);
+    const body = decodeBody(rawBody, header(response.headers, "content-encoding"), MAX_JSON_BYTES);
+    if (body.byteLength > MAX_JSON_BYTES) throw new IntakeError("response_too_large");
+    return { finalUrl: current.toString(), body, contentType };
+  }
+}
+
 async function resolveAnswers(hostname, resolver) {
   let answers;
   try {
@@ -147,7 +202,7 @@ function validateHttpsUrl(value) {
   return url;
 }
 
-export function requestPinnedHttps({ url, address, family, maxBytes = MAX_RESPONSE_BYTES, signal }) {
+export function requestPinnedHttps({ url, address, family, maxBytes = MAX_RESPONSE_BYTES, signal, accept = "text/html,text/plain;q=0.9" }) {
   return new Promise((resolve, reject) => {
     let hardTimer;
     const request = https.request({
@@ -159,7 +214,7 @@ export function requestPinnedHttps({ url, address, family, maxBytes = MAX_RESPON
       signal,
       servername: url.hostname,
       headers: {
-        Accept: "text/html,text/plain;q=0.9",
+        Accept: accept,
         "Accept-Encoding": "identity",
         "User-Agent": "ArcURLSummaryBot/1.0 (+https://arc-agent-marketplace.vercel.app)",
       },
@@ -248,11 +303,11 @@ async function materializeBody(body, maximum) {
   return Buffer.concat(chunks);
 }
 
-function decodeBody(body, encodingValue) {
+function decodeBody(body, encodingValue, maximum = MAX_RESPONSE_BYTES) {
   const encoding = String(encodingValue || "identity").toLowerCase().trim();
   try {
     if (!encoding || encoding === "identity") return body;
-    const options = { maxOutputLength: MAX_RESPONSE_BYTES };
+    const options = { maxOutputLength: maximum };
     if (encoding === "gzip") return gunzipSync(body, options);
     if (encoding === "deflate") return inflateSync(body, options);
     if (encoding === "br") return brotliDecompressSync(body, options);

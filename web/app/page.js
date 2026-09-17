@@ -37,6 +37,7 @@ import {
 import { PostJob, WorkflowGallery, WorkflowExample } from "./components/workflows";
 import { JobDescription } from "./components/job-description";
 import { JobExecutability, useJobExecutability } from "./components/job-executability";
+import { DeliveryPreview } from "./components/delivery-preview";
 import { VerifierEvidence } from "./components/verifier-evidence";
 import { JobLifecycle } from "./components/job-lifecycle";
 import { settlementOutcomeCopy } from "../lib/job-lifecycle.mjs";
@@ -778,6 +779,10 @@ function JobCard({ job, me, agent, agentStake, onAccept, onSubmit, onApprove, on
           )}
           {terminalCopy && <div className="timeout-panel terminal"><strong>Final settlement outcome</strong><p>{terminalCopy}</p></div>}
           <JobLifecycle job={job} chainTimestamp={chainTimestamp} explorer={EXPLORER} marketplace={CONTRACT_ADDRESS} />
+          {job.deliverableURI && <DeliveryPreview
+            key={JSON.stringify([job.id.toString(), status, job.category, job.description, job.deliverableURI])}
+            job={job}
+          />}
           {job.deliverableURI && <VerifierEvidence
             key={JSON.stringify([job.id.toString(), job.client, job.agent, job.description, job.deliverableURI, status, CONTRACT_ADDRESS, arcTestnet.id])}
             job={job} chainId={arcTestnet.id} marketplace={CONTRACT_ADDRESS}
