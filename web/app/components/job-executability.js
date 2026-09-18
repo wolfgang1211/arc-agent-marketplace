@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { classifyJobExecutability } from "../../lib/job-executability.mjs";
+import { classifyJobExecutability, selectCurrentPreflight } from "../../lib/job-executability.mjs";
 
 export function useJobExecutability(job, fetchImpl = globalThis.fetch) {
   const staticClassification = classifyJobExecutability(job);
@@ -41,9 +41,7 @@ export function useJobExecutability(job, fetchImpl = globalThis.fetch) {
     };
   }, [fetchImpl, staticClassification.state, staticClassification.request?.sourceUrl]);
 
-  const currentPreflight = preflight?.sourceUrl === staticClassification.request?.sourceUrl
-    ? preflight.result
-    : null;
+  const currentPreflight = selectCurrentPreflight(preflight, staticClassification.request);
   return staticClassification.state === "checking"
     ? classifyJobExecutability(job, currentPreflight)
     : staticClassification;

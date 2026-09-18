@@ -3,7 +3,7 @@ import test from "node:test";
 import { readFile } from "node:fs/promises";
 import { parseEligibleJob } from "../../bot/src/eligibility.mjs";
 import { buildUrlSummaryDescription } from "../lib/url-summary-job.mjs";
-import { classifyJobExecutability } from "../lib/job-executability.mjs";
+import { classifyJobExecutability, selectCurrentPreflight } from "../lib/job-executability.mjs";
 
 const validDescription = buildUrlSummaryDescription({
   sourceUrl: "https://example.com/article",
@@ -61,6 +61,13 @@ test("live-pattern failures are explicit and block acceptance", () => {
   assert.equal(unavailable.canAccept, false);
 });
 
+test("an empty preflight state cannot dereference a missing result", () => {
+  const request = { sourceUrl: "https://example.com/article" };
+  assert.equal(selectCurrentPreflight(null, request), null);
+  assert.equal(selectCurrentPreflight(null, undefined), null);
+  assert.equal(selectCurrentPreflight({ sourceUrl: request.sourceUrl, result: { ok: true } }, request).ok, true);
+});
+
 test("job cards render the classification before a guarded accept action", async () => {
   const page = await readFile(new URL("../app/page.js", import.meta.url), "utf8");
   const component = await readFile(new URL("../app/components/job-executability.js", import.meta.url), "utf8");
@@ -72,4 +79,5 @@ test("job cards render the classification before a guarded accept action", async
   assert.match(component, /\/api\/source-preflight/);
   assert.match(component, /AbortController/);
   assert.doesNotMatch(component, /response\.statusText|error\.message/);
+  assert.match(component, /selectCurrentPreflight\(preflight, staticClassification\.request\)/);
 });

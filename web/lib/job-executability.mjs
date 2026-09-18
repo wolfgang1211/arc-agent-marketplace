@@ -42,6 +42,11 @@ const PREFLIGHT_REASONS = Object.freeze({
 const result = (state, label, reason, canAccept, reasonCode = null, request = null) =>
   Object.freeze({ state, label, reason, canAccept, reasonCode, request });
 
+export function selectCurrentPreflight(preflight, request) {
+  if (!preflight || !request || preflight.sourceUrl !== request.sourceUrl) return null;
+  return preflight.result;
+}
+
 export function classifyJobExecutability(job, preflight) {
   if (typeof job?.status !== "number" || job.status !== 0) {
     return result("hidden", "Not open", "Executability is classified only for open jobs.", false, "job_not_open");
