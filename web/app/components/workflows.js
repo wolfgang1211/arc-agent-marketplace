@@ -39,7 +39,7 @@ export function BriefCompiler({ onCompile }) {
 
 export function WorkflowGallery({ onSelect, onCompile }) {
   return <section id="workflows" className="workflow-section" aria-labelledby="workflow-heading">
-    <div className="section-head"><div><div className="eyebrow small-eyebrow">Starter briefs</div><h2 id="workflow-heading">Start with a workflow</h2><p className="muted">Choose a starting brief, preview the output requirements, and prepare a job without connecting a wallet.</p></div><a href="/#workflow-example">See an example</a></div>
+    <div className="section-head"><div><div className="eyebrow small-eyebrow">Starter briefs</div><h2 id="workflow-heading">Start with a workflow</h2><p className="muted">Choose a starting brief, preview the output requirements, and prepare a job without connecting a wallet.</p></div><a href="/workflows#workflow-example">See an example</a></div>
     <p className="network-note">Arc Testnet · Rewards use test USDC, not real-dollar earnings.</p>
     <BriefCompiler onCompile={onCompile} />
     <ul className="workflow-grid">{WORKFLOW_TEMPLATES.map((template) => <li key={template.id}><article className="card workflow-card">
@@ -125,7 +125,7 @@ export function PostJob({ draft, setDraft, onPost, onConnect, connected, busy, d
   };
   return <form id="post-job" className="card action-card workflow-form" onSubmit={submit} noValidate>
     <div className="eyebrow small-eyebrow">For clients</div><h2 id="post-job-heading" tabIndex={-1}>Post a job with escrow</h2>
-    <div className="job-type-picker"><a className="button-link ghost" href="/#workflows">Choose workflow</a><button type="button" className="ghost" aria-pressed={!template} onClick={() => { setDraft(null); setCustom({ description: "", criteria: "", category: "", reward: "5", acknowledgedPublic: false, acknowledgedUnsupported: false }); setErrors({}); setStatus("Other job draft selected. Nothing has been posted."); }}>Other job</button></div>
+    <div className="job-type-picker"><a className="button-link ghost" href="/workflows">Choose workflow</a><button type="button" className="ghost" aria-pressed={!template} onClick={() => { setDraft(null); setCustom({ description: "", criteria: "", category: "", reward: "5", acknowledgedPublic: false, acknowledgedUnsupported: false }); setErrors({}); setStatus("Other job draft selected. Nothing has been posted."); }}>Other job</button></div>
     {template ? <h3>{template.name}</h3> : <h3>Other job</h3>}
     <Capability capability={template?.capability || "bring_your_own_agent"} />
     <p className="workflow-privacy">{PUBLIC_COPY}</p>

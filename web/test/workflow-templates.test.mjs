@@ -139,11 +139,19 @@ test("sources, dates and pinned repository rules reject unsafe or ambiguous brie
   assert.ok(validateTemplateDraft(fixture(4)).value.description.includes("aB".repeat(20)));
 });
 
+function compiledAppChunks(root) {
+  return fs.readdirSync(root, { withFileTypes: true }).flatMap((entry) => {
+    const target = new URL(entry.name + (entry.isDirectory() ? "/" : ""), root);
+    if (entry.isDirectory()) return compiledAppChunks(target);
+    return entry.isFile() && entry.name.endsWith(".js") ? [fs.readFileSync(target, "utf8")] : [];
+  });
+}
+
 test("source and fresh compiled chunks preserve warnings, walletless isolation and exact publishing guards", () => {
   const component = fs.readFileSync(new URL("../app/components/workflows.js", import.meta.url), "utf8");
   const page = fs.readFileSync(new URL("../app/page.js", import.meta.url), "utf8");
   const pure = fs.readFileSync(new URL("../lib/workflow-templates.mjs", import.meta.url), "utf8");
-  const chunks = fs.readdirSync(new URL("../.next/static/chunks/app/", import.meta.url)).filter((name) => name.startsWith("page-")).map((name) => fs.readFileSync(new URL(`../.next/static/chunks/app/${name}`, import.meta.url), "utf8")).join("\n");
+  const chunks = compiledAppChunks(new URL("../.next/static/chunks/", import.meta.url)).join("\n");
   for (const copy of Object.values(CAPABILITY_COPY)) {
     const compiledBadge = copy.badge.replaceAll("·", "\\x" + "b7");
     assert.ok(chunks.includes(copy.badge) || chunks.includes(compiledBadge));

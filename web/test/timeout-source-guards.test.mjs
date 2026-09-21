@@ -32,7 +32,8 @@ async function javascriptFiles(root) {
 test("page source and ABI use only bounded job reads", async () => {
   const [page, contract] = await Promise.all([readFile(pagePath, "utf8"), readFile(contractPath, "utf8")]);
   assert.match(page, /functionName:\s*"getJobsPaged"/);
-  assert.match(page, /args:\s*\[pageOffset, JOB_PAGE_SIZE\]/);
+  assert.match(page, /const pageSize = surface === "job-detail" \? 1n : JOB_PAGE_SIZE/);
+  assert.match(page, /args:\s*\[pageOffset, pageSize\]/);
   assert.match(page, /totalJobs\.toString\(\)/);
   assert.doesNotMatch(page, /getAllJobs/);
   assert.doesNotMatch(contract, /getAllJobs/);

@@ -44,7 +44,8 @@ import { settlementOutcomeCopy } from "../lib/job-lifecycle.mjs";
 import { RecentActivity } from "./components/recent-activity";
 import { JobViewControls, JobViewEmpty, useJobView } from "./components/job-views";
 import { selectJobView } from "../lib/job-views.mjs";
-import { createTemplateDraft, validateTemplateDraft, assertJobTextBounds, validateWorkflowReward } from "../lib/workflow-templates.mjs";
+import { parseJobId } from "../lib/job-id.mjs";
+import { createTemplateDraft, previewTemplateDraft, validateTemplateDraft, assertJobTextBounds, validateWorkflowReward } from "../lib/workflow-templates.mjs";
 import { withSourcePreflight } from "../lib/source-preflight.mjs";
 import {
   assertSuccessfulReceipt,
@@ -67,7 +68,7 @@ const DISCOVERY_ENDPOINT = process.env.NEXT_PUBLIC_ENVIO_GRAPHQL_URL || "";
 const JOB_PAGE_SIZE = 20n;
 
 
-export default function Page() {
+export default function Page({ surface = "home", jobId = null }) {
   const { address, isConnected, chainId } = useAccount();
   const { connect, connectors, isPending: connecting } = useConnect();
   const { disconnect } = useDisconnect();
@@ -86,10 +87,19 @@ export default function Page() {
     });
   };
   const selectWorkflow = (id) => {
+    if (surface === "workflows") {
+      window.location.assign(`/jobs/new?template=${encodeURIComponent(id)}`);
+      return;
+    }
     setWorkflowDraft((current) => current?.templateId === id ? current : createTemplateDraft(id));
     focusPostJob();
   };
   const compileWorkflow = (draft) => {
+    if (surface === "workflows") {
+      window.sessionStorage.setItem("marketplace-job-draft", JSON.stringify(draft));
+      window.location.assign("/jobs/new?draft=compiled");
+      return;
+    }
     setWorkflowDraft(draft);
     setWorkflowRevision((current) => current + 1);
     focusPostJob();
@@ -107,7 +117,9 @@ export default function Page() {
   const [discoveryError, setDiscoveryError] = useState("");
   const [discoveryLoading, setDiscoveryLoading] = useState(false);
   const [jobView, updateJobView] = useJobView();
-  const pageOffset = BigInt(jobView.page) * JOB_PAGE_SIZE;
+  const detailJobId = parseJobId(jobId);
+  const pageOffset = surface === "job-detail" && detailJobId ? detailJobId - 1n : BigInt(jobView.page) * JOB_PAGE_SIZE;
+  const pageSize = surface === "job-detail" ? 1n : JOB_PAGE_SIZE;
   const setPageOffset = (offset) => updateJobView({ page: Number(offset / JOB_PAGE_SIZE) });
   const [chainTimestamp, setChainTimestamp] = useState(null);
   const discoveryRequestId = useRef(0);
@@ -120,7 +132,7 @@ export default function Page() {
     abi: MARKETPLACE_ABI,
     functionName: "getJobsPaged",
     chainId: arcTestnet.id,
-    args: [pageOffset, JOB_PAGE_SIZE],
+    args: [pageOffset, pageSize],
     query: { enabled: !!CONTRACT_ADDRESS, refetchInterval: 8000 },
   });
   const jobs = useMemo(() => jobsPage?.[0] || [], [jobsPage]);
@@ -130,6 +142,27 @@ export default function Page() {
     error: noContract ? new Error("Contract address is missing") : jobsReadError,
     itemCount: jobs.length,
   });
+
+  useEffect(() => {
+    if (surface !== "post-job") return;
+    const params = new URLSearchParams(window.location.search);
+    const templateId = params.get("template");
+    if (templateId) {
+      try { setWorkflowDraft(createTemplateDraft(templateId)); } catch { /* keep the safe default */ }
+      return;
+    }
+    if (params.get("draft") !== "compiled") return;
+    try {
+      const stored = window.sessionStorage.getItem("marketplace-job-draft");
+      if (!stored) return;
+      const candidate = JSON.parse(stored);
+      const checked = previewTemplateDraft(candidate);
+      if (checked.valid) setWorkflowDraft(candidate);
+      window.sessionStorage.removeItem("marketplace-job-draft");
+    } catch {
+      window.sessionStorage.removeItem("marketplace-job-draft");
+    }
+  }, [surface]);
 
   useEffect(() => {
     if (!CONTRACT_ADDRESS) return undefined;
@@ -284,7 +317,10 @@ export default function Page() {
   const pagination = getPaginationState(pageOffset, JOB_PAGE_SIZE, totalJobs);
   const statusCounts = getJobStatusCounts(jobList);
   const selectedJobs = selectJobView(jobList, jobView, isConnected ? address : undefined);
-  const needsViewWallet = jobView.view !== "marketplace" && !isConnected;
+  const visibleJobs = surface === "job-detail"
+    ? jobList.filter((job) => detailJobId !== null && job.id === detailJobId)
+    : selectedJobs.jobs;
+  const needsViewWallet = surface === "jobs" && jobView.view !== "marketplace" && !isConnected;
   const indexedAgents = indexedDiscovery?.agents || [];
   const recommendedAgents = indexedAgents.length > 0 ? indexedAgents : onchainAgents;
   const recommendationResolved = onchainAgentsResolved
@@ -347,6 +383,7 @@ export default function Page() {
 
   return (
     <Shell
+      surface={surface}
       right={isConnected ? (
         <ConnectedWallet address={address} onDisconnect={() => disconnect()} />
       ) : (
@@ -393,74 +430,82 @@ export default function Page() {
         <span className="testnet-copy">Test tokens have no real-world value</span>
       </div>
 
-      <section className="dashboard-grid">
-        <div className="card balance-card metric-card metric-card-large">
-          <div className="metric-label">Wallet balance</div>
-          <div className="balance-value">{isConnected ? `${fmt(usdcBalance)} USDC` : "Wallet not connected"}</div>
-          <p className="muted">{isConnected ? "Test USDC available for escrow deposits and rewards." : "Connect only when you want to register, fund, or settle a job."}</p>
-          <a className="button-link ghost" href={FAUCET} target="_blank" rel="noreferrer">Get test USDC ↗</a>
-        </div>
-        <MetricCard label="Open jobs" value={metricValue(statusCounts.open)} tone="blue" />
-        <MetricCard label="In progress" value={metricValue(statusCounts.active)} tone="yellow" />
-        <MetricCard label="Settled records" value={metricValue(statusCounts.settled)} tone="green" />
-      </section>
+      {surface === "home" && <>
+        <section className="dashboard-grid">
+          <div className="card balance-card metric-card metric-card-large">
+            <div className="metric-label">Wallet balance</div>
+            <div className="balance-value">{isConnected ? `${fmt(usdcBalance)} USDC` : "Wallet not connected"}</div>
+            <p className="muted">{isConnected ? "Test USDC available for escrow deposits and rewards." : "Connect only when you want to register, fund, or settle a job."}</p>
+            <a className="button-link ghost" href={FAUCET} target="_blank" rel="noreferrer">Get test USDC ↗</a>
+          </div>
+          <MetricCard label="Open jobs" value={metricValue(statusCounts.open)} tone="blue" />
+          <MetricCard label="In progress" value={metricValue(statusCounts.active)} tone="yellow" />
+          <MetricCard label="Settled records" value={metricValue(statusCounts.settled)} tone="green" />
+        </section>
+        <p className="network-note">Arc gas uses <b>native USDC</b> with 18 decimals. Escrow uses <b>ERC-20 USDC</b> with 6 decimals.</p>
+        <HomeDirectory />
+      </>}
 
-      <p className="network-note">
-        Arc gas uses <b>native USDC</b> with 18 decimals. Escrow uses <b>ERC-20 USDC</b> with 6 decimals.
-      </p>
+      {surface === "workflows" && <>
+        <WorkflowGallery onSelect={selectWorkflow} onCompile={compileWorkflow} />
+        <WorkflowExample onSelect={selectWorkflow} />
+      </>}
 
-      <WorkflowGallery onSelect={selectWorkflow} onCompile={compileWorkflow} />
-      <section className="action-grid" id="actions" aria-label="Marketplace actions">
-        <RegisterAgent agent={agent} stake={agentStake} busy={busy} connected={isConnected} onConnect={requestConnect}
-          disabled={wrongNetwork || noContract || agentStake == null}
-          onWithdraw={() => run("withdraw", () => write("withdrawStake", []))}
-          onRegister={(name, skill, fee) =>
-            run("register", async () => {
-              if (!agent?.registered) {
-                const approveHash = await writeContractAsync({
-                  address: USDC_ADDRESS, abi: ERC20_ABI, functionName: "approve",
-                  args: [CONTRACT_ADDRESS, agentStake],
+      {surface === "agent-register" && (
+        <section className="single-action-layout" aria-label="Agent registration">
+          <RegisterAgent agent={agent} stake={agentStake} busy={busy} connected={isConnected} onConnect={requestConnect}
+            disabled={wrongNetwork || noContract || agentStake == null}
+            onWithdraw={() => run("withdraw", () => write("withdrawStake", []))}
+            onRegister={(name, skill, fee) =>
+              run("register", async () => {
+                if (!agent?.registered) {
+                  const approveHash = await writeContractAsync({
+                    address: USDC_ADDRESS, abi: ERC20_ABI, functionName: "approve",
+                    args: [CONTRACT_ADDRESS, agentStake],
+                  });
+                  assertSuccessfulReceipt(await waitForTransactionReceipt(config, { hash: approveHash }));
+                }
+                return write("registerAgent", [name, skill, fee ? parseUnits(fee, USDC_DECIMALS) : 0n]);
+              })
+            } />
+        </section>
+      )}
+
+      {surface === "post-job" && (
+        <section className="single-action-layout" aria-label="Post a job">
+          <PostJob key={`${workflowDraft?.templateId || "custom"}:${workflowRevision}`} draft={workflowDraft} setDraft={setWorkflowDraft} busy={busy} disabled={wrongNetwork || noContract} connected={isConnected} onConnect={requestConnect}
+            onPost={async (desc, reward, category, draft) => {
+              await run("post", async () => {
+                assertJobTextBounds(desc, category);
+                if (!validateWorkflowReward(reward)) throw new Error("Invalid test USDC reward.");
+                if (draft) {
+                  const checked = validateTemplateDraft(draft);
+                  if (!checked.valid || checked.value.description !== desc || checked.value.reward !== reward || checked.value.category !== category) throw new Error("Review the current workflow draft before posting.");
+                } else if (category === "url-summary-v1") throw new Error("Use the strict URL-summary template.");
+                return withSourcePreflight(category, desc, async () => {
+                  const amount = parseUnits(reward, USDC_DECIMALS);
+                  const approveHash = await writeContractAsync({
+                    address: USDC_ADDRESS, abi: ERC20_ABI, functionName: "approve",
+                    args: [CONTRACT_ADDRESS, amount],
+                  });
+                  assertSuccessfulReceipt(await waitForTransactionReceipt(config, { hash: approveHash }));
+                  return write("postJob", [desc, amount, category]);
                 });
-                assertSuccessfulReceipt(await waitForTransactionReceipt(config, { hash: approveHash }));
-              }
-              return write("registerAgent", [name, skill, fee ? parseUnits(fee, USDC_DECIMALS) : 0n]);
-            })
-          } />
-
-        <PostJob key={`${workflowDraft?.templateId || "custom"}:${workflowRevision}`} draft={workflowDraft} setDraft={setWorkflowDraft} busy={busy} disabled={wrongNetwork || noContract} connected={isConnected} onConnect={requestConnect}
-          onPost={async (desc, reward, category, draft) => {
-            await run("post", async () => {
-              assertJobTextBounds(desc, category);
-              if (!validateWorkflowReward(reward)) throw new Error("Invalid test USDC reward.");
-              if (draft) {
-                const checked = validateTemplateDraft(draft);
-                if (!checked.valid || checked.value.description !== desc || checked.value.reward !== reward || checked.value.category !== category) throw new Error("Review the current workflow draft before posting.");
-              } else if (category === "url-summary-v1") throw new Error("Use the strict URL-summary template.");
-              return withSourcePreflight(category, desc, async () => {
-                const amount = parseUnits(reward, USDC_DECIMALS);
-                const approveHash = await writeContractAsync({
-                  address: USDC_ADDRESS, abi: ERC20_ABI, functionName: "approve",
-                  args: [CONTRACT_ADDRESS, amount],
-                });
-                assertSuccessfulReceipt(await waitForTransactionReceipt(config, { hash: approveHash }));
-                return write("postJob", [desc, amount, category]);
               });
-            });
-          }} />
-      </section>
-
-      <WorkflowExample onSelect={selectWorkflow} />
-      <section className="card jobs-panel" id="jobs">
+            }} />
+        </section>
+      )}
+      {(surface === "jobs" || surface === "job-detail") && <section className="card jobs-panel" id="jobs">
         <div className="section-head">
           <div>
-            <div className="eyebrow small-eyebrow">Marketplace</div>
-            <h2>Jobs and settlements</h2>
-            <p className="muted">Open work, active delivery windows, and final outcomes from this bounded on-chain page.</p>
+            <div className="eyebrow small-eyebrow">{surface === "job-detail" ? "On-chain job" : "Marketplace"}</div>
+            <h2>{surface === "job-detail" ? `Job #${jobId}` : "Jobs and settlements"}</h2>
+            <p className="muted">{surface === "job-detail" ? "Canonical contract state, lifecycle, delivery evidence, and available settlement actions." : "Open work, active delivery windows, and final outcomes from this bounded on-chain page."}</p>
           </div>
           <button className="ghost" onClick={refreshAll}>Refresh</button>
         </div>
 
-        <div className="discovery-toolbar" aria-label="Open job discovery filters">
+        {surface === "jobs" && <div className="discovery-toolbar" aria-label="Open job discovery filters">
           <div className="field">
             <label htmlFor="job-category-filter">Category</label>
             <input id="job-category-filter" value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)} placeholder="All categories" />
@@ -481,18 +526,20 @@ export default function Page() {
               <option value="rewardAsc">Lowest reward</option>
             </select>
           </div>
-        </div>
-        <JobViewControls state={jobView} onChange={updateJobView} counts={selectedJobs.counts}
-          dataStatus={jobsStatus} connected={isConnected} />
+        </div>}
+        {surface === "jobs" && <JobViewControls state={jobView} onChange={updateJobView} counts={selectedJobs.counts}
+          dataStatus={jobsStatus} connected={isConnected} />}
         <div className="discovery-summary">
           <span>
             {jobsStatus === "loading"
               ? "Loading bounded on-chain jobs…"
               : jobsStatus === "error"
                 ? "On-chain job data unavailable"
-                : `${totalJobs.toString()} total on-chain jobs · showing ${pagination.start.toString()}–${pagination.end.toString()}`}
+                : surface === "job-detail"
+                  ? visibleJobs.length ? `Loaded job #${jobId} from the Arc contract` : `Job #${jobId} was not found`
+                  : `${totalJobs.toString()} total on-chain jobs · showing ${pagination.start.toString()}–${pagination.end.toString()}`}
           </span>
-          <span>{discoveryLoading ? "Updating agent data…" : "Bounded on-chain page"}</span>
+          <span>{surface === "job-detail" ? "Exact bounded contract read" : discoveryLoading ? "Updating agent data…" : "Bounded on-chain page"}</span>
         </div>
         {discoveryError && <div className="banner warn">Indexer unavailable. Jobs still use bounded on-chain reads; agent recommendations use the last indexed result or the on-chain fallback.</div>}
 
@@ -501,8 +548,14 @@ export default function Page() {
             connectDisabled={connecting || connectors.length === 0} />
         ) : jobsStatus === "loading" || jobsStatus === "error" ? (
           <MarketplaceDataState resource="jobs" status={jobsStatus} />
-        ) : selectedJobs.jobs.length === 0 ? (
-          <JobViewEmpty state={jobView} connected={isConnected} onReset={() => {
+        ) : visibleJobs.length === 0 ? (
+          surface === "job-detail" ? (
+            <div className="empty-state" role="status">
+              <h3>{detailJobId ? "Job not found" : "Invalid job ID"}</h3>
+              <p>{detailJobId ? "The contract did not return this job ID. Check the URL or browse the marketplace." : "Use a positive whole-number job ID."}</p>
+              <a className="button-link ghost" href="/jobs">Browse jobs</a>
+            </div>
+          ) : <JobViewEmpty state={jobView} connected={isConnected} onReset={() => {
             updateJobView({ status: "all" });
             setCategoryFilter("");
             setRewardMin("");
@@ -510,7 +563,7 @@ export default function Page() {
           }} />
         ) : (
           <div className="jobs-list">
-            {selectedJobs.jobs.map((j) => (
+            {visibleJobs.map((j) => (
               <JobCard key={j.id.toString()} job={j} me={address} agent={agent} busy={busy}
                 agentStake={agentStake}
                 connected={isConnected}
@@ -531,17 +584,17 @@ export default function Page() {
             ))}
           </div>
         )}
-        {(jobsStatus === "ready" || jobsStatus === "empty") && (
+        {surface === "jobs" && (jobsStatus === "ready" || jobsStatus === "empty") && (
           <div className="pagination" aria-label="Job pages">
             <button className="ghost" disabled={!pagination.hasPrevious} onClick={() => setPageOffset(pagination.previousOffset)}>Previous</button>
             <span>Jobs {pagination.start.toString()}–{pagination.end.toString()} of {totalJobs.toString()}</span>
             <button className="ghost" disabled={!pagination.hasNext} onClick={() => setPageOffset(pagination.nextOffset)}>Next</button>
           </div>
         )}
-      </section>
+      </section>}
 
-      <RecentActivity />
-      <RankedAgents agents={recommendedAgents} status={recommendationStatus} source={indexedAgents.length > 0 ? "marketplace index" : "latest on-chain records"} />
+      {surface === "activity" && <RecentActivity />}
+      {surface === "agents" && <RankedAgents agents={recommendedAgents} status={recommendationStatus} source={indexedAgents.length > 0 ? "marketplace index" : "latest on-chain records"} />}
     </Shell>
   );
 }
@@ -592,7 +645,33 @@ function MetricCard({ label, value, tone }) {
   );
 }
 
-function Shell({ children, right }) {
+const SURFACE_COPY = {
+  home: ["Escrow-backed work on Arc", "Hire agents. Verify outcomes.", "Browse public jobs, fund work in test USDC, and follow every settlement directly on-chain."],
+  workflows: ["Deterministic job design", "Start with a supported workflow.", "Compile a constrained brief, inspect its acceptance criteria, then continue to the escrow form."],
+  jobs: ["On-chain marketplace", "Browse jobs and settlements.", "Inspect executable work, delivery windows, and canonical outcomes from the Arc contract."],
+  "job-detail": ["Canonical job record", "Inspect one job end to end.", "Review escrow state, lifecycle, delivery evidence, and the actions currently available on-chain."],
+  "post-job": ["For clients", "Post a job with escrow.", "Choose a supported workflow, review the exact public job text, and fund it with test USDC."],
+  agents: ["On-chain reputation", "Discover marketplace agents.", "Compare registered operators using bounded marketplace and contract records."],
+  "agent-register": ["For operators", "Register your agent.", "Publish an on-chain profile, lock the required stake, and make your agent discoverable."],
+  activity: ["On-chain lifecycle", "Follow marketplace activity.", "Read recent contract-backed job transitions without relying on synthetic backend state."],
+};
+
+function HomeDirectory() {
+  const destinations = [
+    ["Workflows", "Turn a supported brief into a structured, reviewable job draft.", "/workflows", "Explore workflows"],
+    ["Marketplace", "Browse open work, active deliveries, and final settlements.", "/jobs", "Browse jobs"],
+    ["Agents", "Discover registered agents and inspect their on-chain reputation.", "/agents", "Discover agents"],
+    ["Activity", "Follow recent contract-backed lifecycle transitions.", "/activity", "View activity"],
+  ];
+  return <section className="home-directory" aria-labelledby="home-directory-title">
+    <div className="section-head"><div><div className="eyebrow small-eyebrow">Marketplace directory</div><h2 id="home-directory-title">Choose what you want to do</h2><p className="muted">Each area now has its own focused page.</p></div></div>
+    <div className="home-directory-grid">{destinations.map(([title, copy, href, action]) => <article className="card home-directory-card" key={href}><h3>{title}</h3><p>{copy}</p><a className="button-link ghost" href={href}>{action} →</a></article>)}</div>
+  </section>;
+}
+
+function Shell({ children, right, surface }) {
+  const [eyebrow, title, copy] = SURFACE_COPY[surface] || SURFACE_COPY.home;
+  const active = surface === "job-detail" ? "jobs" : surface;
   return (
     <main className="container">
       <header className="header">
@@ -601,20 +680,23 @@ function Shell({ children, right }) {
           <span className="environment-badge">Testnet</span>
         </div>
         <nav className="primary-nav" aria-label="Primary navigation">
-          <a href="/#workflows">Workflows</a>
-          <a href="#jobs">Jobs</a>
-          <a href="#agents">Agents</a>
-          <a href="#actions">Post or register</a>
+          <a href="/workflows" aria-current={active === "workflows" ? "page" : undefined}>Workflows</a>
+          <a href="/jobs" aria-current={active === "jobs" ? "page" : undefined}>Jobs</a>
+          <a href="/agents" aria-current={active === "agents" ? "page" : undefined}>Agents</a>
+          <a href="/activity" aria-current={active === "activity" ? "page" : undefined}>Activity</a>
+          <a className="nav-cta" href="/jobs/new" aria-current={active === "post-job" ? "page" : undefined}>Post a job</a>
         </nav>
         <div className="header-wallet">{right}</div>
       </header>
       <section className="product-intro" aria-labelledby="marketplace-title">
         <div>
-          <p className="eyebrow">Escrow-backed work on Arc</p>
-          <h1 id="marketplace-title">Hire agents. Verify outcomes.</h1>
-          <p>Browse public jobs, fund work in test USDC, and follow every settlement directly on-chain.</p>
+          <p className="eyebrow">{eyebrow}</p>
+          <h1 id="marketplace-title">{title}</h1>
+          <p>{copy}</p>
         </div>
-        <a className="button-link primary" href="#actions">Post a job</a>
+        {surface === "home" && <a className="button-link primary" href="/jobs/new">Post a job</a>}
+        {surface === "agents" && <a className="button-link primary" href="/agents/register">Register an agent</a>}
+        {surface === "workflows" && <a className="button-link primary" href="/jobs/new">Create a job</a>}
       </section>
       {children}
     </main>
@@ -742,7 +824,7 @@ function JobCard({ job, me, agent, agentStake, onAccept, onSubmit, onApprove, on
       <div className="job-main">
         <div className="job-copy">
           <div className="job-topline">
-            <span className="job-id">JOB #{job.id.toString()}</span>
+            <a className="job-id" href={`/jobs/${job.id.toString()}`}>JOB #{job.id.toString()}</a>
             <span className="pill">{job.category}</span>
             <span className={`pill ${pillClass}`}>{JOB_STATUS[status]}</span>
           </div>

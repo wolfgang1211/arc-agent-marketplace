@@ -7,8 +7,10 @@ const page = ["../app/page.js", "../app/components/workflows.js"].map((path) => 
 test("walletless visitors render the marketplace instead of an early wallet gate", () => {
   assert.doesNotMatch(page, /if\s*\(!isConnected\)\s*\{\s*return\s*\(/);
   assert.match(page, /<MetricCard label="Open jobs"/);
-  assert.match(page, /<h2>Jobs and settlements<\/h2>/);
+  assert.match(page, /"Jobs and settlements"/);
   assert.match(page, /<h2>Recommended agents<\/h2>/);
+  assert.match(page, /surface === "jobs"/);
+  assert.match(page, /surface === "agents"/);
 });
 
 test("walletless write controls explain that a wallet is required", () => {

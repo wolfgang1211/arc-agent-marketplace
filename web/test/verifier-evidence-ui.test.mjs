@@ -90,10 +90,10 @@ test("inspector has no wallet/network capabilities or outbound artifact renderin
 });
 
 test("fresh compiled homepage retains advisory warnings (post-build guard)", async (t) => {
-  const directory = new URL("../.next/static/chunks/app/", import.meta.url);
-  const files = (await readdir(directory)).filter((name) => /^page-.*\.js$/.test(name));
+  const directory = new URL("../.next/static/chunks/", import.meta.url);
+  const files = (await readdir(directory, { recursive: true })).filter((name) => String(name).endsWith(".js"));
   assert.ok(files.length, "Run npm run build before post-build tests");
-  const compiled = (await Promise.all(files.map((name) => readFile(new URL(name, directory), "utf8")))).join("\n");
+  const compiled = (await Promise.all(files.map((name) => readFile(new URL(String(name).replaceAll("\\", "/"), directory), "utf8")))).join("\n");
   // A pre-feature build may exist during the initial pre-build test run.
   // REQUIRE_VERIFIER_BUILD=1 makes freshness mandatory for release verification.
   if (process.env.REQUIRE_VERIFIER_BUILD !== "1" && !compiled.includes("Inspect optional verifier evidence")) return t.skip("Pre-feature build; mandatory fresh verification uses REQUIRE_VERIFIER_BUILD=1");

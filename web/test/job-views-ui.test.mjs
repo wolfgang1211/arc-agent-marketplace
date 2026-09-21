@@ -83,7 +83,8 @@ test("integration uses one bounded job source and leaves indexer fallback intact
   const page = await readFile(new URL("../app/page.js", import.meta.url), "utf8");
   assert.match(page, /const JOB_PAGE_SIZE = 20n/);
   assert.match(page, /selectJobView\(jobList, jobView, isConnected \? address : undefined\)/);
-  assert.match(page, /selectedJobs.jobs.map/);
+  assert.match(page, /visibleJobs\.map/);
+  assert.match(page, /surface === "job-detail"[\s\S]*job\.id === detailJobId/);
   assert.match(page, /loadOnchainAgentFallback\(/);
   assert.match(page, /fetchDiscovery\(/);
   assert.doesNotMatch(source, /useReadContract|fetch\(|readContract|writeContract/);

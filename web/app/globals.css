@@ -137,6 +137,14 @@ a { color: var(--accent-strong); }
 .metric-green { background: linear-gradient(180deg, rgba(63,214,168,.14), rgba(20,25,35,.92)); }
 .network-note { margin: 10px 2px 18px; color: var(--muted); font-size: 13px; }
 .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+.single-action-layout { max-width: 760px; margin: 0 auto; }
+.single-action-layout .action-card { margin-bottom: 0; }
+.home-directory { margin-top: 34px; }
+.home-directory-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.home-directory-card { display: flex; min-height: 190px; flex-direction: column; margin-bottom: 0; }
+.home-directory-card h3 { margin: 0 0 8px; font-size: 20px; }
+.home-directory-card p { margin: 0 0 22px; color: var(--muted); line-height: 1.55; }
+.home-directory-card .button-link { margin-top: auto; }
 .section-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 16px; }
 .section-head h2 { font-size: 26px; margin: 5px 0 4px; letter-spacing: -.03em; }
 .small-eyebrow { font-size: 11px; }
@@ -492,6 +500,9 @@ button:disabled { opacity: .42; }
 .primary-nav { justify-content: center; gap: 4px; }
 .primary-nav a { padding: 8px 10px; border-radius: 7px; color: #c6c5c0; font-size: 13px; text-decoration: none; }
 .primary-nav a:hover { background: #1a1b1e; color: var(--text); }
+.primary-nav a[aria-current="page"] { background: #1a1b1e; color: #fff; box-shadow: inset 0 0 0 1px var(--border-strong); }
+.primary-nav a.nav-cta { background: #e9e7df; color: #121315; font-weight: 750; }
+.primary-nav a.nav-cta:hover, .primary-nav a.nav-cta[aria-current="page"] { background: #fff; color: #121315; box-shadow: none; }
 .header-wallet { flex: 1 1 300px; display: flex; justify-content: flex-end; }
 
 .product-intro {
@@ -614,6 +625,8 @@ label { color: #c1c0ba; font-size: 12px; font-weight: 650; }
   .product-intro { grid-template-columns: 1fr; gap: 22px; padding-top: 8px; }
   .product-intro h1 { font-size: clamp(36px, 13vw, 52px); }
   .product-intro .button-link { width: 100%; }
+  .home-directory-grid { grid-template-columns: 1fr; }
+  .home-directory-card { min-height: 0; }
   .network-strip { align-items: flex-start; flex-direction: column; gap: 5px; }
   .network-strip .testnet-copy { margin-left: 0; }
   .dashboard-grid { grid-template-columns: 1fr 1fr; }
