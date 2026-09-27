@@ -68,6 +68,16 @@ test("live transaction writes are fail-closed and receipts are verified", async 
   const missingEvent = clients({ eventNames: [] });
   const missingEventChain = createChainAdapter({ ...missingEvent, account, contractAddress, usdcAddress, writeEnabled: true });
   await assert.rejects(() => missingEventChain.acceptJob(7n), /acceptJob_missing_JobAccepted_event/);
+
+  const payout = clients({ eventNames: ["JobExpiredPaid"] });
+  const payoutChain = createChainAdapter({ ...payout, account, contractAddress, usdcAddress, writeEnabled: true });
+  const payoutResult = await payoutChain.claimApprovalTimeout(7n);
+  assert.match(payoutResult.hash, /^0xa{64}$/);
+  assert.equal(payout.writes[0].functionName, "claimTimeout");
+
+  const missingPayoutEvent = clients({ eventNames: [] });
+  const missingPayoutEventChain = createChainAdapter({ ...missingPayoutEvent, account, contractAddress, usdcAddress, writeEnabled: true });
+  await assert.rejects(() => missingPayoutEventChain.claimApprovalTimeout(7n), /claimTimeout_missing_JobExpiredPaid_event/);
 });
 
 test("transaction status treats only receipt-not-found as pending", async () => {

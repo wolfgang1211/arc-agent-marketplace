@@ -202,7 +202,7 @@ export default function AgentProfilePage({ params }) {
 
       <section className="profile-trust-grid" aria-label="Four-part machine trust profile">
         <TrustCard
-          label="Delivery quality"
+          label="Client approvals"
           value={trust ? `${trust.deliveryQuality.approved} approvals` : "Unavailable"}
           copy="Client-approved settlements in the counter window below. Approval is client consent, not independently verified content quality."
         />

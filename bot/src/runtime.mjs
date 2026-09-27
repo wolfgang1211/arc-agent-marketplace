@@ -26,7 +26,7 @@ export async function runCycle({ chain, state, prepareJob }) {
 
   let jobs = await chain.listJobs();
   const knownIds = Object.entries(snapshot.jobs)
-    .filter(([, record]) => ["prepared", "accepting", "accepted", "submitting", "submitted", "terminal_failure", "timing_out"].includes(record?.phase))
+    .filter(([, record]) => ["prepared", "accepting", "accepted", "submitting", "submitted", "terminal_failure", "timing_out", "claiming_payout"].includes(record?.phase))
     .map(([jobId]) => jobId);
   if (knownIds.length > 0) {
     const recovered = await Promise.all(knownIds.map((jobId) => chain.getJob(jobId)));
@@ -34,26 +34,14 @@ export async function runCycle({ chain, state, prepareJob }) {
     for (const job of recovered) if (job) byJobId.set(String(job.id), job);
     jobs = [...byJobId.values()];
   }
-  const completed = jobs.find((job) => Number(job.status) === 4 && sameAddress(job.agent, chain.address) && snapshot.jobs[String(job.id)]);
+  const completed = jobs.find((job) => Number(job.status) === 4 && sameAddress(job.agent, chain.address) && snapshot.jobs[String(job.id)] && snapshot.jobs[String(job.id)].phase !== "completed");
   if (completed) {
-    const jobId = String(completed.id);
-    const record = snapshot.jobs[jobId];
-    if (record.phase !== "completed") {
-      const [native, usdc] = await Promise.all([chain.getNativeBalance(), chain.getUsdcBalance()]);
-      record.phase = "completed";
-      record.balanceAfterSettlement = { native: String(native), usdc: String(usdc) };
-      record.completedAt = new Date().toISOString();
-      await state.save(snapshot);
-    }
-    return {
-      action: "settlement_observed",
-      jobId,
-      deliveryUri: record.deliveryUri,
-      acceptTxHash: record.acceptTxHash,
-      submitTxHash: record.submitTxHash,
-      balanceBeforeAccept: record.balanceBeforeAccept,
-      balanceAfterSettlement: record.balanceAfterSettlement,
-    };
+    return observeSettlement({ chain, state, snapshot, job: completed });
+  }
+
+  const ambiguousPayout = jobs.find((job) => snapshot.jobs[String(job.id)]?.phase === "claiming_payout");
+  if (ambiguousPayout) {
+    return reconcileAmbiguousPayout({ chain, state, snapshot, job: ambiguousPayout, record: snapshot.jobs[String(ambiguousPayout.id)] });
   }
 
   const ambiguousBroadcast = jobs.find((job) => {
@@ -75,8 +63,15 @@ export async function runCycle({ chain, state, prepareJob }) {
     .sort(byId)[0];
   if (ownedActive) return handleOwnedInProgress({ chain, state, snapshot, job: ownedActive, prepareJob });
 
-  const ownedSubmitted = jobs.find((job) => Number(job.status) === 2 && sameAddress(job.agent, chain.address));
-  if (ownedSubmitted) return { action: "awaiting_customer_approval", jobId: String(ownedSubmitted.id), deliveryUri: ownedSubmitted.deliverableURI };
+  const ownedSubmitted = jobs
+    .filter((job) => Number(job.status) === 2 && sameAddress(job.agent, chain.address))
+    .sort(byId)[0];
+  if (ownedSubmitted) return handleOwnedSubmitted({ chain, state, snapshot, job: ownedSubmitted });
+
+  const ownedDisputed = jobs
+    .filter((job) => Number(job.status) === 3 && sameAddress(job.agent, chain.address))
+    .sort(byId)[0];
+  if (ownedDisputed) return markDisputedWait({ state, snapshot, job: ownedDisputed });
 
   const balance = await chain.getNativeBalance();
   if (!hasGasReserve(balance)) return { action: "gas_guard", balance: String(balance) };
@@ -157,6 +152,120 @@ export async function runCycle({ chain, state, prepareJob }) {
   }
 
   return { action: "no_eligible_jobs" };
+}
+
+async function observeSettlement({ chain, state, snapshot, job }) {
+  const jobId = String(job.id);
+  const record = snapshot.jobs[jobId] || {};
+  const [native, usdc] = await Promise.all([chain.getNativeBalance(), chain.getUsdcBalance()]);
+  record.phase = "completed";
+  record.deliveryUri ||= job.deliverableURI;
+  record.balanceAfterSettlement = { native: String(native), usdc: String(usdc) };
+  record.completedAt = new Date().toISOString();
+  snapshot.jobs[jobId] = record;
+  await state.save(snapshot);
+  return {
+    action: "settlement_observed",
+    jobId,
+    deliveryUri: record.deliveryUri,
+    acceptTxHash: record.acceptTxHash,
+    submitTxHash: record.submitTxHash,
+    balanceBeforeAccept: record.balanceBeforeAccept,
+    balanceAfterSettlement: record.balanceAfterSettlement,
+  };
+}
+
+async function handleOwnedSubmitted({ chain, state, snapshot, job }) {
+  const jobId = String(job.id);
+  const record = snapshot.jobs[jobId] || { phase: "submitted", deliveryUri: job.deliverableURI };
+  snapshot.jobs[jobId] = record;
+  const chainTimestamp = await chain.getChainTimestamp();
+  if (chainTimestamp < BigInt(job.approvalDeadline)) {
+    return { action: "awaiting_customer_approval", jobId, deliveryUri: job.deliverableURI, approvalDeadline: String(job.approvalDeadline) };
+  }
+
+  record.phase = "claiming_payout";
+  record.payoutClaimIntentAt = new Date().toISOString();
+  await state.save(snapshot);
+  try {
+    const claimed = await chain.claimApprovalTimeout(job.id, {
+      onBroadcast: async (hash) => {
+        record.payoutTxHash = hash;
+        record.payoutBroadcastAt = new Date().toISOString();
+        await state.save(snapshot);
+      },
+    });
+    const fresh = await chain.getJob(job.id);
+    return classifyPayoutJob({ chain, state, snapshot, job: fresh || job, record, payoutTxHash: claimed.hash });
+  } catch (error) {
+    record.reason = safeReason(error);
+    if (record.payoutTxHash) {
+      await state.save(snapshot);
+      return { action: "payout_broadcast_reconciliation_wait", jobId, txHash: record.payoutTxHash };
+    }
+    const fresh = await chain.getJob(job.id);
+    if (Number(fresh?.status) !== 2) {
+      return classifyPayoutJob({ chain, state, snapshot, job: fresh || job, record });
+    }
+    record.phase = "submitted";
+    await state.save(snapshot);
+    return { action: "approval_timeout_retry_later", jobId, reason: record.reason };
+  }
+}
+
+async function reconcileAmbiguousPayout({ chain, state, snapshot, job, record }) {
+  const jobId = String(job.id);
+  const txHash = record.payoutTxHash;
+  if (!txHash) {
+    const fresh = await chain.getJob(job.id);
+    if (Number(fresh?.status) !== 2) return classifyPayoutJob({ chain, state, snapshot, job: fresh || job, record });
+    record.phase = "submitted";
+    await state.save(snapshot);
+    return { action: "approval_timeout_retry_later", jobId, reason: "payout_intent_not_broadcast" };
+  }
+
+  const transactionStatus = await chain.getTransactionStatus(txHash);
+  if (transactionStatus === "pending") return { action: "payout_broadcast_reconciliation_wait", jobId, txHash };
+  const fresh = await chain.getJob(job.id);
+  if (transactionStatus === "success" && Number(fresh?.status) === 2) {
+    return { action: "payout_state_reconciliation_wait", jobId, txHash };
+  }
+  if (transactionStatus === "success" || Number(fresh?.status) !== 2) {
+    return classifyPayoutJob({ chain, state, snapshot, job: fresh || job, record, payoutTxHash: txHash });
+  }
+  record.phase = "submitted";
+  record.reason = "payout_transaction_reverted";
+  await state.save(snapshot);
+  return { action: "payout_reverted_retry_later", jobId, txHash };
+}
+
+async function classifyPayoutJob({ chain, state, snapshot, job, record, payoutTxHash }) {
+  const status = Number(job?.status);
+  if (status === 7) return markPayoutClaimed({ state, snapshot, job, record, payoutTxHash });
+  if (status === 4) return observeSettlement({ chain, state, snapshot, job });
+  if (status === 3) return markDisputedWait({ state, snapshot, job });
+  throw new Error("approval_timeout_state_mismatch");
+}
+
+async function markPayoutClaimed({ state, snapshot, job, record, payoutTxHash }) {
+  const jobId = String(job.id);
+  record.phase = "payout_claimed";
+  record.payoutTxHash = payoutTxHash || record.payoutTxHash;
+  record.payoutClaimedAt = new Date().toISOString();
+  await state.save(snapshot);
+  return { action: "approval_timeout_claimed", jobId, payoutTxHash: record.payoutTxHash };
+}
+
+async function markDisputedWait({ state, snapshot, job }) {
+  const jobId = String(job.id);
+  const record = snapshot.jobs[jobId] || {};
+  if (record.phase !== "disputed") {
+    record.phase = "disputed";
+    record.disputedAt = new Date().toISOString();
+    snapshot.jobs[jobId] = record;
+    await state.save(snapshot);
+  }
+  return { action: "awaiting_dispute_resolution", jobId };
 }
 
 async function handleOwnedInProgress({ chain, state, snapshot, job, prepareJob }) {

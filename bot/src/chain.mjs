@@ -94,6 +94,9 @@ export function createChainAdapter({ publicClient, walletClient, account, contra
       { name: "AgentSlashed", args: { agent: address } },
       { name: "JobExpiredRefunded", args: { jobId: BigInt(jobId) } },
     ], options.onBroadcast),
+    claimApprovalTimeout: (jobId, options = {}) => execute(contract, MARKETPLACE_ABI, "claimTimeout", [BigInt(jobId)], [
+      { name: "JobExpiredPaid", args: { jobId: BigInt(jobId), agent: address } },
+    ], options.onBroadcast),
     approveStake: (amount) => execute(usdc, ERC20_ABI, "approve", [contract, BigInt(amount)]),
     registerAgent: (name, skill, fee) => execute(contract, MARKETPLACE_ABI, "registerAgent", [name, skill, BigInt(fee)], [{ name: "AgentRegistered", args: { agent: address, name, skill, fee: BigInt(fee) } }]),
   };

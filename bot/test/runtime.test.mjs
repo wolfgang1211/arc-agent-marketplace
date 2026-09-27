@@ -7,7 +7,8 @@ import { runCycle } from "../src/runtime.mjs";
 const description = JSON.stringify({ schemaVersion: 1, task: "url_summary", sourceUrl: "https://example.com/article", language: "en", maxWords: 400 });
 const agentAddress = "0x1111111111111111111111111111111111111111";
 const clientAddress = "0x2222222222222222222222222222222222222222";
-const openJob = (id = 4n) => ({ id, client: clientAddress, agent: "0x0000000000000000000000000000000000000000", description, category: "url-summary-v1", deliverableURI: "", reward: 5_000000n, status: 0, deliveryDeadline: 0n });
+const openJob = (id = 4n) => ({ id, client: clientAddress, agent: "0x0000000000000000000000000000000000000000", description, category: "url-summary-v1", deliverableURI: "", reward: 5_000000n, status: 0, deliveryDeadline: 0n, approvalDeadline: 0n });
+const submittedJob = (id = 4n, approvalDeadline = 2_000n) => ({ ...openJob(id), agent: agentAddress, status: 2, deliveryDeadline: 1_500n, approvalDeadline, deliverableURI: `https://gateway.example/ipfs/bafy${id}/index.html` });
 
 function memoryState(initial = {}) {
   let value = structuredClone(initial);
@@ -42,7 +43,7 @@ function mockChain({ jobs = [openJob()], balance = GAS_RESERVE_WEI, usdcBalance 
       if (options.onBroadcast) await options.onBroadcast(hash);
       if (submitError) throw submitError;
       const job = jobs.find((item) => item.id === BigInt(id));
-      job.status = 2; job.deliverableURI = uri;
+      job.status = 2; job.deliverableURI = uri; job.approvalDeadline = now + 86_400n;
       return { hash };
     },
     claimTimeout: async (id, options = {}) => {
@@ -51,6 +52,15 @@ function mockChain({ jobs = [openJob()], balance = GAS_RESERVE_WEI, usdcBalance 
       if (options.onBroadcast) await options.onBroadcast(hash);
       const job = jobs.find((item) => item.id === BigInt(id));
       job.status = 6; agent = { ...agent, registered: false, stake: 0n, activeJobs: 0n };
+      return { hash };
+    },
+    claimApprovalTimeout: async (id, options = {}) => {
+      calls.push(["approval-timeout", String(id)]);
+      const hash = "0x" + "f".repeat(64);
+      if (options.onBroadcast) await options.onBroadcast(hash);
+      const job = jobs.find((item) => item.id === BigInt(id));
+      job.status = 7;
+      agent = { ...agent, activeJobs: 0n };
       return { hash };
     },
   };
@@ -173,6 +183,7 @@ test("post-broadcast reverted submit is proven before retry is reopened", async 
     if (options.onBroadcast) await options.onBroadcast(hash);
     job.status = 2;
     job.deliverableURI = uri;
+    job.approvalDeadline = 87_400n;
     return { hash };
   };
   const third = await runCycle({ chain, state, prepareJob });
@@ -195,6 +206,7 @@ test("post-broadcast successful receipt never reopens retry while job state catc
 
   job.status = 2;
   job.deliverableURI = state.inspect().jobs["23"].deliveryUri;
+  job.approvalDeadline = 87_400n;
   const third = await runCycle({ chain, state, prepareJob });
   assert.equal(third.action, "awaiting_customer_approval");
   assert.equal(chain.calls.filter((call) => call[0] === "submit").length, 1);
@@ -425,6 +437,133 @@ test("observes customer approval settlement and records chain balances before an
   assert.deepEqual(result.balanceBeforeAccept, { native: String(GAS_RESERVE_WEI), usdc: "100000000" });
   assert.deepEqual(result.balanceAfterSettlement, { native: String(GAS_RESERVE_WEI + 5_000_000_000_000_000n), usdc: "105000000" });
   assert.equal(state.inspect().jobs["12"].phase, "completed");
+});
+
+test("submitted work waits before the inclusive approval deadline and blocks new work", async () => {
+  const submitted = submittedJob(30n, 2_000n);
+  const chain = mockChain({ jobs: [submitted, openJob(31n)], now: 1_999n });
+  const state = memoryState({ version: 1, wasRegistered: true, halted: false, jobs: { "30": { phase: "submitted", deliveryUri: submitted.deliverableURI } } });
+
+  const result = await runCycle({ chain, state, prepareJob });
+
+  assert.equal(result.action, "awaiting_customer_approval");
+  assert.deepEqual(chain.calls, []);
+});
+
+test("submitted work claims payout at and after the inclusive approval deadline", async () => {
+  for (const now of [2_000n, 2_001n]) {
+    const submitted = submittedJob(now === 2_000n ? 32n : 33n, 2_000n);
+    const chain = mockChain({ jobs: [submitted], now });
+    const state = memoryState({ version: 1, wasRegistered: true, halted: false, jobs: { [String(submitted.id)]: { phase: "submitted", deliveryUri: submitted.deliverableURI } } });
+
+    const result = await runCycle({ chain, state, prepareJob });
+
+    assert.equal(result.action, "approval_timeout_claimed");
+    assert.equal(state.inspect().jobs[String(submitted.id)].phase, "payout_claimed");
+    assert.deepEqual(chain.calls, [["approval-timeout", String(submitted.id)]]);
+  }
+});
+
+test("approval or dispute race before payout broadcast is classified without accepting new work", async () => {
+  for (const racedStatus of [4, 3]) {
+    const submitted = submittedJob(BigInt(34 + racedStatus), 2_000n);
+    const open = openJob(40n + BigInt(racedStatus));
+    const chain = mockChain({ jobs: [submitted, open], now: 2_000n });
+    chain.claimApprovalTimeout = async () => {
+      submitted.status = racedStatus;
+      const error = new Error("execution reverted");
+      error.name = "ContractFunctionExecutionError";
+      throw error;
+    };
+    const state = memoryState({ version: 1, wasRegistered: true, halted: false, jobs: { [String(submitted.id)]: { phase: "submitted", deliveryUri: submitted.deliverableURI } } });
+
+    const result = await runCycle({ chain, state, prepareJob });
+
+    assert.equal(result.action, racedStatus === 4 ? "settlement_observed" : "awaiting_dispute_resolution");
+    assert.equal(chain.calls.some((call) => call[0] === "accept"), false);
+  }
+});
+
+test("approval payout receipt timeout keeps the broadcast hash and never blindly resends", async () => {
+  const submitted = submittedJob(41n, 2_000n);
+  const chain = mockChain({ jobs: [submitted], now: 2_000n, transactionStatus: "pending" });
+  chain.claimApprovalTimeout = async (id, options = {}) => {
+    chain.calls.push(["approval-timeout", String(id)]);
+    await options.onBroadcast("0x" + "f".repeat(64));
+    throw new Error("receipt_timeout");
+  };
+  const state = memoryState({ version: 1, wasRegistered: true, halted: false, jobs: { "41": { phase: "submitted", deliveryUri: submitted.deliverableURI } } });
+
+  const first = await runCycle({ chain, state, prepareJob });
+  const second = await runCycle({ chain, state, prepareJob });
+
+  assert.equal(first.action, "payout_broadcast_reconciliation_wait");
+  assert.equal(second.action, "payout_broadcast_reconciliation_wait");
+  assert.equal(state.inspect().jobs["41"].phase, "claiming_payout");
+  assert.match(state.inspect().jobs["41"].payoutTxHash, /^0xf{64}$/);
+  assert.equal(chain.calls.filter((call) => call[0] === "approval-timeout").length, 1);
+});
+
+test("restart reconciles pending, successful, and reverted payout broadcasts", async () => {
+  for (const transactionStatus of ["pending", "success", "reverted"]) {
+    const submitted = submittedJob(transactionStatus === "pending" ? 42n : transactionStatus === "success" ? 43n : 44n, 2_000n);
+    if (transactionStatus === "success") submitted.status = 7;
+    const chain = mockChain({ jobs: [submitted], now: 2_001n, transactionStatus });
+    const state = memoryState({ version: 1, wasRegistered: true, halted: false, jobs: { [String(submitted.id)]: {
+      phase: "claiming_payout",
+      deliveryUri: submitted.deliverableURI,
+      payoutTxHash: "0x" + "f".repeat(64),
+    } } });
+
+    const result = await runCycle({ chain, state, prepareJob });
+
+    assert.equal(result.action, transactionStatus === "success" ? "approval_timeout_claimed" : transactionStatus === "reverted" ? "payout_reverted_retry_later" : "payout_broadcast_reconciliation_wait");
+    assert.equal(chain.calls.some((call) => call[0] === "approval-timeout"), false);
+    assert.equal(state.inspect().jobs[String(submitted.id)].phase, transactionStatus === "success" ? "payout_claimed" : transactionStatus === "reverted" ? "submitted" : "claiming_payout");
+  }
+});
+
+test("completed and expired-payout history does not block the next open job", async () => {
+  const completed = { ...submittedJob(45n), status: 4 };
+  const expired = { ...submittedJob(46n), status: 7 };
+  const open = openJob(47n);
+  const chain = mockChain({ jobs: [completed, expired, open], now: 1_000n });
+  const state = memoryState({ version: 1, wasRegistered: true, halted: false, jobs: {
+    "45": { phase: "completed", deliveryUri: completed.deliverableURI },
+    "46": { phase: "payout_claimed", deliveryUri: expired.deliverableURI },
+  } });
+
+  const result = await runCycle({ chain, state, prepareJob });
+
+  assert.equal(result.action, "submitted");
+  assert.deepEqual(chain.calls.map((call) => call[0]), ["accept", "submit"]);
+});
+
+test("owned disputed work blocks acceptance of another job", async () => {
+  const disputed = { ...submittedJob(48n), status: 3 };
+  const chain = mockChain({ jobs: [disputed, openJob(49n)], now: 2_001n });
+  const state = memoryState({ version: 1, wasRegistered: true, halted: false, jobs: { "48": { phase: "submitted", deliveryUri: disputed.deliverableURI } } });
+
+  const result = await runCycle({ chain, state, prepareJob });
+
+  assert.equal(result.action, "awaiting_dispute_resolution");
+  assert.deepEqual(chain.calls, []);
+});
+
+test("only one expired submitted job is claimed per cycle", async () => {
+  const firstJob = submittedJob(50n, 2_000n);
+  const secondJob = submittedJob(51n, 2_000n);
+  const chain = mockChain({ jobs: [secondJob, firstJob], now: 2_001n });
+  const state = memoryState({ version: 1, wasRegistered: true, halted: false, jobs: {
+    "50": { phase: "submitted", deliveryUri: firstJob.deliverableURI },
+    "51": { phase: "submitted", deliveryUri: secondJob.deliverableURI },
+  } });
+
+  const result = await runCycle({ chain, state, prepareJob });
+
+  assert.equal(result.action, "approval_timeout_claimed");
+  assert.deepEqual(chain.calls, [["approval-timeout", "50"]]);
+  assert.equal(state.inspect().jobs["51"].phase, "submitted");
 });
 
 test("a previously registered wallet never auto-registers after registration is lost", async () => {

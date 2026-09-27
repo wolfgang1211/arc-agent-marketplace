@@ -32,6 +32,7 @@ export const MARKETPLACE_ABI = [
   { type: "event", name: "DeliverableSubmitted", inputs: [{ name: "jobId", type: "uint256", indexed: true }, { name: "deliverableURI", type: "string", indexed: false }], anonymous: false },
   { type: "event", name: "AgentSlashed", inputs: [{ name: "agent", type: "address", indexed: true }, { name: "amount", type: "uint256", indexed: false }], anonymous: false },
   { type: "event", name: "JobExpiredRefunded", inputs: [{ name: "jobId", type: "uint256", indexed: true }, { name: "client", type: "address", indexed: true }, { name: "reward", type: "uint256", indexed: false }], anonymous: false },
+  { type: "event", name: "JobExpiredPaid", inputs: [{ name: "jobId", type: "uint256", indexed: true }, { name: "agent", type: "address", indexed: true }, { name: "reward", type: "uint256", indexed: false }], anonymous: false },
 ];
 
 export const ERC20_ABI = [
