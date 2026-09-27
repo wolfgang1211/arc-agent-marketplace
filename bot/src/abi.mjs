@@ -27,6 +27,7 @@ export const MARKETPLACE_ABI = [
       { name: "total", type: "uint256" },
     ],
   },
+  { type: "event", name: "JobPosted", inputs: [{ name: "jobId", type: "uint256", indexed: true }, { name: "client", type: "address", indexed: true }, { name: "reward", type: "uint256", indexed: false }, { name: "description", type: "string", indexed: false }, { name: "category", type: "string", indexed: false }], anonymous: false },
   { type: "event", name: "AgentRegistered", inputs: [{ name: "agent", type: "address", indexed: true }, { name: "name", type: "string", indexed: false }, { name: "skill", type: "string", indexed: false }, { name: "fee", type: "uint256", indexed: false }], anonymous: false },
   { type: "event", name: "JobAccepted", inputs: [{ name: "jobId", type: "uint256", indexed: true }, { name: "agent", type: "address", indexed: true }], anonymous: false },
   { type: "event", name: "DeliverableSubmitted", inputs: [{ name: "jobId", type: "uint256", indexed: true }, { name: "deliverableURI", type: "string", indexed: false }], anonymous: false },

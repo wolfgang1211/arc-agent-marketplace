@@ -88,6 +88,7 @@ export async function runCycle({ chain, state, prepareJob }) {
   if (!hasGasReserve(balance)) return { action: "gas_guard", balance: String(balance) };
 
   const openJobs = jobs.filter((job) => Number(job.status) === 0).sort(byId);
+  const houseDelaySkips = [];
   for (const job of openJobs) {
     const jobId = String(job.id);
     if (sameAddress(job.client, chain.address)) {
@@ -103,6 +104,26 @@ export async function runCycle({ chain, state, prepareJob }) {
     }
     if (snapshot.jobs[jobId]?.phase === "rejected" && snapshot.jobs[jobId]?.permanent) continue;
 
+    let opening;
+    try {
+      opening = await chain.getJobOpeningTime(job);
+    } catch {
+      houseDelaySkips.push({ jobId, reason: "job_open_time_unavailable" });
+      continue;
+    }
+    const chainTimestamp = await chain.getChainTimestamp();
+    const eligibleAt = BigInt(opening.timestamp) + BigInt(chain.houseDelaySeconds);
+    if (chainTimestamp < eligibleAt) {
+      houseDelaySkips.push({
+        jobId,
+        reason: "house_delay_wait",
+        openedAt: String(opening.timestamp),
+        openingTimeSource: opening.source,
+        eligibleAt: String(eligibleAt),
+      });
+      continue;
+    }
+
     let prepared;
     try {
       prepared = await prepareJob(job, eligibility.request);
@@ -116,7 +137,7 @@ export async function runCycle({ chain, state, prepareJob }) {
         attempts: Number(snapshot.jobs[jobId]?.attempts || 0) + 1,
       };
       await state.save(snapshot);
-      if (!permanent) return { action: "prepare_retry_later", jobId, reason: safeReason(error) };
+      if (!permanent) return withHouseDiagnostics({ action: "prepare_retry_later", jobId, reason: safeReason(error) }, houseDelaySkips, opening);
       continue;
     }
 
@@ -128,6 +149,8 @@ export async function runCycle({ chain, state, prepareJob }) {
       resultUri: prepared.resultUri,
       preparedAt: new Date().toISOString(),
       submitAttempts: 0,
+      jobOpenedAt: String(opening.timestamp),
+      jobOpeningTimeSource: opening.source,
     };
     await state.save(snapshot);
 
@@ -135,10 +158,10 @@ export async function runCycle({ chain, state, prepareJob }) {
     if (!freshJob || Number(freshJob.status) !== 0) {
       snapshot.jobs[jobId].phase = "accept_race_lost";
       await state.save(snapshot);
-      return { action: "accept_race_lost", jobId };
+      return withHouseDiagnostics({ action: "accept_race_lost", jobId }, houseDelaySkips, opening);
     }
     const freshBalance = await chain.getNativeBalance();
-    if (!hasGasReserve(freshBalance)) return { action: "gas_guard", balance: String(freshBalance), preparedJobId: jobId };
+    if (!hasGasReserve(freshBalance)) return withHouseDiagnostics({ action: "gas_guard", balance: String(freshBalance), preparedJobId: jobId }, houseDelaySkips, opening);
     const freshUsdcBalance = await chain.getUsdcBalance();
     snapshot.jobs[jobId].balanceBeforeAccept = { native: String(freshBalance), usdc: String(freshUsdcBalance) };
     await state.save(snapshot);
@@ -159,10 +182,19 @@ export async function runCycle({ chain, state, prepareJob }) {
     if (!acceptedJob || Number(acceptedJob.status) !== 1 || !sameAddress(acceptedJob.agent, chain.address)) {
       throw new Error("accept_receipt_state_mismatch");
     }
-    return submitPrepared({ chain, state, snapshot, job: acceptedJob });
+    const result = await submitPrepared({ chain, state, snapshot, job: acceptedJob });
+    return withHouseDiagnostics(result, houseDelaySkips, opening);
   }
 
-  return { action: "no_eligible_jobs" };
+  return withHouseDiagnostics({ action: "no_eligible_jobs" }, houseDelaySkips);
+}
+
+function withHouseDiagnostics(result, houseDelaySkips, opening) {
+  return {
+    ...result,
+    ...(opening ? { jobOpenedAt: String(opening.timestamp), jobOpeningTimeSource: opening.source } : {}),
+    ...(houseDelaySkips.length > 0 ? { houseDelaySkips } : {}),
+  };
 }
 
 async function runReadOnlyCycle(chain) {

@@ -6,7 +6,7 @@ import { createChainAdapter } from "../src/chain.mjs";
 const contractAddress = "0xFc7dE289e02FCFB4268AE8f0e49991D2Eafe5C87";
 const usdcAddress = "0x3600000000000000000000000000000000000000";
 const account = { address: "0x1111111111111111111111111111111111111111" };
-const sampleJob = (id) => ({ id, status: 0, category: "url-summary-v1" });
+const sampleJob = (id) => ({ id, status: 0, category: "url-summary-v1", createdAt: 1_000n });
 
 function clients({ receiptStatus = "success", eventNames = ["JobAccepted", "DeliverableSubmitted", "AgentRegistered", "AgentSlashed", "JobExpiredRefunded"] } = {}) {
   const reads = [];
@@ -25,6 +25,7 @@ function clients({ receiptStatus = "success", eventNames = ["JobAccepted", "Deli
     getBalance: async () => 20_000_000_000_000_000n,
     getChainId: async () => 5_042_002,
     getBlock: async () => ({ timestamp: 1234n }),
+    getContractEvents: async () => [],
     simulateContract: async (request) => ({ request }),
     getTransactionReceipt: async () => ({ status: receiptStatus }),
     waitForTransactionReceipt: async () => ({ status: receiptStatus, eventNames }),
@@ -108,4 +109,26 @@ test("transaction status treats only receipt-not-found as pending", async () => 
   unavailable.publicClient.getTransactionReceipt = async () => { throw new Error("rpc unavailable"); };
   const unavailableChain = createChainAdapter({ ...unavailable, account, contractAddress, usdcAddress, writeEnabled: false });
   await assert.rejects(() => unavailableChain.getTransactionStatus("0x" + "a".repeat(64)), /rpc unavailable/);
+});
+
+test("reads job opening time from createdAt and falls back to the JobPosted block", async () => {
+  const withStructTimestamp = clients();
+  let eventReads = 0;
+  withStructTimestamp.publicClient.getContractEvents = async () => { eventReads += 1; return []; };
+  const structChain = createChainAdapter({ ...withStructTimestamp, account, contractAddress, usdcAddress, writeEnabled: false });
+  assert.deepEqual(await structChain.getJobOpeningTime({ id: 7n, createdAt: 1_111n }), { timestamp: 1_111n, source: "createdAt" });
+  assert.equal(eventReads, 0);
+
+  const fromEvent = clients();
+  fromEvent.publicClient.getContractEvents = async ({ eventName, args }) => {
+    assert.equal(eventName, "JobPosted");
+    assert.deepEqual(args, { jobId: 7n });
+    return [{ blockNumber: 77n }];
+  };
+  fromEvent.publicClient.getBlock = async ({ blockNumber }) => {
+    assert.equal(blockNumber, 77n);
+    return { timestamp: 2_222n };
+  };
+  const eventChain = createChainAdapter({ ...fromEvent, account, contractAddress, usdcAddress, writeEnabled: false });
+  assert.deepEqual(await eventChain.getJobOpeningTime({ id: 7n }), { timestamp: 2_222n, source: "JobPosted" });
 });

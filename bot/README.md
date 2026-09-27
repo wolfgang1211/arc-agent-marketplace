@@ -35,6 +35,8 @@ DNS, redirects and HTTPS share a 20-second total source deadline. The web postin
 - Initial wallet target: `10.10 USDC`.
 - New jobs are not accepted when native gas is below `0.02 USDC` (`20_000_000_000_000_000` native base units).
 - Existing accepted work is still submitted or honestly timed out below that guard.
+- The house agent accepts an eligible Open job only after `HOUSE_DELAY_SECONDS` of chain time have elapsed since creation. The default is `14400` seconds (4 hours), with a validated range of `0–86400`. It uses `job.createdAt` when present, otherwise the `JobPosted` event block timestamp; unreadable creation time fails closed and is reported in the cycle log.
+- The explicit category allowlist currently contains only `url-summary-v1`; every other category is rejected as `unsupported_category`.
 - Permanent post-accept failures become terminal immediately. Transient failures retry on the normal poll cadence while more than `300` seconds remain before the delivery deadline; no additional backoff is applied.
 - `submitAttempts` persists across restarts as diagnostic evidence only. It does not consume or shorten the deadline-based retry budget.
 - A slash halts the worker. It never funds itself, re-registers, or submits a fake deliverable.

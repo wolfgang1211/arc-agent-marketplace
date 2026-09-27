@@ -20,7 +20,17 @@ test("config is fail-closed for secrets and live writes are explicit", () => {
   assert.match(config.stateFile.replaceAll("\\", "/"), /C:\/tmp\/data\/state\.json$/i);
   assert.equal(config.agentSkill, "url-summary-v1");
   assert.equal(config.agentFee, 5_000000n);
+  assert.equal(config.houseDelaySeconds, 14_400);
   assert.equal(loadConfig({ ...secrets, BOT_LIVE_WRITES: "true" }, { root: "C:/tmp" }).writeEnabled, true);
+});
+
+test("house delay defaults to four hours and accepts only bounded integer seconds", () => {
+  assert.equal(loadConfig(secrets, { root: "C:/tmp" }).houseDelaySeconds, 14_400);
+  assert.equal(loadConfig({ ...secrets, HOUSE_DELAY_SECONDS: "0" }, { root: "C:/tmp" }).houseDelaySeconds, 0);
+  assert.equal(loadConfig({ ...secrets, HOUSE_DELAY_SECONDS: "86400" }, { root: "C:/tmp" }).houseDelaySeconds, 86_400);
+  for (const value of ["-1", "86401", "1.5", "nope"]) {
+    assert.throws(() => loadConfig({ ...secrets, HOUSE_DELAY_SECONDS: value }, { root: "C:/tmp" }), /HOUSE_DELAY_SECONDS must be an integer between 0 and 86400/);
+  }
 });
 
 test("rejects credential-bearing or non-HTTPS provider URLs", () => {

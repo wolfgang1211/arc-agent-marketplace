@@ -11,7 +11,7 @@ export const ARC_TESTNET = defineChain({
 
 const PAGE_LIMIT = 100n;
 
-export function createLiveChain({ rpcUrl, contractAddress, usdcAddress, privateKey, writeEnabled }) {
+export function createLiveChain({ rpcUrl, contractAddress, usdcAddress, privateKey, writeEnabled, houseDelaySeconds }) {
   if (!/^0x[0-9a-fA-F]{64}$/.test(privateKey || "")) throw new Error("BOT_PRIVATE_KEY must be a 32-byte hex key");
   const account = privateKeyToAccount(privateKey);
   const transport = http(rpcUrl, { timeout: 15_000, retryCount: 3, retryDelay: 1_000 });
@@ -22,10 +22,11 @@ export function createLiveChain({ rpcUrl, contractAddress, usdcAddress, privateK
     contractAddress,
     usdcAddress,
     writeEnabled,
+    houseDelaySeconds,
   });
 }
 
-export function createChainAdapter({ publicClient, walletClient, account, contractAddress, usdcAddress, writeEnabled = false }) {
+export function createChainAdapter({ publicClient, walletClient, account, contractAddress, usdcAddress, writeEnabled = false, houseDelaySeconds = 14_400 }) {
   const contract = getAddress(contractAddress);
   const usdc = getAddress(usdcAddress);
   const address = getAddress(account.address);
@@ -69,6 +70,7 @@ export function createChainAdapter({ publicClient, walletClient, account, contra
     contractAddress: contract,
     usdcAddress: usdc,
     writeEnabled,
+    houseDelaySeconds,
     async assertChain() {
       const chainId = await publicClient.getChainId();
       if (chainId !== ARC_TESTNET.id) throw new Error(`wrong_chain_id_${chainId}`);
@@ -104,6 +106,35 @@ export function createChainAdapter({ publicClient, walletClient, account, contra
     async getChainTimestamp() {
       return (await publicClient.getBlock({ blockTag: "latest" })).timestamp;
     },
+    async getJobOpeningTime(job) {
+      const structTimestamp = positiveTimestamp(job?.createdAt);
+      if (structTimestamp != null) return { timestamp: structTimestamp, source: "createdAt" };
+
+      const jobId = BigInt(job?.id || 0);
+      if (jobId <= 0n) throw new Error("job_open_time_unavailable");
+      let events;
+      try {
+        events = await publicClient.getContractEvents({
+          address: contract,
+          abi: MARKETPLACE_ABI,
+          eventName: "JobPosted",
+          args: { jobId },
+          fromBlock: 0n,
+          toBlock: "latest",
+        });
+      } catch {
+        throw new Error("job_open_time_unavailable");
+      }
+      if (!Array.isArray(events) || events.length !== 1 || events[0].blockNumber == null) throw new Error("job_open_time_unavailable");
+      try {
+        const block = await publicClient.getBlock({ blockNumber: events[0].blockNumber });
+        const eventTimestamp = positiveTimestamp(block?.timestamp);
+        if (eventTimestamp == null) throw new Error("job_open_time_unavailable");
+        return { timestamp: eventTimestamp, source: "JobPosted" };
+      } catch {
+        throw new Error("job_open_time_unavailable");
+      }
+    },
     acceptJob: (jobId, options = {}) => execute(contract, MARKETPLACE_ABI, "acceptJob", [BigInt(jobId)], [{ name: "JobAccepted", args: { jobId: BigInt(jobId), agent: address } }], options.onBroadcast),
     submitDeliverable: (jobId, uri, options = {}) => execute(contract, MARKETPLACE_ABI, "submitDeliverable", [BigInt(jobId), uri], [{ name: "DeliverableSubmitted", args: { jobId: BigInt(jobId), deliverableURI: uri } }], options.onBroadcast),
     claimTimeout: (jobId, options = {}) => execute(contract, MARKETPLACE_ABI, "claimTimeout", [BigInt(jobId)], [
@@ -133,4 +164,13 @@ function matchesEventArgs(actual, expected) {
     }
     return observed === value;
   });
+}
+
+function positiveTimestamp(value) {
+  try {
+    const timestamp = BigInt(value);
+    return timestamp > 0n ? timestamp : null;
+  } catch {
+    return null;
+  }
 }

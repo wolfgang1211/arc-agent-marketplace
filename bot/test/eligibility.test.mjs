@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   GAS_RESERVE_WEI,
+  SUPPORTED_CATEGORIES,
   URL_SUMMARY_CATEGORY,
   hasGasReserve,
   parseEligibleJob,
@@ -25,6 +26,7 @@ const job = (overrides = {}) => ({
 });
 
 test("accepts only the exact url-summary-v1 schema and bounded reward", () => {
+  assert.deepEqual([...SUPPORTED_CATEGORIES], [URL_SUMMARY_CATEGORY]);
   assert.deepEqual(parseEligibleJob(job()), {
     ok: true,
     request: {
@@ -36,6 +38,7 @@ test("accepts only the exact url-summary-v1 schema and bounded reward", () => {
     },
   });
   assert.equal(parseEligibleJob(job({ category: "research" })).reason, "unsupported_category");
+  assert.equal(parseEligibleJob(job({ category: "url-summary" })).reason, "unsupported_category");
   assert.equal(parseEligibleJob(job({ reward: 4_999999n })).reason, "reward_out_of_range");
   assert.equal(parseEligibleJob(job({ reward: 20_000001n })).reason, "reward_out_of_range");
   assert.equal(parseEligibleJob(job({ reward: "5000000" })).reason, "reward_out_of_range");

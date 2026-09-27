@@ -12,6 +12,7 @@ export function loadConfig(env = process.env, { requireSecrets = true, root = pr
     privateKey: env.BOT_PRIVATE_KEY || "",
     writeEnabled: env.BOT_LIVE_WRITES === "true",
     pollIntervalMs: boundedInteger(env.POLL_INTERVAL_MS, 8_000, 1_000, 300_000, "POLL_INTERVAL_MS"),
+    houseDelaySeconds: boundedInteger(env.HOUSE_DELAY_SECONDS, 14_400, 0, 86_400, "HOUSE_DELAY_SECONDS"),
     stateFile: resolve(root, env.BOT_STATE_FILE || "data/state.json"),
     summaryApiUrl: env.SUMMARY_API_URL || "",
     summaryApiKey: env.SUMMARY_API_KEY || "",

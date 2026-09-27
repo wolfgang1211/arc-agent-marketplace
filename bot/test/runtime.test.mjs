@@ -7,7 +7,7 @@ import { runCycle } from "../src/runtime.mjs";
 const description = JSON.stringify({ schemaVersion: 1, task: "url_summary", sourceUrl: "https://example.com/article", language: "en", maxWords: 400 });
 const agentAddress = "0x1111111111111111111111111111111111111111";
 const clientAddress = "0x2222222222222222222222222222222222222222";
-const openJob = (id = 4n) => ({ id, client: clientAddress, agent: "0x0000000000000000000000000000000000000000", description, category: "url-summary-v1", deliverableURI: "", reward: 5_000000n, status: 0, deliveryDeadline: 0n, approvalDeadline: 0n });
+const openJob = (id = 4n) => ({ id, client: clientAddress, agent: "0x0000000000000000000000000000000000000000", description, category: "url-summary-v1", deliverableURI: "", reward: 5_000000n, status: 0, createdAt: 1n, deliveryDeadline: 0n, approvalDeadline: 0n });
 const submittedJob = (id = 4n, approvalDeadline = 2_000n) => ({ ...openJob(id), agent: agentAddress, status: 2, deliveryDeadline: 1_500n, approvalDeadline, deliverableURI: `https://gateway.example/ipfs/bafy${id}/index.html` });
 
 function memoryState(initial = {}) {
@@ -16,12 +16,13 @@ function memoryState(initial = {}) {
   return { load: async () => structuredClone(value), save: async (next) => { saveCount += 1; value = structuredClone(next); }, inspect: () => value, saves: () => saveCount };
 }
 
-function mockChain({ jobs = [openJob()], balance = GAS_RESERVE_WEI, usdcBalance = 100_000000n, registered = true, now = 1_000n, submitError = null, transactionStatus = "pending", writeEnabled = true } = {}) {
+function mockChain({ jobs = [openJob()], balance = GAS_RESERVE_WEI, usdcBalance = 100_000000n, registered = true, now = 1_000n, submitError = null, transactionStatus = "pending", writeEnabled = true, houseDelaySeconds = 0, openingEventTimestamp = null, openingTimeError = null } = {}) {
   const calls = [];
   let agent = { registered, stake: registered ? 10_000000n : 0n, activeJobs: 0n };
   const chain = {
     address: agentAddress,
     writeEnabled,
+    houseDelaySeconds,
     calls,
     assertChain: async () => 5_042_002,
     listJobs: async () => jobs,
@@ -30,6 +31,12 @@ function mockChain({ jobs = [openJob()], balance = GAS_RESERVE_WEI, usdcBalance 
     getNativeBalance: async () => balance,
     getUsdcBalance: async () => usdcBalance,
     getChainTimestamp: async () => now,
+    getJobOpeningTime: async (job) => {
+      if (openingTimeError) throw openingTimeError;
+      if (typeof job.createdAt === "bigint" && job.createdAt > 0n) return { timestamp: job.createdAt, source: "createdAt" };
+      if (openingEventTimestamp != null) return { timestamp: BigInt(openingEventTimestamp), source: "JobPosted" };
+      throw new Error("job_open_time_unavailable");
+    },
     getTransactionStatus: async () => transactionStatus,
     acceptJob: async (id, options = {}) => {
       calls.push(["accept", String(id)]);
@@ -85,6 +92,57 @@ test("prepares, rechecks, accepts, and submits one eligible job without interven
   assert.match(result.acceptTxHash, /^0xa{64}$/);
   assert.match(result.submitTxHash, /^0xb{64}$/);
   assert.equal(state.inspect().jobs["3"].phase, "submitted");
+});
+
+test("house waits through 14399 seconds and accepts at 14400 after restart", async () => {
+  const job = openJob(5n);
+  job.createdAt = 1_000n;
+  let now = 15_399n;
+  const chain = mockChain({ jobs: [job], now, houseDelaySeconds: 14_400 });
+  chain.getChainTimestamp = async () => now;
+  let prepareCount = 0;
+  const countingPrepare = async (candidate) => { prepareCount += 1; return prepareJob(candidate); };
+
+  const before = await runCycle({ chain, state: memoryState(), prepareJob: countingPrepare });
+  assert.equal(before.action, "no_eligible_jobs");
+  assert.deepEqual(before.houseDelaySkips, [{ jobId: "5", reason: "house_delay_wait", openedAt: "1000", openingTimeSource: "createdAt", eligibleAt: "15400" }]);
+  assert.equal(prepareCount, 0);
+  assert.deepEqual(chain.calls, []);
+
+  now = 15_400n;
+  const restartedState = memoryState();
+  const atBoundary = await runCycle({ chain, state: restartedState, prepareJob: countingPrepare });
+  assert.equal(atBoundary.action, "submitted");
+  assert.equal(atBoundary.jobOpeningTimeSource, "createdAt");
+  assert.equal(atBoundary.jobOpenedAt, "1000");
+  assert.equal(prepareCount, 1);
+  assert.deepEqual(chain.calls.map((call) => call[0]), ["accept", "submit"]);
+});
+
+test("house uses the JobPosted block timestamp when createdAt is absent", async () => {
+  const job = openJob(6n);
+  delete job.createdAt;
+  const chain = mockChain({ jobs: [job], now: 15_400n, houseDelaySeconds: 14_400, openingEventTimestamp: 1_000n });
+
+  const result = await runCycle({ chain, state: memoryState(), prepareJob });
+
+  assert.equal(result.action, "submitted");
+  assert.equal(result.jobOpeningTimeSource, "JobPosted");
+  assert.equal(result.jobOpenedAt, "1000");
+});
+
+test("house skips and reports an open job when opening time cannot be read", async () => {
+  const job = openJob(7n);
+  delete job.createdAt;
+  const chain = mockChain({ jobs: [job], now: 20_000n, houseDelaySeconds: 14_400, openingTimeError: new Error("rpc unavailable") });
+  let prepared = false;
+
+  const result = await runCycle({ chain, state: memoryState(), prepareJob: async () => { prepared = true; } });
+
+  assert.equal(result.action, "no_eligible_jobs");
+  assert.deepEqual(result.houseDelaySkips, [{ jobId: "7", reason: "job_open_time_unavailable" }]);
+  assert.equal(prepared, false);
+  assert.deepEqual(chain.calls, []);
 });
 
 test("gas guard stops new acceptance before source work", async () => {
