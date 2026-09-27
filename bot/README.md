@@ -39,6 +39,20 @@ DNS, redirects and HTTPS share a 20-second total source deadline. The web postin
 - `submitAttempts` persists across restarts as diagnostic evidence only. It does not consume or shorten the deadline-based retry budget.
 - A slash halts the worker. It never funds itself, re-registers, or submits a fake deliverable.
 
+## Payout attention recovery
+
+A Submitted job enters `payout_needs_attention` when automatic payout claiming can no longer proceed safely, including after five hash-backed failed claims, a payout transaction remaining pending for more than 30 minutes of chain time, or an ambiguous broadcast without a transaction hash. The worker emits one `operator_alert` on the transition and will not automatically claim that job again. Ten consecutive simulation failures also emit a one-time `operator_alert`, but keep the job in the normal Submitted/cooldown flow and do not increment `payoutAttempts`.
+
+To clear `payout_needs_attention` safely:
+
+1. Stop the worker so it cannot overwrite `/data/state.json` while it is being inspected. Keep a backup of that file.
+2. Read the job and recorded `payoutTxHash` from the configured chain. Do not clear the state while that transaction is pending or its outcome is unknown.
+3. If the job is still Submitted and the recorded transaction is conclusively dropped or reverted, change only that job record's `phase` to `submitted`; set `payoutAttempts` to `0`; and remove `reason`, `payoutNeedsAttentionAt`, `payoutTxHash`, `payoutAttemptCountedHash`, `nextPayoutAttemptAt`, `payoutBroadcastAt`, and `payoutBroadcastAtChainTimestamp`. Remove `payoutSimulationFailures` and `payoutSimulationAlerted` only when intentionally starting a new simulation-error streak.
+4. If the chain already shows Completed, Disputed, or expired-paid settlement, do not reset the record to Submitted. Reconcile it to that observed terminal state instead.
+5. Validate the JSON, restart the worker with the same state file, and confirm one read-only/status cycle before enabling writes.
+
+Never delete the whole state file to clear one job: it also contains registration and transaction-reconciliation safety state.
+
 ## Delivery
 
 The worker prepares the full artifact before accepting a job, then rechecks on-chain state and gas immediately before `acceptJob`. Pinata receives one directory containing:

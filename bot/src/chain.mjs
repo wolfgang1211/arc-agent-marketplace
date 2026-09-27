@@ -34,11 +34,26 @@ export function createChainAdapter({ publicClient, walletClient, account, contra
 
   async function execute(addressTo, abi, functionName, args, expectedEvents = [], onBroadcast) {
     if (!writeEnabled) throw new Error("live_writes_disabled");
-    const { request } = await publicClient.simulateContract({ account, address: addressTo, abi, functionName, args });
-    const hash = await walletClient.writeContract(request);
+    let request;
+    try {
+      ({ request } = await publicClient.simulateContract({ account, address: addressTo, abi, functionName, args }));
+    } catch (error) {
+      throw withTransactionStage(error, "simulation");
+    }
+    let hash;
+    try {
+      hash = await walletClient.writeContract(request);
+    } catch (error) {
+      throw withTransactionStage(error, "broadcast");
+    }
     if (onBroadcast) await onBroadcast(hash);
-    const receipt = await publicClient.waitForTransactionReceipt({ hash, confirmations: 1, timeout: 60_000 });
-    if (receipt.status !== "success") throw new Error(`${functionName}_receipt_failed`);
+    let receipt;
+    try {
+      receipt = await publicClient.waitForTransactionReceipt({ hash, confirmations: 1, timeout: 60_000 });
+    } catch (error) {
+      throw withTransactionStage(error, "receipt", hash);
+    }
+    if (receipt.status !== "success") throw withTransactionStage(new Error(`${functionName}_receipt_failed`), "receipt", hash);
     const eventEvidence = Array.isArray(receipt.eventNames)
       ? receipt.eventNames.map((eventName) => ({ eventName, args: null }))
       : parseEventLogs({ abi: MARKETPLACE_ABI, logs: receipt.logs || [], strict: false });
@@ -53,6 +68,7 @@ export function createChainAdapter({ publicClient, walletClient, account, contra
     address,
     contractAddress: contract,
     usdcAddress: usdc,
+    writeEnabled,
     async assertChain() {
       const chainId = await publicClient.getChainId();
       if (chainId !== ARC_TESTNET.id) throw new Error(`wrong_chain_id_${chainId}`);
@@ -100,6 +116,13 @@ export function createChainAdapter({ publicClient, walletClient, account, contra
     approveStake: (amount) => execute(usdc, ERC20_ABI, "approve", [contract, BigInt(amount)]),
     registerAgent: (name, skill, fee) => execute(contract, MARKETPLACE_ABI, "registerAgent", [name, skill, BigInt(fee)], [{ name: "AgentRegistered", args: { agent: address, name, skill, fee: BigInt(fee) } }]),
   };
+}
+
+function withTransactionStage(error, transactionStage, transactionHash) {
+  const staged = error instanceof Error ? error : new Error(String(error || "transaction_failed"));
+  staged.transactionStage = transactionStage;
+  if (transactionHash) staged.transactionHash = transactionHash;
+  return staged;
 }
 
 function matchesEventArgs(actual, expected) {

@@ -62,8 +62,22 @@ test("live transaction writes are fail-closed and receipts are verified", async 
 
   const failed = clients({ receiptStatus: "reverted" });
   const failedChain = createChainAdapter({ ...failed, account, contractAddress, usdcAddress, writeEnabled: true });
-  await assert.rejects(() => failedChain.claimTimeout(7n), /claimTimeout_receipt_failed/);
+  await assert.rejects(() => failedChain.claimTimeout(7n), (error) => {
+    assert.match(error.message, /claimTimeout_receipt_failed/);
+    assert.equal(error.transactionStage, "receipt");
+    assert.match(error.transactionHash, /^0xa{64}$/);
+    return true;
+  });
   assert.equal(await failedChain.getTransactionStatus("0x" + "a".repeat(64)), "reverted");
+
+  const simulationFailure = clients();
+  simulationFailure.publicClient.simulateContract = async () => { throw new Error("simulation reverted"); };
+  const simulationFailureChain = createChainAdapter({ ...simulationFailure, account, contractAddress, usdcAddress, writeEnabled: true });
+  await assert.rejects(() => simulationFailureChain.claimApprovalTimeout(7n), (error) => {
+    assert.equal(error.transactionStage, "simulation");
+    assert.equal(simulationFailure.writes.length, 0);
+    return true;
+  });
 
   const missingEvent = clients({ eventNames: [] });
   const missingEventChain = createChainAdapter({ ...missingEvent, account, contractAddress, usdcAddress, writeEnabled: true });

@@ -32,12 +32,7 @@ process.on("SIGTERM", () => { stopping = true; });
 log({ type: "bot_started", address: chain.address, contract: chain.contractAddress, writeEnabled: config.writeEnabled, pollIntervalMs: config.pollIntervalMs });
 do {
   try {
-    if (!config.writeEnabled) {
-      const [agent, nativeBalance, jobs] = await Promise.all([chain.getAgent(), chain.getNativeBalance(), chain.listJobs()]);
-      health.lastCycle = { action: "read_only", registered: agent.registered, nativeBalance: String(nativeBalance), visibleJobs: jobs.length };
-    } else {
-      health.lastCycle = await runCycle({ chain, state, prepareJob });
-    }
+    health.lastCycle = await runCycle({ chain, state, prepareJob });
     const [readinessAgent, readinessNative, readinessUsdc] = await Promise.all([chain.getAgent(), chain.getNativeBalance(), chain.getUsdcBalance()]);
     health.readiness = {
       registered: readinessAgent.registered,
@@ -48,7 +43,7 @@ do {
       readyForNewJob: config.writeEnabled && readinessAgent.registered && readinessAgent.activeJobs === 0n && readinessNative >= GAS_RESERVE_WEI && !["halted", "halted_after_slash", "registration_lost_halt"].includes(health.lastCycle.action),
     };
     health.lastError = null;
-    log({ type: "cycle_complete", ...health.lastCycle });
+    log({ type: health.lastCycle.alert === true ? "operator_alert" : "cycle_complete", ...health.lastCycle }, health.lastCycle.alert === true);
     if (["halted", "halted_after_slash", "registration_lost_halt"].includes(health.lastCycle.action)) stopping = true;
   } catch (error) {
     health.lastError = safeError(error);

@@ -12,14 +12,16 @@ const submittedJob = (id = 4n, approvalDeadline = 2_000n) => ({ ...openJob(id), 
 
 function memoryState(initial = {}) {
   let value = structuredClone(initial);
-  return { load: async () => structuredClone(value), save: async (next) => { value = structuredClone(next); }, inspect: () => value };
+  let saveCount = 0;
+  return { load: async () => structuredClone(value), save: async (next) => { saveCount += 1; value = structuredClone(next); }, inspect: () => value, saves: () => saveCount };
 }
 
-function mockChain({ jobs = [openJob()], balance = GAS_RESERVE_WEI, usdcBalance = 100_000000n, registered = true, now = 1_000n, submitError = null, transactionStatus = "pending" } = {}) {
+function mockChain({ jobs = [openJob()], balance = GAS_RESERVE_WEI, usdcBalance = 100_000000n, registered = true, now = 1_000n, submitError = null, transactionStatus = "pending", writeEnabled = true } = {}) {
   const calls = [];
   let agent = { registered, stake: registered ? 10_000000n : 0n, activeJobs: 0n };
   const chain = {
     address: agentAddress,
+    writeEnabled,
     calls,
     assertChain: async () => 5_042_002,
     listJobs: async () => jobs,
@@ -484,23 +486,33 @@ test("approval or dispute race before payout broadcast is classified without acc
   }
 });
 
-test("approval payout receipt timeout keeps the broadcast hash and never blindly resends", async () => {
+test("receipt unavailability starts durable cooldown and never blindly resends after restart", async () => {
   const submitted = submittedJob(41n, 2_000n);
-  const chain = mockChain({ jobs: [submitted], now: 2_000n, transactionStatus: "pending" });
+  let now = 2_000n;
+  const chain = mockChain({ jobs: [submitted], now, transactionStatus: "pending" });
+  chain.getChainTimestamp = async () => now;
   chain.claimApprovalTimeout = async (id, options = {}) => {
     chain.calls.push(["approval-timeout", String(id)]);
     await options.onBroadcast("0x" + "f".repeat(64));
-    throw new Error("receipt_timeout");
+    const error = new Error("receipt_timeout");
+    error.transactionStage = "receipt";
+    throw error;
   };
   const state = memoryState({ version: 1, wasRegistered: true, halted: false, jobs: { "41": { phase: "submitted", deliveryUri: submitted.deliverableURI } } });
 
   const first = await runCycle({ chain, state, prepareJob });
-  const second = await runCycle({ chain, state, prepareJob });
+  assert.equal(first.action, "payout_cooldown_wait");
+  assert.equal(state.inspect().jobs["41"].payoutAttempts, 1);
+  assert.equal(state.inspect().jobs["41"].nextPayoutAttemptAt, "2060");
 
-  assert.equal(first.action, "payout_broadcast_reconciliation_wait");
-  assert.equal(second.action, "payout_broadcast_reconciliation_wait");
-  assert.equal(state.inspect().jobs["41"].phase, "claiming_payout");
-  assert.match(state.inspect().jobs["41"].payoutTxHash, /^0xf{64}$/);
+  now = 2_059n;
+  const restartedBeforeBoundary = await runCycle({ chain, state, prepareJob });
+  assert.equal(restartedBeforeBoundary.action, "payout_cooldown_wait");
+  assert.equal(chain.calls.filter((call) => call[0] === "approval-timeout").length, 1);
+
+  now = 2_060n;
+  const atBoundary = await runCycle({ chain, state, prepareJob });
+  assert.equal(atBoundary.action, "payout_broadcast_reconciliation_wait");
   assert.equal(chain.calls.filter((call) => call[0] === "approval-timeout").length, 1);
 });
 
@@ -508,11 +520,14 @@ test("restart reconciles pending, successful, and reverted payout broadcasts", a
   for (const transactionStatus of ["pending", "success", "reverted"]) {
     const submitted = submittedJob(transactionStatus === "pending" ? 42n : transactionStatus === "success" ? 43n : 44n, 2_000n);
     if (transactionStatus === "success") submitted.status = 7;
-    const chain = mockChain({ jobs: [submitted], now: 2_001n, transactionStatus });
+    const chain = mockChain({ jobs: [submitted], now: 2_060n, transactionStatus });
     const state = memoryState({ version: 1, wasRegistered: true, halted: false, jobs: { [String(submitted.id)]: {
       phase: "claiming_payout",
       deliveryUri: submitted.deliverableURI,
       payoutTxHash: "0x" + "f".repeat(64),
+      payoutAttempts: 1,
+      payoutAttemptCountedHash: "0x" + "f".repeat(64),
+      nextPayoutAttemptAt: "2060",
     } } });
 
     const result = await runCycle({ chain, state, prepareJob });
@@ -521,6 +536,185 @@ test("restart reconciles pending, successful, and reverted payout broadcasts", a
     assert.equal(chain.calls.some((call) => call[0] === "approval-timeout"), false);
     assert.equal(state.inspect().jobs[String(submitted.id)].phase, transactionStatus === "success" ? "payout_claimed" : transactionStatus === "reverted" ? "submitted" : "claiming_payout");
   }
+});
+
+test("payout cooldown survives restart and allows a new broadcast exactly at the chain-time boundary", async () => {
+  const submitted = submittedJob(52n, 2_000n);
+  let now = 2_119n;
+  const chain = mockChain({ jobs: [submitted], now });
+  chain.getChainTimestamp = async () => now;
+  const state = memoryState({ version: 1, wasRegistered: true, halted: false, jobs: { "52": {
+    phase: "submitted",
+    deliveryUri: submitted.deliverableURI,
+    payoutAttempts: 2,
+    nextPayoutAttemptAt: "2120",
+  } } });
+
+  const before = await runCycle({ chain, state, prepareJob });
+  assert.equal(before.action, "payout_cooldown_wait");
+  assert.deepEqual(chain.calls, []);
+
+  now = 2_120n;
+  const boundary = await runCycle({ chain, state, prepareJob });
+  assert.equal(boundary.action, "approval_timeout_claimed");
+  assert.deepEqual(chain.calls, [["approval-timeout", "52"]]);
+});
+
+test("five failed broadcast attempts require attention and block all further automatic claims", async () => {
+  const submitted = submittedJob(53n, 2_000n);
+  let now = 2_000n;
+  const chain = mockChain({ jobs: [submitted], now, transactionStatus: "reverted" });
+  chain.getChainTimestamp = async () => now;
+  chain.claimApprovalTimeout = async (id, options = {}) => {
+    chain.calls.push(["approval-timeout", String(id)]);
+    const hash = `0x${String(chain.calls.filter((call) => call[0] === "approval-timeout").length).padStart(64, "0")}`;
+    await options.onBroadcast(hash);
+    const error = new Error("claimTimeout_receipt_failed");
+    error.transactionStage = "receipt";
+    throw error;
+  };
+  const state = memoryState({ version: 1, wasRegistered: true, halted: false, jobs: { "53": { phase: "submitted", deliveryUri: submitted.deliverableURI } } });
+
+  let result;
+  for (let attempt = 1; attempt <= 5; attempt += 1) {
+    result = await runCycle({ chain, state, prepareJob });
+    assert.equal(result.action, "payout_cooldown_wait");
+    assert.equal(state.inspect().jobs["53"].payoutAttempts, attempt);
+    const expectedDelay = 60n * (2n ** BigInt(attempt - 1));
+    assert.equal(state.inspect().jobs["53"].nextPayoutAttemptAt, String(now + expectedDelay));
+    now += expectedDelay;
+    result = await runCycle({ chain, state, prepareJob });
+    assert.equal(result.action, attempt === 5 ? "payout_needs_attention" : "payout_reverted_retry_later");
+    if (attempt < 5) result = await runCycle({ chain, state, prepareJob });
+  }
+
+  assert.equal(state.inspect().jobs["53"].phase, "payout_needs_attention");
+  assert.equal(result.alert, true);
+  const callCount = chain.calls.filter((call) => call[0] === "approval-timeout").length;
+  const blocked = await runCycle({ chain, state, prepareJob });
+  assert.equal(blocked.action, "payout_needs_attention_wait");
+  assert.equal(chain.calls.filter((call) => call[0] === "approval-timeout").length, callCount);
+});
+
+test("simulation revert applies short cooldown without incrementing payout attempts", async () => {
+  const submitted = submittedJob(54n, 2_000n);
+  let now = 2_000n;
+  const chain = mockChain({ jobs: [submitted], now });
+  chain.getChainTimestamp = async () => now;
+  chain.claimApprovalTimeout = async () => {
+    const error = new Error("execution reverted");
+    error.transactionStage = "simulation";
+    throw error;
+  };
+  const state = memoryState({ version: 1, wasRegistered: true, halted: false, jobs: { "54": { phase: "submitted", deliveryUri: submitted.deliverableURI, payoutAttempts: 2 } } });
+
+  const first = await runCycle({ chain, state, prepareJob });
+  assert.equal(first.action, "payout_simulation_cooldown");
+  assert.equal(state.inspect().jobs["54"].payoutAttempts, 2);
+  assert.equal(state.inspect().jobs["54"].payoutSimulationFailures, 1);
+  assert.equal(state.inspect().jobs["54"].nextPayoutAttemptAt, "2060");
+
+  now = 2_059n;
+  const second = await runCycle({ chain, state, prepareJob });
+  assert.equal(second.action, "payout_cooldown_wait");
+  assert.equal(state.inspect().jobs["54"].payoutAttempts, 2);
+});
+
+test("the tenth consecutive payout simulation failure alerts once and a broadcast resets the streak", async () => {
+  const submitted = submittedJob(57n, 2_000n);
+  let now = 2_000n;
+  const chain = mockChain({ jobs: [submitted], now });
+  const successfulClaim = chain.claimApprovalTimeout;
+  chain.getChainTimestamp = async () => now;
+  chain.claimApprovalTimeout = async () => {
+    const error = new Error("execution reverted");
+    error.transactionStage = "simulation";
+    throw error;
+  };
+  const state = memoryState({ version: 1, wasRegistered: true, halted: false, jobs: { "57": { phase: "submitted", deliveryUri: submitted.deliverableURI, payoutAttempts: 2 } } });
+
+  for (let failure = 1; failure <= 11; failure += 1) {
+    const result = await runCycle({ chain, state, prepareJob });
+    assert.equal(result.action, "payout_simulation_cooldown");
+    assert.equal(result.alert, failure === 10 ? true : undefined);
+    assert.equal(state.inspect().jobs["57"].payoutSimulationFailures, failure);
+    assert.equal(state.inspect().jobs["57"].payoutAttempts, 2);
+    now += 60n;
+  }
+
+  assert.equal(state.inspect().jobs["57"].payoutSimulationAlerted, true);
+  chain.claimApprovalTimeout = successfulClaim;
+  const claimed = await runCycle({ chain, state, prepareJob });
+  assert.equal(claimed.action, "approval_timeout_claimed");
+  assert.equal(state.inspect().jobs["57"].payoutSimulationFailures, 0);
+  assert.equal(state.inspect().jobs["57"].payoutSimulationAlerted, undefined);
+});
+
+test("pending payout is tolerated through 30 chain-time minutes then requires attention once", async () => {
+  const submitted = submittedJob(58n, 2_000n);
+  let now = 3_800n;
+  const txHash = "0x" + "e".repeat(64);
+  const chain = mockChain({ jobs: [submitted], now, transactionStatus: "pending" });
+  chain.getChainTimestamp = async () => now;
+  const state = memoryState({ version: 1, wasRegistered: true, halted: false, jobs: { "58": {
+    phase: "claiming_payout",
+    deliveryUri: submitted.deliverableURI,
+    payoutTxHash: txHash,
+    payoutBroadcastAtChainTimestamp: "2000",
+    payoutAttempts: 1,
+    payoutAttemptCountedHash: txHash,
+    nextPayoutAttemptAt: "9999",
+  } } });
+
+  const boundary = await runCycle({ chain, state, prepareJob });
+  assert.equal(boundary.action, "payout_cooldown_wait");
+  assert.equal(state.inspect().jobs["58"].phase, "claiming_payout");
+
+  now = 3_801n;
+  const expired = await runCycle({ chain, state, prepareJob });
+  assert.equal(expired.action, "payout_needs_attention");
+  assert.equal(expired.alert, true);
+  assert.equal(expired.reason, "payout_transaction_pending_too_long");
+
+  const repeated = await runCycle({ chain, state, prepareJob });
+  assert.equal(repeated.action, "payout_needs_attention_wait");
+  assert.equal(repeated.alert, undefined);
+});
+
+test("ambiguous broadcast failure without a transaction hash fails closed for operator attention", async () => {
+  const submitted = submittedJob(56n, 2_000n);
+  const chain = mockChain({ jobs: [submitted], now: 2_001n });
+  chain.claimApprovalTimeout = async () => {
+    chain.calls.push(["approval-timeout", "56"]);
+    const error = new Error("wallet rpc response unavailable");
+    error.transactionStage = "broadcast";
+    throw error;
+  };
+  const state = memoryState({ version: 1, wasRegistered: true, halted: false, jobs: { "56": { phase: "submitted", deliveryUri: submitted.deliverableURI } } });
+
+  const first = await runCycle({ chain, state, prepareJob });
+  assert.equal(first.action, "payout_needs_attention");
+  assert.equal(first.alert, true);
+  assert.equal(first.reason, "payout_broadcast_state_unknown");
+  assert.equal(state.inspect().jobs["56"].payoutAttempts, undefined);
+
+  const second = await runCycle({ chain, state, prepareJob });
+  assert.equal(second.action, "payout_needs_attention_wait");
+  assert.equal(chain.calls.filter((call) => call[0] === "approval-timeout").length, 1);
+});
+
+test("read-only submitted payout path performs no writes and does not mutate durable state", async () => {
+  const submitted = submittedJob(55n, 2_000n);
+  const chain = mockChain({ jobs: [submitted], now: 2_001n, writeEnabled: false });
+  const initial = { version: 1, wasRegistered: true, halted: false, jobs: { "55": { phase: "submitted", deliveryUri: submitted.deliverableURI } } };
+  const state = memoryState(initial);
+
+  const result = await runCycle({ chain, state, prepareJob });
+
+  assert.equal(result.action, "awaiting_payout_claim_readonly");
+  assert.equal(state.saves(), 0);
+  assert.deepEqual(state.inspect(), initial);
+  assert.deepEqual(chain.calls, []);
 });
 
 test("completed and expired-payout history does not block the next open job", async () => {

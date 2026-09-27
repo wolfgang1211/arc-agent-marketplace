@@ -3,9 +3,15 @@ import { hasGasReserve, parseEligibleJob } from "./eligibility.mjs";
 const STATE_VERSION = 1;
 // Reserve five minutes for bounded RPC retries and receipt confirmation; do not start a new submit inside this window.
 export const MIN_SUBMIT_ATTEMPT_WINDOW_SECONDS = 300n;
+export const PAYOUT_BASE_COOLDOWN_SECONDS = 60n;
+export const PAYOUT_MAX_COOLDOWN_SECONDS = 3_600n;
+export const MAX_PAYOUT_ATTEMPTS = 5;
+export const PAYOUT_PENDING_ATTENTION_SECONDS = 1_800n;
+export const PAYOUT_SIMULATION_ALERT_THRESHOLD = 10;
 
 export async function runCycle({ chain, state, prepareJob }) {
   await chain.assertChain();
+  if (chain.writeEnabled === false) return runReadOnlyCycle(chain);
   let snapshot = normalizeState(await state.load());
   if (snapshot.halted) return { action: "halted", reason: snapshot.haltReason || "halted" };
 
@@ -26,7 +32,7 @@ export async function runCycle({ chain, state, prepareJob }) {
 
   let jobs = await chain.listJobs();
   const knownIds = Object.entries(snapshot.jobs)
-    .filter(([, record]) => ["prepared", "accepting", "accepted", "submitting", "submitted", "terminal_failure", "timing_out", "claiming_payout"].includes(record?.phase))
+    .filter(([, record]) => ["prepared", "accepting", "accepted", "submitting", "submitted", "terminal_failure", "timing_out", "claiming_payout", "payout_needs_attention"].includes(record?.phase))
     .map(([jobId]) => jobId);
   if (knownIds.length > 0) {
     const recovered = await Promise.all(knownIds.map((jobId) => chain.getJob(jobId)));
@@ -42,6 +48,11 @@ export async function runCycle({ chain, state, prepareJob }) {
   const ambiguousPayout = jobs.find((job) => snapshot.jobs[String(job.id)]?.phase === "claiming_payout");
   if (ambiguousPayout) {
     return reconcileAmbiguousPayout({ chain, state, snapshot, job: ambiguousPayout, record: snapshot.jobs[String(ambiguousPayout.id)] });
+  }
+
+  const attentionPayout = jobs.find((job) => snapshot.jobs[String(job.id)]?.phase === "payout_needs_attention" && Number(job.status) === 2 && sameAddress(job.agent, chain.address));
+  if (attentionPayout) {
+    return { action: "payout_needs_attention_wait", jobId: String(attentionPayout.id), attempts: Number(snapshot.jobs[String(attentionPayout.id)].payoutAttempts || 0) };
   }
 
   const ambiguousBroadcast = jobs.find((job) => {
@@ -154,6 +165,19 @@ export async function runCycle({ chain, state, prepareJob }) {
   return { action: "no_eligible_jobs" };
 }
 
+async function runReadOnlyCycle(chain) {
+  const [agent, nativeBalance, jobs, chainTimestamp] = await Promise.all([
+    chain.getAgent(), chain.getNativeBalance(), chain.listJobs(), chain.getChainTimestamp(),
+  ]);
+  const awaitingPayout = jobs
+    .filter((job) => Number(job.status) === 2 && sameAddress(job.agent, chain.address) && chainTimestamp >= BigInt(job.approvalDeadline))
+    .sort(byId)[0];
+  if (awaitingPayout) {
+    return { action: "awaiting_payout_claim_readonly", jobId: String(awaitingPayout.id), approvalDeadline: String(awaitingPayout.approvalDeadline) };
+  }
+  return { action: "read_only", registered: agent.registered, nativeBalance: String(nativeBalance), visibleJobs: jobs.length };
+}
+
 async function observeSettlement({ chain, state, snapshot, job }) {
   const jobId = String(job.id);
   const record = snapshot.jobs[jobId] || {};
@@ -177,11 +201,21 @@ async function observeSettlement({ chain, state, snapshot, job }) {
 
 async function handleOwnedSubmitted({ chain, state, snapshot, job }) {
   const jobId = String(job.id);
-  const record = snapshot.jobs[jobId] || { phase: "submitted", deliveryUri: job.deliverableURI };
-  snapshot.jobs[jobId] = record;
   const chainTimestamp = await chain.getChainTimestamp();
   if (chainTimestamp < BigInt(job.approvalDeadline)) {
     return { action: "awaiting_customer_approval", jobId, deliveryUri: job.deliverableURI, approvalDeadline: String(job.approvalDeadline) };
+  }
+  if (chain.writeEnabled === false) {
+    return { action: "awaiting_payout_claim_readonly", jobId, deliveryUri: job.deliverableURI, approvalDeadline: String(job.approvalDeadline) };
+  }
+
+  const record = snapshot.jobs[jobId] || { phase: "submitted", deliveryUri: job.deliverableURI, payoutAttempts: 0 };
+  snapshot.jobs[jobId] = record;
+  if (record.phase === "payout_needs_attention") {
+    return { action: "payout_needs_attention_wait", jobId, attempts: Number(record.payoutAttempts || 0) };
+  }
+  if (isPayoutCoolingDown(record, chainTimestamp)) {
+    return payoutCooldownResult(jobId, record);
   }
 
   record.phase = "claiming_payout";
@@ -192,6 +226,9 @@ async function handleOwnedSubmitted({ chain, state, snapshot, job }) {
       onBroadcast: async (hash) => {
         record.payoutTxHash = hash;
         record.payoutBroadcastAt = new Date().toISOString();
+        record.payoutBroadcastAtChainTimestamp = String(chainTimestamp);
+        record.payoutSimulationFailures = 0;
+        delete record.payoutSimulationAlerted;
         await state.save(snapshot);
       },
     });
@@ -199,44 +236,129 @@ async function handleOwnedSubmitted({ chain, state, snapshot, job }) {
     return classifyPayoutJob({ chain, state, snapshot, job: fresh || job, record, payoutTxHash: claimed.hash });
   } catch (error) {
     record.reason = safeReason(error);
-    if (record.payoutTxHash) {
-      await state.save(snapshot);
-      return { action: "payout_broadcast_reconciliation_wait", jobId, txHash: record.payoutTxHash };
-    }
     const fresh = await chain.getJob(job.id);
     if (Number(fresh?.status) !== 2) {
       return classifyPayoutJob({ chain, state, snapshot, job: fresh || job, record });
     }
-    record.phase = "submitted";
-    await state.save(snapshot);
-    return { action: "approval_timeout_retry_later", jobId, reason: record.reason };
+    if (record.payoutTxHash) {
+      scheduleFailedPayoutAttempt(record, chainTimestamp, record.payoutTxHash);
+      await state.save(snapshot);
+      return payoutCooldownResult(jobId, record);
+    }
+    if (error?.transactionStage === "simulation") {
+      record.phase = "submitted";
+      record.payoutSimulationFailures = Number(record.payoutSimulationFailures || 0) + 1;
+      record.nextPayoutAttemptAt = String(chainTimestamp + PAYOUT_BASE_COOLDOWN_SECONDS);
+      const shouldAlert = record.payoutSimulationFailures === PAYOUT_SIMULATION_ALERT_THRESHOLD && record.payoutSimulationAlerted !== true;
+      if (shouldAlert) record.payoutSimulationAlerted = true;
+      await state.save(snapshot);
+      return {
+        action: "payout_simulation_cooldown",
+        jobId,
+        nextPayoutAttemptAt: record.nextPayoutAttemptAt,
+        simulationFailures: record.payoutSimulationFailures,
+        reason: shouldAlert ? "payout_simulation_failures_threshold" : record.reason,
+        ...(shouldAlert ? { alert: true } : {}),
+      };
+    }
+    return markPayoutNeedsAttention({ state, snapshot, job, record, reason: "payout_broadcast_state_unknown" });
   }
 }
 
 async function reconcileAmbiguousPayout({ chain, state, snapshot, job, record }) {
   const jobId = String(job.id);
-  const txHash = record.payoutTxHash;
-  if (!txHash) {
-    const fresh = await chain.getJob(job.id);
-    if (Number(fresh?.status) !== 2) return classifyPayoutJob({ chain, state, snapshot, job: fresh || job, record });
-    record.phase = "submitted";
-    await state.save(snapshot);
-    return { action: "approval_timeout_retry_later", jobId, reason: "payout_intent_not_broadcast" };
-  }
+  if (Number(job.status) !== 2) return classifyPayoutJob({ chain, state, snapshot, job, record, payoutTxHash: record.payoutTxHash });
+  const chainTimestamp = await chain.getChainTimestamp();
 
-  const transactionStatus = await chain.getTransactionStatus(txHash);
-  if (transactionStatus === "pending") return { action: "payout_broadcast_reconciliation_wait", jobId, txHash };
+  const txHash = record.payoutTxHash;
+  if (!txHash) return markPayoutNeedsAttention({ state, snapshot, job, record, reason: "payout_broadcast_state_unknown" });
+  if (record.payoutBroadcastAtChainTimestamp == null || record.payoutBroadcastAtChainTimestamp === "") {
+    record.payoutBroadcastAtChainTimestamp = String(chainTimestamp);
+    await state.save(snapshot);
+  }
+  const pendingTooLong = chainTimestamp > BigInt(record.payoutBroadcastAtChainTimestamp) + PAYOUT_PENDING_ATTENTION_SECONDS;
+  if (isPayoutCoolingDown(record, chainTimestamp) && !pendingTooLong) return payoutCooldownResult(jobId, record);
+
+  let transactionStatus;
+  try {
+    transactionStatus = await chain.getTransactionStatus(txHash);
+  } catch (error) {
+    record.reason = safeReason(error);
+    scheduleFailedPayoutAttempt(record, chainTimestamp, txHash, { refreshCooldown: true });
+    await state.save(snapshot);
+    return payoutCooldownResult(jobId, record);
+  }
+  if (transactionStatus === "pending") {
+    if (pendingTooLong) {
+      return markPayoutNeedsAttention({ state, snapshot, job, record, reason: "payout_transaction_pending_too_long" });
+    }
+    record.nextPayoutAttemptAt = String(chainTimestamp + payoutCooldownSeconds(Math.max(1, Number(record.payoutAttempts || 0))));
+    await state.save(snapshot);
+    return { action: "payout_broadcast_reconciliation_wait", jobId, txHash, nextPayoutAttemptAt: record.nextPayoutAttemptAt };
+  }
   const fresh = await chain.getJob(job.id);
   if (transactionStatus === "success" && Number(fresh?.status) === 2) {
-    return { action: "payout_state_reconciliation_wait", jobId, txHash };
+    record.nextPayoutAttemptAt = String(chainTimestamp + PAYOUT_BASE_COOLDOWN_SECONDS);
+    await state.save(snapshot);
+    return { action: "payout_state_reconciliation_wait", jobId, txHash, nextPayoutAttemptAt: record.nextPayoutAttemptAt };
   }
   if (transactionStatus === "success" || Number(fresh?.status) !== 2) {
     return classifyPayoutJob({ chain, state, snapshot, job: fresh || job, record, payoutTxHash: txHash });
   }
-  record.phase = "submitted";
+
+  scheduleFailedPayoutAttempt(record, chainTimestamp, txHash);
+  record.lastPayoutTxHash = txHash;
+  delete record.payoutTxHash;
+  delete record.payoutAttemptCountedHash;
   record.reason = "payout_transaction_reverted";
+  if (Number(record.payoutAttempts || 0) >= MAX_PAYOUT_ATTEMPTS) {
+    return markPayoutNeedsAttention({ state, snapshot, job, record, reason: record.reason });
+  }
+  record.phase = "submitted";
   await state.save(snapshot);
-  return { action: "payout_reverted_retry_later", jobId, txHash };
+  return { action: "payout_reverted_retry_later", jobId, txHash, attempts: record.payoutAttempts, nextPayoutAttemptAt: record.nextPayoutAttemptAt };
+}
+
+function isPayoutCoolingDown(record, chainTimestamp) {
+  if (record.nextPayoutAttemptAt == null || record.nextPayoutAttemptAt === "") return false;
+  return chainTimestamp < BigInt(record.nextPayoutAttemptAt);
+}
+
+function payoutCooldownSeconds(attempts) {
+  const exponent = Math.max(0, Number(attempts || 1) - 1);
+  const delay = PAYOUT_BASE_COOLDOWN_SECONDS * (2n ** BigInt(exponent));
+  return delay > PAYOUT_MAX_COOLDOWN_SECONDS ? PAYOUT_MAX_COOLDOWN_SECONDS : delay;
+}
+
+function scheduleFailedPayoutAttempt(record, chainTimestamp, txHash, { refreshCooldown = false } = {}) {
+  const isNewFailure = record.payoutAttemptCountedHash !== txHash;
+  if (isNewFailure) {
+    record.payoutAttempts = Number(record.payoutAttempts || 0) + 1;
+    record.payoutAttemptCountedHash = txHash;
+  }
+  if (isNewFailure || refreshCooldown) {
+    record.nextPayoutAttemptAt = String(chainTimestamp + payoutCooldownSeconds(record.payoutAttempts));
+  }
+}
+
+function payoutCooldownResult(jobId, record) {
+  return {
+    action: "payout_cooldown_wait",
+    jobId,
+    attempts: Number(record.payoutAttempts || 0),
+    nextPayoutAttemptAt: record.nextPayoutAttemptAt,
+    txHash: record.payoutTxHash,
+  };
+}
+
+async function markPayoutNeedsAttention({ state, snapshot, job, record, reason }) {
+  const jobId = String(job.id);
+  record.phase = "payout_needs_attention";
+  record.reason = reason;
+  record.payoutNeedsAttentionAt = new Date().toISOString();
+  snapshot.jobs[jobId] = record;
+  await state.save(snapshot);
+  return { action: "payout_needs_attention", alert: true, jobId, attempts: Number(record.payoutAttempts || 0), reason };
 }
 
 async function classifyPayoutJob({ chain, state, snapshot, job, record, payoutTxHash }) {
