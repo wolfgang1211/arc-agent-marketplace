@@ -5,12 +5,15 @@ export const DEFAULT_CONTRACT = "0xFc7dE289e02FCFB4268AE8f0e49991D2Eafe5C87";
 export const DEFAULT_USDC = "0x3600000000000000000000000000000000000000";
 
 export function loadConfig(env = process.env, { requireSecrets = true, root = process.cwd() } = {}) {
+  const pilotScope = parsePilotJobId(env.BOT_PILOT_JOB_ID);
   const config = {
     rpcUrl: httpsUrl(env.ARC_RPC_URL || "https://rpc.testnet.arc.network", "ARC_RPC_URL"),
     contractAddress: getAddress(env.CONTRACT_ADDRESS || DEFAULT_CONTRACT),
     usdcAddress: getAddress(env.USDC_ADDRESS || DEFAULT_USDC),
     privateKey: env.BOT_PRIVATE_KEY || "",
     writeEnabled: env.BOT_LIVE_WRITES === "true",
+    ...pilotScope,
+    buildSha: /^[0-9a-fA-F]{40}$/.test(env.BOT_BUILD_SHA || "") ? env.BOT_BUILD_SHA.toLowerCase() : "unavailable",
     pollIntervalMs: boundedInteger(env.POLL_INTERVAL_MS, 8_000, 1_000, 300_000, "POLL_INTERVAL_MS"),
     houseDelaySeconds: boundedInteger(env.HOUSE_DELAY_SECONDS, 14_400, 0, 86_400, "HOUSE_DELAY_SECONDS"),
     stateFile: resolve(root, env.BOT_STATE_FILE || "data/state.json"),
@@ -33,6 +36,18 @@ export function loadConfig(env = process.env, { requireSecrets = true, root = pr
     config.pinataGatewayBase = httpsUrl(config.pinataGatewayBase, "PINATA_GATEWAY_BASE").replace(/\/$/, "");
   }
   return config;
+}
+
+function parsePilotJobId(raw) {
+  if (raw == null || raw === "") return { pilotJobId: null, pilotScopeValid: false, pilotScopeReason: "pilot_job_id_missing" };
+  if (!/^[1-9]\d*$/.test(raw)) return { pilotJobId: null, pilotScopeValid: false, pilotScopeReason: "pilot_job_id_invalid" };
+  try {
+    const value = BigInt(raw);
+    if (value >= 2n ** 256n) throw new Error();
+    return { pilotJobId: value, pilotScopeValid: true, pilotScopeReason: null };
+  } catch {
+    return { pilotJobId: null, pilotScopeValid: false, pilotScopeReason: "pilot_job_id_invalid" };
+  }
 }
 
 function httpsUrl(value, name) {

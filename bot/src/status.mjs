@@ -1,12 +1,14 @@
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { createLiveChain } from "./chain.mjs";
+import { computeBuildFingerprint } from "./build-identity.mjs";
 import { GAS_RESERVE_WEI } from "./eligibility.mjs";
 import { loadConfig } from "./config.mjs";
 
 const envPath = resolve(process.cwd(), ".env");
 if (existsSync(envPath) && typeof process.loadEnvFile === "function") process.loadEnvFile(envPath);
 const config = loadConfig(process.env, { requireSecrets: false, root: process.cwd() });
+const buildFingerprint = computeBuildFingerprint(process.cwd());
 const chain = createLiveChain(config);
 await chain.assertChain();
 const [nativeBalance, usdcBalance, agent, visibleJobs, chainTimestamp] = await Promise.all([
@@ -23,6 +25,11 @@ console.log(JSON.stringify({
   visibleJobs: visibleJobs.length,
   chainTimestamp: chainTimestamp.toString(),
   gasGuardSatisfied: nativeBalance >= GAS_RESERVE_WEI,
-  readyForNewJob: config.writeEnabled && agent.registered && agent.activeJobs === 0n && nativeBalance >= GAS_RESERVE_WEI,
+  readyForNewJob: config.writeEnabled && config.pilotScopeValid && agent.registered && agent.activeJobs === 0n && nativeBalance >= GAS_RESERVE_WEI,
   writeEnabled: config.writeEnabled,
+  pilotJobId: config.pilotJobId == null ? null : String(config.pilotJobId),
+  pilotScopeValid: config.pilotScopeValid,
+  pilotScopeReason: config.pilotScopeReason,
+  buildSha: config.buildSha,
+  buildFingerprint,
 }));

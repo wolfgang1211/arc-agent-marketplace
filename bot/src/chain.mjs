@@ -11,7 +11,7 @@ export const ARC_TESTNET = defineChain({
 
 const PAGE_LIMIT = 100n;
 
-export function createLiveChain({ rpcUrl, contractAddress, usdcAddress, privateKey, writeEnabled, houseDelaySeconds }) {
+export function createLiveChain({ rpcUrl, contractAddress, usdcAddress, privateKey, writeEnabled, houseDelaySeconds, pilotJobId, pilotScopeValid, pilotScopeReason }) {
   if (!/^0x[0-9a-fA-F]{64}$/.test(privateKey || "")) throw new Error("BOT_PRIVATE_KEY must be a 32-byte hex key");
   const account = privateKeyToAccount(privateKey);
   const transport = http(rpcUrl, { timeout: 15_000, retryCount: 3, retryDelay: 1_000 });
@@ -23,18 +23,24 @@ export function createLiveChain({ rpcUrl, contractAddress, usdcAddress, privateK
     usdcAddress,
     writeEnabled,
     houseDelaySeconds,
+    pilotJobId,
+    pilotScopeValid,
+    pilotScopeReason,
   });
 }
 
-export function createChainAdapter({ publicClient, walletClient, account, contractAddress, usdcAddress, writeEnabled = false, houseDelaySeconds = 14_400 }) {
+export function createChainAdapter({ publicClient, walletClient, account, contractAddress, usdcAddress, writeEnabled = false, houseDelaySeconds = 14_400, pilotJobId = null, pilotScopeValid = false, pilotScopeReason = "pilot_job_id_missing" }) {
   const contract = getAddress(contractAddress);
   const usdc = getAddress(usdcAddress);
   const address = getAddress(account.address);
   const readMarketplace = (functionName, args = []) => publicClient.readContract({ address: contract, abi: MARKETPLACE_ABI, functionName, args });
   const readUsdc = (functionName, args = []) => publicClient.readContract({ address: usdc, abi: ERC20_ABI, functionName, args });
 
-  async function execute(addressTo, abi, functionName, args, expectedEvents = [], onBroadcast) {
+  async function execute(addressTo, abi, functionName, args, expectedEvents = [], onBroadcast, scopedJobId = null) {
     if (!writeEnabled) throw new Error("live_writes_disabled");
+    if (!pilotScopeValid || pilotJobId == null) throw new Error(`pilot_scope_invalid:${pilotScopeReason || "pilot_job_id_invalid"}`);
+    if (scopedJobId == null) throw new Error("pilot_scope_non_job_write");
+    if (BigInt(scopedJobId) !== BigInt(pilotJobId)) throw new Error("pilot_scope_violation");
     let request;
     try {
       ({ request } = await publicClient.simulateContract({ account, address: addressTo, abi, functionName, args }));
@@ -71,6 +77,9 @@ export function createChainAdapter({ publicClient, walletClient, account, contra
     usdcAddress: usdc,
     writeEnabled,
     houseDelaySeconds,
+    pilotJobId,
+    pilotScopeValid,
+    pilotScopeReason,
     async assertChain() {
       const chainId = await publicClient.getChainId();
       if (chainId !== ARC_TESTNET.id) throw new Error(`wrong_chain_id_${chainId}`);
@@ -135,15 +144,15 @@ export function createChainAdapter({ publicClient, walletClient, account, contra
         throw new Error("job_open_time_unavailable");
       }
     },
-    acceptJob: (jobId, options = {}) => execute(contract, MARKETPLACE_ABI, "acceptJob", [BigInt(jobId)], [{ name: "JobAccepted", args: { jobId: BigInt(jobId), agent: address } }], options.onBroadcast),
-    submitDeliverable: (jobId, uri, options = {}) => execute(contract, MARKETPLACE_ABI, "submitDeliverable", [BigInt(jobId), uri], [{ name: "DeliverableSubmitted", args: { jobId: BigInt(jobId), deliverableURI: uri } }], options.onBroadcast),
+    acceptJob: (jobId, options = {}) => execute(contract, MARKETPLACE_ABI, "acceptJob", [BigInt(jobId)], [{ name: "JobAccepted", args: { jobId: BigInt(jobId), agent: address } }], options.onBroadcast, jobId),
+    submitDeliverable: (jobId, uri, options = {}) => execute(contract, MARKETPLACE_ABI, "submitDeliverable", [BigInt(jobId), uri], [{ name: "DeliverableSubmitted", args: { jobId: BigInt(jobId), deliverableURI: uri } }], options.onBroadcast, jobId),
     claimTimeout: (jobId, options = {}) => execute(contract, MARKETPLACE_ABI, "claimTimeout", [BigInt(jobId)], [
       { name: "AgentSlashed", args: { agent: address } },
       { name: "JobExpiredRefunded", args: { jobId: BigInt(jobId) } },
-    ], options.onBroadcast),
+    ], options.onBroadcast, jobId),
     claimApprovalTimeout: (jobId, options = {}) => execute(contract, MARKETPLACE_ABI, "claimTimeout", [BigInt(jobId)], [
       { name: "JobExpiredPaid", args: { jobId: BigInt(jobId), agent: address } },
-    ], options.onBroadcast),
+    ], options.onBroadcast, jobId),
     approveStake: (amount) => execute(usdc, ERC20_ABI, "approve", [contract, BigInt(amount)]),
     registerAgent: (name, skill, fee) => execute(contract, MARKETPLACE_ABI, "registerAgent", [name, skill, BigInt(fee)], [{ name: "AgentRegistered", args: { agent: address, name, skill, fee: BigInt(fee) } }]),
   };

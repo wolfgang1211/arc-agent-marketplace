@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { createServer } from "node:http";
 import { resolve } from "node:path";
 import { createLiveChain } from "./chain.mjs";
+import { computeBuildFingerprint } from "./build-identity.mjs";
 import { GAS_RESERVE_WEI } from "./eligibility.mjs";
 import { loadConfig } from "./config.mjs";
 import { createJobPreparer } from "./prepare.mjs";
@@ -16,6 +17,7 @@ if (process.env.BOT_MODE === "register") {
   process.exit(0);
 }
 const config = loadConfig(process.env, { root: process.cwd() });
+const buildFingerprint = computeBuildFingerprint(process.cwd());
 const chain = createLiveChain(config);
 await chain.assertChain();
 const state = createFileState(config.stateFile);
@@ -23,16 +25,17 @@ const summarize = createOpenAICompatibleSummarizer({ apiKey: config.summaryApiKe
 const prepareJob = createJobPreparer({ summarize, pinataJwt: config.pinataJwt, gatewayBase: config.pinataGatewayBase });
 const once = process.argv.includes("--once");
 let stopping = false;
-let health = { started: true, address: chain.address, writeEnabled: config.writeEnabled, lastCycle: null, lastError: null };
+let health = { started: true, address: chain.address, writeEnabled: config.writeEnabled, buildSha: config.buildSha, buildFingerprint, pilotJobId: config.pilotJobId == null ? null : String(config.pilotJobId), lastCycle: null, lastError: null };
 
 if (config.port) createHealthServer(config.port);
 process.on("SIGINT", () => { stopping = true; });
 process.on("SIGTERM", () => { stopping = true; });
 
-log({ type: "bot_started", address: chain.address, contract: chain.contractAddress, writeEnabled: config.writeEnabled, pollIntervalMs: config.pollIntervalMs });
+log({ type: "bot_started", buildSha: config.buildSha, buildFingerprint, address: chain.address, contract: chain.contractAddress, writeEnabled: config.writeEnabled, pilotJobId: config.pilotJobId == null ? null : String(config.pilotJobId), pilotScopeValid: config.pilotScopeValid, pollIntervalMs: config.pollIntervalMs });
 do {
   try {
     health.lastCycle = await runCycle({ chain, state, prepareJob });
+    if (health.lastCycle.alert === true) log({ type: "operator_alert", ...health.lastCycle }, true);
     const [readinessAgent, readinessNative, readinessUsdc] = await Promise.all([chain.getAgent(), chain.getNativeBalance(), chain.getUsdcBalance()]);
     health.readiness = {
       registered: readinessAgent.registered,
@@ -40,12 +43,13 @@ do {
       nativeBalance: String(readinessNative),
       usdcBalance: String(readinessUsdc),
       gasGuardSatisfied: readinessNative >= GAS_RESERVE_WEI,
-      readyForNewJob: config.writeEnabled && readinessAgent.registered && readinessAgent.activeJobs === 0n && readinessNative >= GAS_RESERVE_WEI && !["halted", "halted_after_slash", "registration_lost_halt"].includes(health.lastCycle.action),
+      readyForNewJob: config.writeEnabled && config.pilotScopeValid && readinessAgent.registered && readinessAgent.activeJobs === 0n && readinessNative >= GAS_RESERVE_WEI && !["halted", "halted_after_slash", "registration_lost_halt"].includes(health.lastCycle.action),
     };
     health.lastError = null;
-    log({ type: health.lastCycle.alert === true ? "operator_alert" : "cycle_complete", ...health.lastCycle }, health.lastCycle.alert === true);
+    if (health.lastCycle.alert !== true) log({ type: "cycle_complete", ...health.lastCycle });
     if (["halted", "halted_after_slash", "registration_lost_halt"].includes(health.lastCycle.action)) stopping = true;
   } catch (error) {
+    health.readiness = { readyForNewJob: false, reason: "readiness_unavailable" };
     health.lastError = safeError(error);
     log({ type: "cycle_failed", error: health.lastError }, true);
     if (once) process.exitCode = 1;

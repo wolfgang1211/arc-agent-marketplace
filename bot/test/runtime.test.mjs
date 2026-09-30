@@ -16,13 +16,16 @@ function memoryState(initial = {}) {
   return { load: async () => structuredClone(value), save: async (next) => { saveCount += 1; value = structuredClone(next); }, inspect: () => value, saves: () => saveCount };
 }
 
-function mockChain({ jobs = [openJob()], balance = GAS_RESERVE_WEI, usdcBalance = 100_000000n, registered = true, now = 1_000n, submitError = null, transactionStatus = "pending", writeEnabled = true, houseDelaySeconds = 0, openingEventTimestamp = null, openingTimeError = null } = {}) {
+function mockChain({ jobs = [openJob()], balance = GAS_RESERVE_WEI, usdcBalance = 100_000000n, registered = true, agentActiveJobs = 0n, now = 1_000n, submitError = null, transactionStatus = "pending", writeEnabled = true, houseDelaySeconds = 0, openingEventTimestamp = null, openingTimeError = null, pilotJobId = jobs[0]?.id ?? 1n, pilotScopeValid = true, pilotScopeReason = null } = {}) {
   const calls = [];
-  let agent = { registered, stake: registered ? 10_000000n : 0n, activeJobs: 0n };
+  let agent = { registered, stake: registered ? 10_000000n : 0n, activeJobs: BigInt(agentActiveJobs) };
   const chain = {
     address: agentAddress,
     writeEnabled,
     houseDelaySeconds,
+    pilotJobId: pilotJobId == null ? null : BigInt(pilotJobId),
+    pilotScopeValid,
+    pilotScopeReason,
     calls,
     assertChain: async () => 5_042_002,
     listJobs: async () => jobs,
@@ -82,8 +85,66 @@ const prepareJob = async (job) => ({
   cid: `bafy${job.id}`,
 });
 
+test("live mode without a valid pilot ID fails closed and raises an operator alert", async () => {
+  for (const scope of [
+    { pilotJobId: null, pilotScopeValid: false, pilotScopeReason: "pilot_job_id_missing" },
+    { pilotJobId: null, pilotScopeValid: false, pilotScopeReason: "pilot_job_id_invalid" },
+  ]) {
+    const chain = mockChain(scope);
+    const state = memoryState();
+    const result = await runCycle({ chain, state, prepareJob });
+    assert.deepEqual(result, { action: "pilot_scope_invalid", reason: scope.pilotScopeReason, alert: true });
+    assert.deepEqual(chain.calls, []);
+    assert.equal(state.saves(), 0);
+  }
+});
+
+test("read-only mode remains safe when pilot ID is absent", async () => {
+  const chain = mockChain({ writeEnabled: false, pilotJobId: null, pilotScopeValid: false, pilotScopeReason: "pilot_job_id_missing" });
+  const state = memoryState();
+  const result = await runCycle({ chain, state, prepareJob });
+  assert.equal(result.action, "read_only");
+  assert.deepEqual(chain.calls, []);
+  assert.equal(state.saves(), 0);
+});
+
+test("pilot scope skips non-pilot open jobs before preparation or acceptance", async () => {
+  const outside = openJob(8n);
+  const chain = mockChain({ jobs: [outside], pilotJobId: 9n });
+  let prepared = false;
+  const result = await runCycle({ chain, state: memoryState(), prepareJob: async () => { prepared = true; } });
+
+  assert.equal(result.action, "no_eligible_jobs");
+  assert.deepEqual(result.pilotScopeSkips, [{ jobId: "8", status: 0, reason: "pilot_scope_skip" }]);
+  assert.equal(prepared, false);
+  assert.deepEqual(chain.calls, []);
+});
+
+test("owned timeout and payout paths are restricted to the pilot job", async () => {
+  const inProgress = { ...openJob(21n), agent: agentAddress, status: 1, deliveryDeadline: 900n };
+  const submitted = submittedJob(22n, 900n);
+  for (const job of [inProgress, submitted]) {
+    const pilot = openJob(99n);
+    const chain = mockChain({ jobs: [job, pilot], pilotJobId: 99n, now: 1_000n });
+    const result = await runCycle({ chain, state: memoryState(), prepareJob });
+    assert.equal(result.action, "pilot_scope_owned_job_wait");
+    assert.equal(result.alert, true);
+    assert.equal(result.jobId, String(job.id));
+    assert.deepEqual(result.pilotScopeSkips, [{ jobId: String(job.id), status: Number(job.status), reason: "pilot_scope_skip" }]);
+    assert.deepEqual(chain.calls, []);
+  }
+});
+
+test("unresolved active work outside the visible pilot scope blocks all writes", async () => {
+  const pilot = openJob(99n);
+  const chain = mockChain({ jobs: [pilot], pilotJobId: 99n, agentActiveJobs: 1n });
+  const result = await runCycle({ chain, state: memoryState(), prepareJob });
+  assert.deepEqual(result, { action: "pilot_scope_owned_job_unresolved", reason: "active_job_outside_pilot_scope", alert: true });
+  assert.deepEqual(chain.calls, []);
+});
+
 test("prepares, rechecks, accepts, and submits one eligible job without intervention", async () => {
-  const chain = mockChain({ jobs: [openJob(3n), openJob(4n)] });
+  const chain = mockChain({ jobs: [openJob(3n), openJob(4n)], pilotJobId: 3n });
   const state = memoryState();
   const result = await runCycle({ chain, state, prepareJob });
   assert.equal(result.action, "submitted");
@@ -94,10 +155,10 @@ test("prepares, rechecks, accepts, and submits one eligible job without interven
   assert.equal(state.inspect().jobs["3"].phase, "submitted");
 });
 
-test("temporary prepare failure skips the blocked head and submits the next eligible job in the same cycle", async () => {
+test("pilot scope skips a blocked head and submits only the selected eligible job", async () => {
   const blocked = openJob(5n);
   const next = openJob(6n);
-  const chain = mockChain({ jobs: [blocked, next], now: 1_000n });
+  const chain = mockChain({ jobs: [blocked, next], now: 1_000n, pilotJobId: 6n });
   const state = memoryState();
   const preparedIds = [];
   const result = await runCycle({
@@ -105,27 +166,16 @@ test("temporary prepare failure skips the blocked head and submits the next elig
     state,
     prepareJob: async (job) => {
       preparedIds.push(String(job.id));
-      if (job.id === 5n) {
-        const error = new Error("getaddrinfo ENOTFOUND source.example");
-        error.code = "dns_error";
-        error.permanent = false;
-        throw error;
-      }
       return prepareJob(job);
     },
   });
 
   assert.equal(result.action, "submitted");
   assert.equal(result.jobId, "6");
-  assert.deepEqual(preparedIds, ["5", "6"]);
+  assert.deepEqual(preparedIds, ["6"]);
+  assert.deepEqual(result.pilotScopeSkips, [{ jobId: "5", status: 0, reason: "pilot_scope_skip" }]);
   assert.deepEqual(chain.calls.map((call) => [call[0], call[1]]), [["accept", "6"], ["submit", "6"]]);
-  assert.deepEqual(state.inspect().jobs["5"], {
-    phase: "prepare_retry",
-    reason: "dns_error",
-    permanent: false,
-    attempts: 1,
-    nextPrepareAttemptAt: "1300",
-  });
+  assert.equal(state.inspect().jobs["5"], undefined);
 });
 
 test("temporary prepare cooldown survives restart and retries at the chain-time boundary", async () => {
@@ -938,7 +988,7 @@ test("completed and expired-payout history does not block the next open job", as
   const completed = { ...submittedJob(45n), status: 4 };
   const expired = { ...submittedJob(46n), status: 7 };
   const open = openJob(47n);
-  const chain = mockChain({ jobs: [completed, expired, open], now: 1_000n });
+  const chain = mockChain({ jobs: [completed, expired, open], now: 1_000n, pilotJobId: 47n });
   const state = memoryState({ version: 1, wasRegistered: true, halted: false, jobs: {
     "45": { phase: "completed", deliveryUri: completed.deliverableURI },
     "46": { phase: "payout_claimed", deliveryUri: expired.deliverableURI },
@@ -961,10 +1011,10 @@ test("owned disputed work blocks acceptance of another job", async () => {
   assert.deepEqual(chain.calls, []);
 });
 
-test("only one expired submitted job is claimed per cycle", async () => {
+test("a non-pilot submitted job blocks payout even when the pilot payout is eligible", async () => {
   const firstJob = submittedJob(50n, 2_000n);
   const secondJob = submittedJob(51n, 2_000n);
-  const chain = mockChain({ jobs: [secondJob, firstJob], now: 2_001n });
+  const chain = mockChain({ jobs: [secondJob, firstJob], now: 2_001n, pilotJobId: 50n });
   const state = memoryState({ version: 1, wasRegistered: true, halted: false, jobs: {
     "50": { phase: "submitted", deliveryUri: firstJob.deliverableURI },
     "51": { phase: "submitted", deliveryUri: secondJob.deliverableURI },
@@ -972,8 +1022,12 @@ test("only one expired submitted job is claimed per cycle", async () => {
 
   const result = await runCycle({ chain, state, prepareJob });
 
-  assert.equal(result.action, "approval_timeout_claimed");
-  assert.deepEqual(chain.calls, [["approval-timeout", "50"]]);
+  assert.equal(result.action, "pilot_scope_owned_job_wait");
+  assert.equal(result.jobId, "51");
+  assert.equal(result.alert, true);
+  assert.deepEqual(result.pilotScopeSkips, [{ jobId: "51", status: 2, reason: "pilot_scope_skip" }]);
+  assert.deepEqual(chain.calls, []);
+  assert.equal(state.inspect().jobs["50"].phase, "submitted");
   assert.equal(state.inspect().jobs["51"].phase, "submitted");
 });
 

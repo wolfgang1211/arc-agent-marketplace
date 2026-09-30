@@ -29,6 +29,8 @@ The validated DNS address is pinned into the TLS connection to close the DNS-reb
 
 DNS, redirects and HTTPS share a 20-second total source deadline. The web posting preflight uses a byte-identical standalone copy of this policy before USDC approval. It does not upload artifacts, invoke a model or request wallet actions. A successful check is only a point-in-time accessibility observation: the worker always rechecks and can still decline.
 
+During the bounded live pilot, `BOT_PILOT_JOB_ID` must be one canonical positive uint256 job ID. When writes are enabled, a missing or invalid value fails closed with `operator_alert`; every other job is reported as `pilot_scope_skip`. Runtime selection and the chain adapter independently restrict `acceptJob`, `submitDeliverable`, delivery-timeout claims, and approval-timeout payout claims to that ID. Non-job writes such as registration are disabled in the pilot build. `BOT_BUILD_SHA` is an operator-pinned 40-hex commit label, not self-attestation. `bot_started` and `/healthz` also emit a runtime-derived `buildFingerprint` over `package.json`, `package-lock.json`, and all `src/*.mjs` bytes. Before activation, compare both the pinned SHA and `npm run fingerprint` output from the exact clean checkout with the deployed log/readback; reject `unavailable` or any mismatch.
+
 ## Economic guard
 
 - Required registration stake: `10 USDC` (read from the live contract before registration).
@@ -72,6 +74,7 @@ V1 artifacts retain their schema and field set. V2 artifacts use `schemaVersion:
 npm ci
 npm test
 npm run check
+npm run fingerprint
 npm run probe
 npm run once
 npm start
@@ -79,7 +82,7 @@ npm run status
 npm run register
 ```
 
-`BOT_LIVE_WRITES` defaults to `false`. `npm run register`, `acceptJob`, `submitDeliverable`, and `claimTimeout` fail closed unless it is exactly `true`.
+`BOT_LIVE_WRITES` defaults to `false`. Job writes additionally require a valid `BOT_PILOT_JOB_ID`; missing or invalid pilot scope emits `operator_alert` and performs no write. `npm run register`, `acceptJob`, `submitDeliverable`, and `claimTimeout` all fail closed unless live writes are exactly `true`.
 
 ## Railway activation order
 
@@ -87,8 +90,8 @@ npm run register
 2. Add the variables from `.env.example`. Keep `BOT_PRIVATE_KEY`, `SUMMARY_API_KEY`, and `PINATA_JWT` only in Railway secrets. Use `BOT_STATE_FILE=/data/state.json`.
 3. Start with `BOT_LIVE_WRITES=false`; verify the service and public wallet address.
 4. Transfer exactly `10.10 USDC` to that new independent wallet.
-5. Set `BOT_LIVE_WRITES=true`, run `npm run register` once, and verify the approve/register transaction receipts plus `getAgent` state.
-6. Start the worker and verify `registered=true`, native balance at or above `0.02 USDC`, and zero active jobs before asking the customer to post.
+5. Complete agent registration with the separately reviewed registration workflow before deploying the pilot guard. The pilot build intentionally blocks non-job writes such as stake approval and registration.
+6. Start the pilot worker with `BOT_LIVE_WRITES=false`; verify `registered=true`, native balance at or above `0.02 USDC`, zero active jobs, the exact `BOT_BUILD_SHA`, and the intended `BOT_PILOT_JOB_ID` before asking the customer to post.
 7. After 48 hours, review Railway CPU/memory/credit use. Move to Hobby only if needed to preserve 24/7 operation.
 
 Do not put a private key, provider key, JWT, gateway credential, or connection string in this repository, a state file, logs, or deployment output.

@@ -15,6 +15,19 @@ export const MAX_PREPARE_ATTEMPTS = 5;
 export async function runCycle({ chain, state, prepareJob }) {
   await chain.assertChain();
   if (chain.writeEnabled === false) return runReadOnlyCycle(chain);
+  if (chain.pilotScopeValid !== true || chain.pilotJobId == null) {
+    return { action: "pilot_scope_invalid", reason: chain.pilotScopeReason || "pilot_job_id_invalid", alert: true };
+  }
+  const pilotScope = createPilotScopedChain(chain);
+  const result = await runWriteCycle({ chain: pilotScope.chain, state, prepareJob, pilotScope });
+  const pilotScopeSkips = pilotScope.skips();
+  return {
+    ...result,
+    ...(pilotScopeSkips.length > 0 ? { pilotScopeSkips } : {}),
+  };
+}
+
+async function runWriteCycle({ chain, state, prepareJob, pilotScope }) {
   let snapshot = normalizeState(await state.load());
   if (snapshot.halted) return { action: "halted", reason: snapshot.haltReason || "halted" };
 
@@ -42,6 +55,21 @@ export async function runCycle({ chain, state, prepareJob }) {
     const byJobId = new Map(jobs.map((job) => [String(job.id), job]));
     for (const job of recovered) if (job) byJobId.set(String(job.id), job);
     jobs = [...byJobId.values()];
+  }
+  const scopedJobs = pilotScope.scopeJobs(jobs, chain.address);
+  if (scopedJobs.nonPilotOwned) {
+    return {
+      action: "pilot_scope_owned_job_wait",
+      jobId: String(scopedJobs.nonPilotOwned.id),
+      status: Number(scopedJobs.nonPilotOwned.status),
+      reason: "pilot_scope_skip",
+      alert: true,
+    };
+  }
+  jobs = scopedJobs.jobs;
+  const pilotOwnsActiveJob = jobs.some((job) => [1, 2, 3].includes(Number(job.status)) && sameAddress(job.agent, chain.address));
+  if (BigInt(agent.activeJobs || 0) > 0n && !pilotOwnsActiveJob) {
+    return { action: "pilot_scope_owned_job_unresolved", reason: "active_job_outside_pilot_scope", alert: true };
   }
   const completed = jobs.find((job) => Number(job.status) === 4 && sameAddress(job.agent, chain.address) && snapshot.jobs[String(job.id)] && snapshot.jobs[String(job.id)].phase !== "completed");
   if (completed) {
@@ -232,6 +260,43 @@ function withHouseDiagnostics(result, houseDelaySkips, opening, prepareSkips = [
     ...(houseDelaySkips.length > 0 ? { houseDelaySkips } : {}),
     ...(prepareSkips.length > 0 ? { prepareSkips } : {}),
     ...(prepareSkips.some((skip) => skip.alert === true) ? { alert: true } : {}),
+  };
+}
+
+function createPilotScopedChain(chain) {
+  const pilotJobId = BigInt(chain.pilotJobId);
+  const skipped = new Map();
+  const rememberSkip = (job) => {
+    const jobId = String(job?.id ?? "");
+    if (!/^\d+$/.test(jobId) || BigInt(jobId) === pilotJobId) return;
+    skipped.set(jobId, { jobId, status: Number(job?.status), reason: "pilot_scope_skip" });
+  };
+  const assertPilotId = (jobId) => {
+    if (BigInt(jobId) !== pilotJobId) throw new Error("pilot_scope_violation");
+  };
+  const scopeWrite = (write) => async (jobId, ...args) => {
+    assertPilotId(jobId);
+    return write(jobId, ...args);
+  };
+  return {
+    chain: {
+      ...chain,
+      acceptJob: scopeWrite(chain.acceptJob),
+      submitDeliverable: scopeWrite(chain.submitDeliverable),
+      claimTimeout: scopeWrite(chain.claimTimeout),
+      claimApprovalTimeout: scopeWrite(chain.claimApprovalTimeout),
+    },
+    scopeJobs(jobs, address) {
+      for (const job of jobs) rememberSkip(job);
+      const nonPilotOwned = jobs
+        .filter((job) => BigInt(job.id) !== pilotJobId && [1, 2, 3].includes(Number(job.status)) && sameAddress(job.agent, address))
+        .sort(byId)[0];
+      return {
+        jobs: jobs.filter((job) => BigInt(job.id) === pilotJobId),
+        nonPilotOwned,
+      };
+    },
+    skips: () => [...skipped.values()].sort((left, right) => BigInt(left.jobId) < BigInt(right.jobId) ? -1 : 1),
   };
 }
 

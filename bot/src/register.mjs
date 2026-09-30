@@ -7,6 +7,10 @@ import { loadConfig } from "./config.mjs";
 const envPath = resolve(process.cwd(), ".env");
 if (existsSync(envPath) && typeof process.loadEnvFile === "function") process.loadEnvFile(envPath);
 const config = loadConfig(process.env, { requireSecrets: false, root: process.cwd() });
+if (config.writeEnabled && !config.pilotScopeValid) {
+  print({ type: "operator_alert", action: "pilot_scope_invalid", reason: config.pilotScopeReason });
+  throw new Error(config.pilotScopeReason);
+}
 if (!config.writeEnabled) throw new Error("BOT_LIVE_WRITES=true is required for explicit registration");
 const chain = createLiveChain(config);
 await chain.assertChain();
