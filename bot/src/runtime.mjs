@@ -8,6 +8,9 @@ export const PAYOUT_MAX_COOLDOWN_SECONDS = 3_600n;
 export const MAX_PAYOUT_ATTEMPTS = 5;
 export const PAYOUT_PENDING_ATTENTION_SECONDS = 1_800n;
 export const PAYOUT_SIMULATION_ALERT_THRESHOLD = 10;
+export const PREPARE_BASE_COOLDOWN_SECONDS = 300n;
+export const PREPARE_MAX_COOLDOWN_SECONDS = 21_600n;
+export const MAX_PREPARE_ATTEMPTS = 5;
 
 export async function runCycle({ chain, state, prepareJob }) {
   await chain.assertChain();
@@ -32,7 +35,7 @@ export async function runCycle({ chain, state, prepareJob }) {
 
   let jobs = await chain.listJobs();
   const knownIds = Object.entries(snapshot.jobs)
-    .filter(([, record]) => ["prepared", "accepting", "accepted", "submitting", "submitted", "terminal_failure", "timing_out", "claiming_payout", "payout_needs_attention"].includes(record?.phase))
+    .filter(([, record]) => ["prepared", "prepare_retry", "accepting", "accepted", "submitting", "submitted", "terminal_failure", "timing_out", "claiming_payout", "payout_needs_attention"].includes(record?.phase))
     .map(([jobId]) => jobId);
   if (knownIds.length > 0) {
     const recovered = await Promise.all(knownIds.map((jobId) => chain.getJob(jobId)));
@@ -89,6 +92,7 @@ export async function runCycle({ chain, state, prepareJob }) {
 
   const openJobs = jobs.filter((job) => Number(job.status) === 0).sort(byId);
   const houseDelaySkips = [];
+  const prepareSkips = [];
   for (const job of openJobs) {
     const jobId = String(job.id);
     if (sameAddress(job.client, chain.address)) {
@@ -112,6 +116,16 @@ export async function runCycle({ chain, state, prepareJob }) {
       continue;
     }
     const chainTimestamp = await chain.getChainTimestamp();
+    const prepareRecord = snapshot.jobs[jobId];
+    if (isPrepareCoolingDown(prepareRecord, chainTimestamp)) {
+      prepareSkips.push({
+        jobId,
+        reason: "prepare_cooldown",
+        attempts: Number(prepareRecord.attempts || 0),
+        nextPrepareAttemptAt: String(prepareRecord.nextPrepareAttemptAt),
+      });
+      continue;
+    }
     const eligibleAt = BigInt(opening.timestamp) + BigInt(chain.houseDelaySeconds);
     if (chainTimestamp < eligibleAt) {
       houseDelaySkips.push({
@@ -130,14 +144,36 @@ export async function runCycle({ chain, state, prepareJob }) {
       assertPreparedArtifact(prepared);
     } catch (error) {
       const permanent = error?.permanent === true;
+      const attempts = Number(snapshot.jobs[jobId]?.attempts || 0) + 1;
+      const reason = safeReason(error);
+      if (!permanent && attempts >= MAX_PREPARE_ATTEMPTS) {
+        snapshot.jobs[jobId] = {
+          phase: "rejected",
+          reason: "source_unavailable",
+          lastPrepareError: reason,
+          permanent: true,
+          attempts,
+        };
+        await state.save(snapshot);
+        prepareSkips.push({ jobId, reason: "source_unavailable", attempts, alert: true });
+        continue;
+      }
       snapshot.jobs[jobId] = {
-        phase: "rejected",
-        reason: safeReason(error),
+        phase: permanent ? "rejected" : "prepare_retry",
+        reason,
         permanent,
-        attempts: Number(snapshot.jobs[jobId]?.attempts || 0) + 1,
+        attempts,
+        ...(!permanent ? { nextPrepareAttemptAt: String(chainTimestamp + prepareCooldownSeconds(attempts)) } : {}),
       };
       await state.save(snapshot);
-      if (!permanent) return withHouseDiagnostics({ action: "prepare_retry_later", jobId, reason: safeReason(error) }, houseDelaySkips, opening);
+      if (!permanent) {
+        prepareSkips.push({
+          jobId,
+          reason,
+          attempts,
+          nextPrepareAttemptAt: snapshot.jobs[jobId].nextPrepareAttemptAt,
+        });
+      }
       continue;
     }
 
@@ -158,10 +194,10 @@ export async function runCycle({ chain, state, prepareJob }) {
     if (!freshJob || Number(freshJob.status) !== 0) {
       snapshot.jobs[jobId].phase = "accept_race_lost";
       await state.save(snapshot);
-      return withHouseDiagnostics({ action: "accept_race_lost", jobId }, houseDelaySkips, opening);
+      return withHouseDiagnostics({ action: "accept_race_lost", jobId }, houseDelaySkips, opening, prepareSkips);
     }
     const freshBalance = await chain.getNativeBalance();
-    if (!hasGasReserve(freshBalance)) return withHouseDiagnostics({ action: "gas_guard", balance: String(freshBalance), preparedJobId: jobId }, houseDelaySkips, opening);
+    if (!hasGasReserve(freshBalance)) return withHouseDiagnostics({ action: "gas_guard", balance: String(freshBalance), preparedJobId: jobId }, houseDelaySkips, opening, prepareSkips);
     const freshUsdcBalance = await chain.getUsdcBalance();
     snapshot.jobs[jobId].balanceBeforeAccept = { native: String(freshBalance), usdc: String(freshUsdcBalance) };
     await state.save(snapshot);
@@ -183,17 +219,19 @@ export async function runCycle({ chain, state, prepareJob }) {
       throw new Error("accept_receipt_state_mismatch");
     }
     const result = await submitPrepared({ chain, state, snapshot, job: acceptedJob });
-    return withHouseDiagnostics(result, houseDelaySkips, opening);
+    return withHouseDiagnostics(result, houseDelaySkips, opening, prepareSkips);
   }
 
-  return withHouseDiagnostics({ action: "no_eligible_jobs" }, houseDelaySkips);
+  return withHouseDiagnostics({ action: "no_eligible_jobs" }, houseDelaySkips, undefined, prepareSkips);
 }
 
-function withHouseDiagnostics(result, houseDelaySkips, opening) {
+function withHouseDiagnostics(result, houseDelaySkips, opening, prepareSkips = []) {
   return {
     ...result,
     ...(opening ? { jobOpenedAt: String(opening.timestamp), jobOpeningTimeSource: opening.source } : {}),
     ...(houseDelaySkips.length > 0 ? { houseDelaySkips } : {}),
+    ...(prepareSkips.length > 0 ? { prepareSkips } : {}),
+    ...(prepareSkips.some((skip) => skip.alert === true) ? { alert: true } : {}),
   };
 }
 
@@ -580,6 +618,17 @@ function assertPreparedArtifact(prepared) {
     error.permanent = true;
     throw error;
   }
+}
+
+function isPrepareCoolingDown(record, chainTimestamp) {
+  if (record?.phase !== "prepare_retry" || !/^\d+$/.test(String(record.nextPrepareAttemptAt || ""))) return false;
+  return chainTimestamp < BigInt(record.nextPrepareAttemptAt);
+}
+
+function prepareCooldownSeconds(attempts) {
+  const exponent = BigInt(Math.max(0, Math.min(Number(attempts) - 1, 63)));
+  const cooldown = PREPARE_BASE_COOLDOWN_SECONDS * (2n ** exponent);
+  return cooldown < PREPARE_MAX_COOLDOWN_SECONDS ? cooldown : PREPARE_MAX_COOLDOWN_SECONDS;
 }
 
 function normalizeState(value) {

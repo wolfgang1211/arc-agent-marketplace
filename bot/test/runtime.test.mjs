@@ -94,6 +94,165 @@ test("prepares, rechecks, accepts, and submits one eligible job without interven
   assert.equal(state.inspect().jobs["3"].phase, "submitted");
 });
 
+test("temporary prepare failure skips the blocked head and submits the next eligible job in the same cycle", async () => {
+  const blocked = openJob(5n);
+  const next = openJob(6n);
+  const chain = mockChain({ jobs: [blocked, next], now: 1_000n });
+  const state = memoryState();
+  const preparedIds = [];
+  const result = await runCycle({
+    chain,
+    state,
+    prepareJob: async (job) => {
+      preparedIds.push(String(job.id));
+      if (job.id === 5n) {
+        const error = new Error("getaddrinfo ENOTFOUND source.example");
+        error.code = "dns_error";
+        error.permanent = false;
+        throw error;
+      }
+      return prepareJob(job);
+    },
+  });
+
+  assert.equal(result.action, "submitted");
+  assert.equal(result.jobId, "6");
+  assert.deepEqual(preparedIds, ["5", "6"]);
+  assert.deepEqual(chain.calls.map((call) => [call[0], call[1]]), [["accept", "6"], ["submit", "6"]]);
+  assert.deepEqual(state.inspect().jobs["5"], {
+    phase: "prepare_retry",
+    reason: "dns_error",
+    permanent: false,
+    attempts: 1,
+    nextPrepareAttemptAt: "1300",
+  });
+});
+
+test("temporary prepare cooldown survives restart and retries at the chain-time boundary", async () => {
+  const job = openJob(5n);
+  let now = 1_000n;
+  const chain = mockChain({ jobs: [job], now });
+  chain.getChainTimestamp = async () => now;
+  const state = memoryState();
+  let prepareCalls = 0;
+  const transientThenSuccess = async (candidate) => {
+    prepareCalls += 1;
+    if (prepareCalls === 1) {
+      const error = new Error("temporary DNS failure");
+      error.code = "dns_error";
+      error.permanent = false;
+      throw error;
+    }
+    return prepareJob(candidate);
+  };
+
+  const first = await runCycle({ chain, state, prepareJob: transientThenSuccess });
+  assert.equal(first.action, "no_eligible_jobs");
+  assert.equal(state.inspect().jobs["5"].nextPrepareAttemptAt, "1300");
+  assert.equal(prepareCalls, 1);
+
+  now = 1_299n;
+  const restartedBeforeBoundary = await runCycle({ chain, state, prepareJob: transientThenSuccess });
+  assert.equal(restartedBeforeBoundary.action, "no_eligible_jobs");
+  assert.equal(prepareCalls, 1);
+
+  now = 1_300n;
+  const restartedAtBoundary = await runCycle({ chain, state, prepareJob: transientThenSuccess });
+  assert.equal(restartedAtBoundary.action, "submitted");
+  assert.equal(restartedAtBoundary.jobId, "5");
+  assert.equal(prepareCalls, 2);
+});
+
+test("restart recovers a prepare-retry job outside the bounded discovery page", async () => {
+  const job = openJob(5n);
+  const chain = mockChain({ jobs: [job], now: 1_300n });
+  chain.listJobs = async () => [];
+  const state = memoryState({
+    version: 1,
+    wasRegistered: true,
+    halted: false,
+    jobs: {
+      "5": {
+        phase: "prepare_retry",
+        reason: "dns_error",
+        permanent: false,
+        attempts: 1,
+        nextPrepareAttemptAt: "1300",
+      },
+    },
+  });
+
+  const result = await runCycle({ chain, state, prepareJob });
+
+  assert.equal(result.action, "submitted");
+  assert.equal(result.jobId, "5");
+  assert.deepEqual(chain.calls.map((call) => [call[0], call[1]]), [["accept", "5"], ["submit", "5"]]);
+});
+
+test("fifth temporary prepare failure permanently rejects source_unavailable and alerts only once", async () => {
+  const job = openJob(5n);
+  let now = 1_000n;
+  const chain = mockChain({ jobs: [job], now });
+  chain.getChainTimestamp = async () => now;
+  const state = memoryState();
+  let prepareCalls = 0;
+  const alwaysTransient = async () => {
+    prepareCalls += 1;
+    const error = new Error("temporary source failure");
+    error.code = "dns_error";
+    error.permanent = false;
+    throw error;
+  };
+
+  const attemptTimes = [1_000n, 1_300n, 1_900n, 3_100n, 5_500n];
+  let result;
+  for (const attemptTime of attemptTimes) {
+    now = attemptTime;
+    result = await runCycle({ chain, state, prepareJob: alwaysTransient });
+  }
+
+  assert.equal(result.action, "no_eligible_jobs");
+  assert.equal(result.alert, true);
+  assert.deepEqual(state.inspect().jobs["5"], {
+    phase: "rejected",
+    reason: "source_unavailable",
+    lastPrepareError: "dns_error",
+    permanent: true,
+    attempts: 5,
+  });
+  assert.equal(prepareCalls, 5);
+
+  now = 50_000n;
+  const afterRestart = await runCycle({ chain, state, prepareJob: alwaysTransient });
+  assert.equal(afterRestart.action, "no_eligible_jobs");
+  assert.equal(afterRestart.alert, undefined);
+  assert.equal(prepareCalls, 5);
+});
+
+test("permanent prepare errors keep the existing immediate rejection behavior", async () => {
+  const chain = mockChain({ jobs: [openJob(5n)] });
+  const state = memoryState();
+  const result = await runCycle({
+    chain,
+    state,
+    prepareJob: async () => {
+      const error = new Error("unsupported source");
+      error.code = "unsupported_content_type";
+      error.permanent = true;
+      throw error;
+    },
+  });
+
+  assert.equal(result.action, "no_eligible_jobs");
+  assert.deepEqual(state.inspect().jobs["5"], {
+    phase: "rejected",
+    reason: "unsupported_content_type",
+    permanent: true,
+    attempts: 1,
+  });
+  assert.deepEqual(chain.calls, []);
+});
+
 test("house waits through 14399 seconds and accepts at 14400 after restart", async () => {
   const job = openJob(5n);
   job.createdAt = 1_000n;
