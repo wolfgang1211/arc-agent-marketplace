@@ -5,6 +5,8 @@ const CID = /^(?:b[a-z2-7]{20,120}|Qm[1-9A-HJ-NP-Za-km-z]{44})$/;
 const PINNING_RISK = "If pinning is lost, this CID still identifies what was delivered, but the content may become unavailable.";
 const V1_FIELDS = ["fetchedAt", "finalUrl", "generatorVersion", "jobId", "keyPoints", "language", "limitations", "maxWords", "pinningRisk", "schemaVersion", "sourceBytes", "sourceSha256", "sourceUrl", "summary", "title"];
 const V2_FIELDS = [...V1_FIELDS, "acceptanceCriteria", "request", "requestSchemaVersion"].sort();
+const V3_FIELDS = [...V2_FIELDS, "executionMode"].sort();
+const EXECUTION_MODES = new Set(["autonomous", "human-reviewed", "human-led"]);
 
 export class DeliveryPreviewError extends Error {
   constructor(code) {
@@ -45,22 +47,39 @@ export function validateDeliveryArtifact(job, rawJson, resultUri) {
   if (!artifact || typeof artifact !== "object" || Array.isArray(artifact)) throw new DeliveryPreviewError("malformed_artifact");
 
   const request = parsedRequest.request;
-  const expectedFields = request.schemaVersion === 2 ? V2_FIELDS : V1_FIELDS;
+  const expectedFields = artifact.schemaVersion === 3
+    ? V3_FIELDS
+    : artifact.schemaVersion === 2
+      ? V2_FIELDS
+      : artifact.schemaVersion === 1
+        ? V1_FIELDS
+        : null;
   const fields = Object.keys(artifact).sort();
-  if (fields.length !== expectedFields.length || fields.some((field, index) => field !== expectedFields[index])) {
+  if (!expectedFields || fields.length !== expectedFields.length || fields.some((field, index) => field !== expectedFields[index])) {
     throw new DeliveryPreviewError("artifact_schema_mismatch");
   }
-  if (artifact.schemaVersion !== request.schemaVersion
-    || artifact.generatorVersion !== `arc-url-summary-agent/${request.schemaVersion}.0.0`
+  if (artifact.schemaVersion === 3 && (!validGeneratorVersion(artifact.generatorVersion) || !EXECUTION_MODES.has(artifact.executionMode))) {
+    throw new DeliveryPreviewError("artifact_schema_mismatch");
+  }
+  const legacyArtifact = artifact.schemaVersion === 1 || artifact.schemaVersion === 2;
+  if ((legacyArtifact && artifact.schemaVersion !== request.schemaVersion)
+    || (legacyArtifact && artifact.generatorVersion !== `arc-url-summary-agent/${request.schemaVersion}.0.0`)
     || artifact.jobId !== String(job.id)
     || artifact.sourceUrl !== request.sourceUrl
     || artifact.language !== request.language
     || artifact.maxWords !== request.maxWords) {
     throw new DeliveryPreviewError("job_binding_mismatch");
   }
-  if (request.schemaVersion === 2) {
+  if (artifact.schemaVersion === 2) {
     if (artifact.requestSchemaVersion !== 2 || !sameRequest(artifact.request, request)
       || !sameStringArray(artifact.acceptanceCriteria, request.acceptanceCriteria)) {
+      throw new DeliveryPreviewError("job_binding_mismatch");
+    }
+  }
+  if (artifact.schemaVersion === 3) {
+    const expectedCriteria = request.schemaVersion === 2 ? request.acceptanceCriteria : [];
+    if (artifact.requestSchemaVersion !== request.schemaVersion || !sameRequest(artifact.request, request)
+      || !sameStringArray(artifact.acceptanceCriteria, expectedCriteria)) {
       throw new DeliveryPreviewError("job_binding_mismatch");
     }
   }
@@ -87,6 +106,8 @@ export function validateDeliveryArtifact(job, rawJson, resultUri) {
     fetchedAt: artifact.fetchedAt,
     sourceSha256: artifact.sourceSha256,
     sourceBytes: artifact.sourceBytes,
+    generatorVersion: artifact.generatorVersion,
+    executionMode: artifact.schemaVersion === 3 ? artifact.executionMode : null,
     resultUri,
     pinningRisk: artifact.pinningRisk,
   });
@@ -102,6 +123,11 @@ export async function loadDeliveryPreview(job, options = {}) {
     throw new DeliveryPreviewError(error instanceof IntakeError ? error.code : "preview_unavailable");
   }
   return validateDeliveryArtifact(job, fetched.body.toString("utf8"), resultUri);
+}
+
+function validGeneratorVersion(value) {
+  return typeof value === "string" && value.length <= 128
+    && /^[a-z0-9][a-z0-9._-]{0,63}(?:\/[a-z0-9][a-z0-9._-]{0,63})*\/(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)$/.test(value);
 }
 
 function sameRequest(actual, expected) {

@@ -15,10 +15,11 @@ const secrets = {
   SUMMARY_MODEL: "test-model",
   PINATA_JWT: "pinata-secret",
   PINATA_GATEWAY_BASE: "https://gateway.example.test",
+  BOT_EXECUTION_MODE: "autonomous",
 };
 
 test("config is fail-closed for secrets and live writes are explicit", () => {
-  assert.throws(() => loadConfig({}, { root: "C:/tmp" }), /BOT_PRIVATE_KEY/);
+  assert.throws(() => loadConfig({ BOT_EXECUTION_MODE: "autonomous" }, { root: "C:/tmp" }), /BOT_PRIVATE_KEY/);
   const config = loadConfig(secrets, { root: "C:/tmp" });
   assert.equal(config.writeEnabled, false);
   assert.equal(config.contractAddress, DEFAULT_CONTRACT);
@@ -26,10 +27,22 @@ test("config is fail-closed for secrets and live writes are explicit", () => {
   assert.equal(config.agentSkill, "url-summary-v1");
   assert.equal(config.agentFee, 5_000000n);
   assert.equal(config.houseDelaySeconds, 14_400);
+  assert.equal(config.executionMode, "autonomous");
   assert.equal(config.pilotJobId, null);
   assert.equal(config.pilotScopeValid, false);
   assert.equal(config.pilotScopeReason, "pilot_job_id_missing");
   assert.equal(loadConfig({ ...secrets, BOT_LIVE_WRITES: "true" }, { root: "C:/tmp" }).writeEnabled, true);
+});
+
+test("execution mode is explicit and restricted to the public disclosure enum", () => {
+  for (const executionMode of ["autonomous", "human-reviewed", "human-led"]) {
+    assert.equal(loadConfig({ ...secrets, BOT_EXECUTION_MODE: executionMode }, { root: "C:/tmp" }).executionMode, executionMode);
+  }
+  for (const executionMode of [undefined, "", "Autonomous", "human_reviewed", "unknown"]) {
+    const env = { ...secrets, BOT_EXECUTION_MODE: executionMode };
+    if (executionMode === undefined) delete env.BOT_EXECUTION_MODE;
+    assert.throws(() => loadConfig(env, { root: "C:/tmp" }), /BOT_EXECUTION_MODE/);
+  }
 });
 
 test("pilot job scope is canonical uint256 and invalid live scope remains observable", () => {
@@ -53,7 +66,7 @@ test("build SHA is normalized for deployment log attestation", () => {
   assert.equal(loadConfig({ ...secrets, BOT_BUILD_SHA: "not-a-sha" }, { root: "C:/tmp" }).buildSha, "unavailable");
   const startupSource = readFileSync(new URL("../src/index.mjs", import.meta.url), "utf8");
   assert.match(startupSource, /type: "bot_started", buildSha: config\.buildSha/);
-  assert.match(startupSource, /let health = \{ started: true, address: chain\.address, writeEnabled: config\.writeEnabled, buildSha: config\.buildSha/);
+  assert.match(startupSource, /let health = \{ started: true, address: chain\.address, writeEnabled: config\.writeEnabled, executionMode: config\.executionMode, buildSha: config\.buildSha/);
   assert.match(startupSource, /pilotJobId: config\.pilotJobId == null \? null : String\(config\.pilotJobId\)/);
 });
 
@@ -85,6 +98,7 @@ test("registration, runtime logging, and status preserve the pilot fail-closed b
   assert.ok(alertIndex >= 0 && alertIndex < readinessIndex);
   assert.ok(readinessIndex >= 0 && readinessIndex < successIndex);
   assert.match(indexSource, /health\.readiness = \{ readyForNewJob: false, reason: "readiness_unavailable" \}/);
+  assert.match(statusSource, /executionMode: config\.executionMode/);
   assert.match(statusSource, /readyForNewJob: config\.writeEnabled && config\.pilotScopeValid/);
   assert.match(statusSource, /pilotScopeReason: config\.pilotScopeReason/);
   assert.match(statusSource, /buildFingerprint,/);

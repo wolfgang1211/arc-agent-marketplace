@@ -19,18 +19,35 @@ const input = {
     limitations: ["Single public source"],
   },
   fetchedAt: "2026-09-02T12:00:00.000Z",
+  executionMode: "autonomous",
 };
 
 test("builds matching human and machine artifacts with provenance and pinning risk", () => {
   const artifact = buildArtifact(input);
   assert.equal(artifact.result.jobId, "7");
   assert.equal(artifact.result.sourceSha256, "a".repeat(64));
+  assert.equal(artifact.result.schemaVersion, 3);
+  assert.equal(artifact.result.requestSchemaVersion, 1);
+  assert.equal(artifact.result.generatorVersion, "arc-url-summary-agent/3.0.0");
+  assert.equal(artifact.result.executionMode, "autonomous");
+  assert.deepEqual(artifact.result.acceptanceCriteria, []);
   assert.equal(artifact.result.pinningRisk, "If pinning is lost, this CID still identifies what was delivered, but the content may become unavailable.");
   assert.deepEqual(JSON.parse(artifact.resultJson), artifact.result);
   assert.match(artifact.indexHtml, /Grounded summary\./);
   assert.match(artifact.indexHtml, /result\.json/);
+  assert.match(artifact.indexHtml, /Autonomous/);
+  assert.match(artifact.indexHtml, /operator-declared/);
   assert.doesNotMatch(artifact.indexHtml, /<script>alert/);
   assert.match(artifact.indexHtml, /&lt;script&gt;/);
+});
+
+test("artifact v3 requires one exact execution mode", () => {
+  for (const executionMode of ["autonomous", "human-reviewed", "human-led"]) {
+    assert.equal(buildArtifact({ ...input, executionMode }).result.executionMode, executionMode);
+  }
+  for (const executionMode of [undefined, "", "Autonomous", "human_reviewed", "unknown"]) {
+    assert.throws(() => buildArtifact({ ...input, executionMode }), /invalid_execution_mode/);
+  }
 });
 
 test("uploads one IPFS directory, verifies both gateway bytes, and returns the index URI", async () => {

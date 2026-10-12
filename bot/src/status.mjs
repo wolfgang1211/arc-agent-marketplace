@@ -27,6 +27,7 @@ console.log(JSON.stringify({
   gasGuardSatisfied: nativeBalance >= GAS_RESERVE_WEI,
   readyForNewJob: config.writeEnabled && config.pilotScopeValid && agent.registered && agent.activeJobs === 0n && nativeBalance >= GAS_RESERVE_WEI,
   writeEnabled: config.writeEnabled,
+  executionMode: config.executionMode,
   pilotJobId: config.pilotJobId == null ? null : String(config.pilotJobId),
   pilotScopeValid: config.pilotScopeValid,
   pilotScopeReason: config.pilotScopeReason,

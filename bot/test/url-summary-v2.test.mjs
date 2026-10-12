@@ -43,21 +43,26 @@ test("v2 fails closed on missing, altered, reordered, wrong-type and injected cr
   assert.equal(parseEligibleJob(job({ ...request, sourceUrl: `https://example.com/${"x".repeat(8192)}` })).ok, false);
 });
 
-test("v2 artifact binds the complete accepted request without mutating it; v1 stays v1", () => {
+test("artifact v3 binds complete v2 and legacy v1 requests without mutation", () => {
   const input = { jobId: 7n, sourceUrl: legacy.sourceUrl, source, summary, fetchedAt: "2026-09-01T00:00:00.000Z" };
-  const artifact = buildArtifact({ ...input, request });
-  assert.equal(artifact.result.schemaVersion, 2);
+  const artifact = buildArtifact({ ...input, request, executionMode: "human-reviewed" });
+  assert.equal(artifact.result.schemaVersion, 3);
+  assert.equal(artifact.result.generatorVersion, "arc-url-summary-agent/3.0.0");
+  assert.equal(artifact.result.executionMode, "human-reviewed");
   assert.equal(artifact.result.requestSchemaVersion, 2);
   assert.deepEqual(artifact.result.request, request);
   assert.deepEqual(artifact.result.acceptanceCriteria, request.acceptanceCriteria);
   assert.notEqual(artifact.result.request.acceptanceCriteria, request.acceptanceCriteria);
   assert.match(artifact.indexHtml, /Acceptance criteria recorded on-chain/);
-  const old = buildArtifact({ ...input, request: legacy });
-  assert.equal(old.result.schemaVersion, 1);
-  assert.equal(Object.hasOwn(old.result, "acceptanceCriteria"), false);
-  assert.equal(Object.hasOwn(old.result, "request"), false);
-  assert.throws(() => buildArtifact({ ...input, sourceUrl: "https://other.example/", request }), /request_source_mismatch/);
-  assert.throws(() => buildArtifact({ ...input, request: { ...request, acceptanceCriteria: [] } }), /invalid_artifact_request/);
+  const oldRequest = buildArtifact({ ...input, request: legacy, executionMode: "human-led" });
+  assert.equal(oldRequest.result.schemaVersion, 3);
+  assert.equal(oldRequest.result.requestSchemaVersion, 1);
+  assert.deepEqual(oldRequest.result.request, legacy);
+  assert.deepEqual(oldRequest.result.acceptanceCriteria, []);
+  assert.equal(oldRequest.result.executionMode, "human-led");
+  assert.match(oldRequest.indexHtml, /Legacy request v1/);
+  assert.throws(() => buildArtifact({ ...input, sourceUrl: "https://other.example/", request, executionMode: "autonomous" }), /request_source_mismatch/);
+  assert.throws(() => buildArtifact({ ...input, request: { ...request, acceptanceCriteria: [] }, executionMode: "autonomous" }), /invalid_artifact_request/);
 });
 
 test("actual preparer carries validated v2 request through source, summary and pin stages", async () => {
@@ -65,9 +70,17 @@ test("actual preparer carries validated v2 request through source, summary and p
   assert.equal(accepted.ok, true);
   const calls = [];
   const prepare = createJobPreparer({
+    executionMode: "human-reviewed",
     fetchSource: async (url) => { calls.push("fetch"); assert.equal(url, legacy.sourceUrl); return source; },
     summarize: async (args) => { calls.push("summarize"); assert.equal(args.maxWords, 400); return summary; },
-    pin: async ({ artifact }) => { calls.push("pin"); assert.deepEqual(JSON.parse(artifact.resultJson).request, request); return { deliveryUri: "https://example.com/ipfs/test/index.html" }; },
+    pin: async ({ artifact }) => {
+      calls.push("pin");
+      const result = JSON.parse(artifact.resultJson);
+      assert.deepEqual(result.request, request);
+      assert.equal(result.schemaVersion, 3);
+      assert.equal(result.executionMode, "human-reviewed");
+      return { deliveryUri: "https://example.com/ipfs/test/index.html" };
+    },
   });
   await prepare(job(request), accepted.request);
   assert.deepEqual(calls, ["fetch", "summarize", "pin"]);

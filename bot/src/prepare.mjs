@@ -1,7 +1,7 @@
 import { buildArtifact, pinArtifact } from "./artifact.mjs";
 import { fetchEligibleSource } from "./safe-fetch.mjs";
 
-export function createJobPreparer({ summarize, pinataJwt, gatewayBase, fetchSource = fetchEligibleSource, pin = pinArtifact, clock = () => new Date() }) {
+export function createJobPreparer({ summarize, pinataJwt, gatewayBase, executionMode, fetchSource = fetchEligibleSource, pin = pinArtifact, clock = () => new Date() }) {
   return async function prepareJob(job, request) {
     const source = await fetchSource(request.sourceUrl);
     const fetchedAt = clock().toISOString();
@@ -13,6 +13,7 @@ export function createJobPreparer({ summarize, pinataJwt, gatewayBase, fetchSour
       request,
       summary,
       fetchedAt,
+      executionMode,
     });
     return pin({ artifact, pinataJwt, gatewayBase });
   };

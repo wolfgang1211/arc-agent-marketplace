@@ -3,6 +3,7 @@ import { getAddress } from "viem";
 
 export const DEFAULT_CONTRACT = "0xFc7dE289e02FCFB4268AE8f0e49991D2Eafe5C87";
 export const DEFAULT_USDC = "0x3600000000000000000000000000000000000000";
+export const EXECUTION_MODES = Object.freeze(["autonomous", "human-reviewed", "human-led"]);
 
 export function loadConfig(env = process.env, { requireSecrets = true, root = process.cwd() } = {}) {
   const pilotScope = parsePilotJobId(env.BOT_PILOT_JOB_ID);
@@ -12,6 +13,7 @@ export function loadConfig(env = process.env, { requireSecrets = true, root = pr
     usdcAddress: getAddress(env.USDC_ADDRESS || DEFAULT_USDC),
     privateKey: env.BOT_PRIVATE_KEY || "",
     writeEnabled: env.BOT_LIVE_WRITES === "true",
+    executionMode: parseExecutionMode(env.BOT_EXECUTION_MODE, requireSecrets),
     ...pilotScope,
     buildSha: /^[0-9a-fA-F]{40}$/.test(env.BOT_BUILD_SHA || "") ? env.BOT_BUILD_SHA.toLowerCase() : "unavailable",
     pollIntervalMs: boundedInteger(env.POLL_INTERVAL_MS, 8_000, 1_000, 300_000, "POLL_INTERVAL_MS"),
@@ -36,6 +38,15 @@ export function loadConfig(env = process.env, { requireSecrets = true, root = pr
     config.pinataGatewayBase = httpsUrl(config.pinataGatewayBase, "PINATA_GATEWAY_BASE").replace(/\/$/, "");
   }
   return config;
+}
+
+function parseExecutionMode(raw, required) {
+  if (raw == null || raw === "") {
+    if (required) throw new Error(`BOT_EXECUTION_MODE is required and must be one of: ${EXECUTION_MODES.join(", ")}`);
+    return null;
+  }
+  if (!EXECUTION_MODES.includes(raw)) throw new Error(`BOT_EXECUTION_MODE must be one of: ${EXECUTION_MODES.join(", ")}`);
+  return raw;
 }
 
 function parsePilotJobId(raw) {

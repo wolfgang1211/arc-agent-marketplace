@@ -32,6 +32,12 @@ const artifact = {
   request,
   acceptanceCriteria: request.acceptanceCriteria,
 };
+const artifactV3 = {
+  ...artifact,
+  schemaVersion: 3,
+  generatorVersion: "external-operator/1.2.3",
+  executionMode: "human-reviewed",
+};
 
 const rejects = (fn, code) => assert.throws(fn, error => error instanceof DeliveryPreviewError && error.code === code);
 
@@ -63,6 +69,28 @@ test("validated previews bind exact job, request, criteria, schema and hash shap
   rejects(() => validateDeliveryArtifact(job, duplicate, resultUri), "malformed_artifact");
 });
 
+test("artifact v3 accepts bounded external generators and exact execution modes without weakening legacy v2", () => {
+  const preview = validateDeliveryArtifact(job, JSON.stringify(artifactV3), resultUri);
+  assert.equal(preview.executionMode, "human-reviewed");
+  assert.equal(preview.generatorVersion, "external-operator/1.2.3");
+  assert.equal(validateDeliveryArtifact(job, JSON.stringify(artifact), resultUri).executionMode, null);
+
+  const legacyRequest = { schemaVersion: 1, task: "url_summary", sourceUrl: request.sourceUrl, language: request.language, maxWords: request.maxWords };
+  const legacyJob = { ...job, description: JSON.stringify(legacyRequest) };
+  const legacyV3 = { ...artifactV3, requestSchemaVersion: 1, request: legacyRequest, acceptanceCriteria: [] };
+  assert.equal(validateDeliveryArtifact(legacyJob, JSON.stringify(legacyV3), resultUri).executionMode, "human-reviewed");
+
+  rejects(() => validateDeliveryArtifact(job, JSON.stringify({ ...artifact, generatorVersion: "external-operator/1.2.3" }), resultUri), "job_binding_mismatch");
+  for (const executionMode of [undefined, "", "Autonomous", "human_reviewed", "unknown"]) {
+    const candidate = { ...artifactV3, executionMode };
+    if (executionMode === undefined) delete candidate.executionMode;
+    rejects(() => validateDeliveryArtifact(job, JSON.stringify(candidate), resultUri), "artifact_schema_mismatch");
+  }
+  for (const generatorVersion of ["", "external operator/1.2.3", "external-operator/latest", `${"x".repeat(129)}/1.0.0`]) {
+    rejects(() => validateDeliveryArtifact(job, JSON.stringify({ ...artifactV3, generatorVersion }), resultUri), "artifact_schema_mismatch");
+  }
+});
+
 test("bounded JSON fetch pins public DNS, requests JSON and rejects unsafe redirects", async () => {
   const calls = [];
   const fetched = await fetchBoundedJson(resultUri, {
@@ -86,7 +114,7 @@ test("bounded JSON fetch pins public DNS, requests JSON and rejects unsafe redir
 });
 
 test("delivery preview API returns sanitized validated fields and safe failures", async () => {
-  const handler = createDeliveryPreviewHandler({ fetchJson: async () => ({ body: Buffer.from(JSON.stringify(artifact)) }) });
+  const handler = createDeliveryPreviewHandler({ fetchJson: async () => ({ body: Buffer.from(JSON.stringify(artifactV3)) }) });
   const makeRequest = body => new Request("https://market.example/api/delivery-preview", {
     method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body),
   });
@@ -95,6 +123,8 @@ test("delivery preview API returns sanitized validated fields and safe failures"
   const payload = await response.json();
   assert.equal(payload.ok, true);
   assert.equal(payload.preview.summary, artifact.summary);
+  assert.equal(payload.preview.executionMode, "human-reviewed");
+  assert.equal(payload.preview.generatorVersion, "external-operator/1.2.3");
   assert.equal(payload.preview.request, undefined);
 
   const bad = await handler(makeRequest({ ...job, deliverableURI: "https://example.com/file.html" }));
@@ -114,4 +144,6 @@ test("UI uses text-only JSON preview and preserves the canonical delivery link",
   assert.match(component, /state\.snapshot === snapshot/);
   assert.doesNotMatch(component, /href=\{preview\.finalUrl\}/);
   assert.match(component, /Source claim/);
+  assert.match(component, /Human reviewed/);
+  assert.match(component, /Operator-declared/);
 });

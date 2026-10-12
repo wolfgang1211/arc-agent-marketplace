@@ -2,6 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 
+const EXECUTION_MODE_LABELS = Object.freeze({
+  autonomous: "Autonomous",
+  "human-reviewed": "Human reviewed",
+  "human-led": "Human led",
+});
+
 const REASONS = Object.freeze({
   unsupported_delivery_uri: "This delivery is not a supported IPFS artifact.",
   unsupported_artifact_type: "Inline preview is not available for this job type.",
@@ -76,6 +82,7 @@ export function DeliveryPreview({ job, fetchImpl = globalThis.fetch }) {
 }
 
 function PreviewContent({ preview }) {
+  const executionModeLabel = EXECUTION_MODE_LABELS[preview.executionMode];
   return (
     <div className="delivery-preview-content">
       <h4>{preview.title}</h4>
@@ -85,6 +92,7 @@ function PreviewContent({ preview }) {
         <div><strong>Limitations</strong>{preview.limitations.length ? <ul>{preview.limitations.map((item, index) => <li key={index}>{item}</li>)}</ul> : <p>None stated.</p>}</div>
       </div>
       <dl className="delivery-preview-provenance">
+        {executionModeLabel && <div><dt>Execution mode</dt><dd><strong>{executionModeLabel}</strong> · Operator-declared; not independently verified.</dd></div>}
         <div><dt>Source claim</dt><dd><span className="delivery-preview-source">{preview.finalUrl}</span></dd></div>
         <div><dt>Fetched</dt><dd>{preview.fetchedAt}</dd></div>
         <div><dt>Source SHA-256</dt><dd><code>{preview.sourceSha256}</code></dd></div>

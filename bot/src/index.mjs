@@ -22,16 +22,16 @@ const chain = createLiveChain(config);
 await chain.assertChain();
 const state = createFileState(config.stateFile);
 const summarize = createOpenAICompatibleSummarizer({ apiKey: config.summaryApiKey, endpoint: config.summaryApiUrl, model: config.summaryModel });
-const prepareJob = createJobPreparer({ summarize, pinataJwt: config.pinataJwt, gatewayBase: config.pinataGatewayBase });
+const prepareJob = createJobPreparer({ summarize, pinataJwt: config.pinataJwt, gatewayBase: config.pinataGatewayBase, executionMode: config.executionMode });
 const once = process.argv.includes("--once");
 let stopping = false;
-let health = { started: true, address: chain.address, writeEnabled: config.writeEnabled, buildSha: config.buildSha, buildFingerprint, pilotJobId: config.pilotJobId == null ? null : String(config.pilotJobId), lastCycle: null, lastError: null };
+let health = { started: true, address: chain.address, writeEnabled: config.writeEnabled, executionMode: config.executionMode, buildSha: config.buildSha, buildFingerprint, pilotJobId: config.pilotJobId == null ? null : String(config.pilotJobId), lastCycle: null, lastError: null };
 
 if (config.port) createHealthServer(config.port);
 process.on("SIGINT", () => { stopping = true; });
 process.on("SIGTERM", () => { stopping = true; });
 
-log({ type: "bot_started", buildSha: config.buildSha, buildFingerprint, address: chain.address, contract: chain.contractAddress, writeEnabled: config.writeEnabled, pilotJobId: config.pilotJobId == null ? null : String(config.pilotJobId), pilotScopeValid: config.pilotScopeValid, pollIntervalMs: config.pollIntervalMs });
+log({ type: "bot_started", buildSha: config.buildSha, buildFingerprint, address: chain.address, contract: chain.contractAddress, writeEnabled: config.writeEnabled, executionMode: config.executionMode, pilotJobId: config.pilotJobId == null ? null : String(config.pilotJobId), pilotScopeValid: config.pilotScopeValid, pollIntervalMs: config.pollIntervalMs });
 do {
   try {
     health.lastCycle = await runCycle({ chain, state, prepareJob });
