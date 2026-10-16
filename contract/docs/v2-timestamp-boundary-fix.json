@@ -1,0 +1,28 @@
+{
+  "scope": "V2 fault-window test-clock boundary fix",
+  "rootCause": {
+    "contract": "unchanged; fault slash remains strictly before faultDeadline and release remains available at/after the deadline",
+    "oldTests": {
+      "disputes": "relative evm_increaseTime(deadline - latest - 2) left time for transaction submission/estimation and full-suite fixture work; the resolve transaction could be mined at the deadline, so the nominal D-1 slash was rejected",
+      "vault": "relative evm_increaseTime(97) after markFault(deadline = pre-mark latest + 100) did not pin the target receipt; full-suite execution could mine slash at or after D and hit AgentMarketplaceV2.sol:144 FaultWindowClosed"
+    }
+  },
+  "correctedClockEvidence": {
+    "method": "evm_setNextBlockTimestamp immediately before each boundary transaction; explicit gasLimit skips revert-prone estimateGas; failed receipts are read back by transactionHash",
+    "disputes": {
+      "Dminus1": "resolveFaultReview receipt block timestamp is asserted equal to faultReviewDeadline - 1; genuine positive late slash remains successful",
+      "D": "resolveFaultReview is sent with gasLimit and its mined receipt status is asserted 0 with block timestamp equal to faultReviewDeadline",
+      "Dplus1": "releaseFaultReview receipt block timestamp is asserted equal to faultReviewDeadline + 1 and succeeds"
+    },
+    "vault": {
+      "Dminus1": "slashAndRelease receipt block timestamp is asserted equal to faultDeadline - 1 and disposition becomes slashed/released",
+      "D": "slashAndRelease is sent with gasLimit and its mined receipt status is asserted 0 with block timestamp equal to faultDeadline",
+      "Dplus1": "releaseFault receipt block timestamp is asserted equal to faultDeadline + 1 and disposition becomes released"
+    }
+  },
+  "verification": {
+    "command": "npx hardhat test --config hardhat.v2.config.js --network hardhat test/v2-vault.test.js test/v2-disputes.test.js test/v2-core.test.js test/v2-claude-zero-resolver.test.js",
+    "result": "37 passing",
+    "productionFilesChanged": false
+  }
+}

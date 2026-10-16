@@ -1,0 +1,135 @@
+{
+  "name": "v2-settlement-acceptance-rows",
+  "generatedAt": "2026-10-15T20:53:49.477Z",
+  "command": "npx hardhat test --config hardhat.v2.config.js --network hardhat test/v2-matrix-settlement.test.js",
+  "rows": [
+    {
+      "id": "V2-026",
+      "testTitle": "Blocked client token withdrawal does not block claims, releases, or unrelated payments",
+      "status": "verifiedpass",
+      "tags": [
+        "accounting",
+        "withdrawal"
+      ],
+      "caseErrors": [],
+      "actualCommandExit": 0
+    },
+    {
+      "id": "V2-027",
+      "testTitle": "Free reserved stake overdraw rejection and stake conservation across terminal/pending/fault jobs",
+      "status": "verifiedpass",
+      "tags": [
+        "stake",
+        "conservation"
+      ],
+      "caseErrors": [],
+      "actualCommandExit": 0
+    },
+    {
+      "id": "V2-028",
+      "testTitle": "Open bystander failure, expiry D±1, signed application award on terminal job",
+      "status": "verifiedpass",
+      "tags": [
+        "open",
+        "application",
+        "expiry"
+      ],
+      "caseErrors": [],
+      "actualCommandExit": 0
+    },
+    {
+      "id": "V2-029",
+      "testTitle": "Mutual stale version, reject, expiry, proposer revoke behavior, and during-dispute elapsed time",
+      "status": "verifiedpass",
+      "tags": [
+        "mutual",
+        "dispute"
+      ],
+      "caseErrors": [],
+      "actualCommandExit": 0
+    },
+    {
+      "id": "V2-030",
+      "testTitle": "Mutual full/partial payout fee 5 percent and full refund fee zero",
+      "status": "verifiedpass",
+      "tags": [
+        "mutual",
+        "fee"
+      ],
+      "caseErrors": [],
+      "actualCommandExit": 0
+    },
+    {
+      "id": "V2-031",
+      "testTitle": "Pre-existing mutual proposal does not block delivery; stale proposal replay is rejected",
+      "status": "verifiedpass",
+      "tags": [
+        "mutual",
+        "replay"
+      ],
+      "caseErrors": [],
+      "actualCommandExit": 0
+    },
+    {
+      "id": "V2-032",
+      "testTitle": "Review-timeout claim versus invalid late actions in both same-block orders",
+      "status": "verifiedpass",
+      "tags": [
+        "same-block",
+        "review",
+        "dispute"
+      ],
+      "caseErrors": [],
+      "actualCommandExit": 0
+    },
+    {
+      "id": "V2-033",
+      "testTitle": "Same-block ordered receipts for claim then late action and late action then claim across all phases",
+      "status": "verifiedpass",
+      "tags": [
+        "same-block",
+        "ordering",
+        "receipt"
+      ],
+      "caseErrors": [],
+      "actualCommandExit": 0
+    },
+    {
+      "id": "V2-034",
+      "testTitle": "Extension count above two, 180-day exact/+1 cap, non-InProgress extension rejection",
+      "status": "verifiedpass",
+      "tags": [
+        "extension",
+        "cap"
+      ],
+      "caseErrors": [],
+      "actualCommandExit": 0
+    },
+    {
+      "id": "V2-035",
+      "testTitle": "Canonical terms/deadline/stateVersion event observability and no plaintext locator",
+      "status": "verifiedpass",
+      "tags": [
+        "events",
+        "observability"
+      ],
+      "caseErrors": [],
+      "actualCommandExit": 0
+    },
+    {
+      "id": "V2-036",
+      "testTitle": "Stage A fee policy/min reward/terms snapshot and EIP-1271 coverage reference rows",
+      "status": "verifiedpass",
+      "tags": [
+        "stage-a",
+        "signatures",
+        "reference"
+      ],
+      "caseErrors": [],
+      "actualCommandExit": 0
+    }
+  ],
+  "counts": {
+    "verifiedpass": 11
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "profile": {
+    "compiler": "solc 0.8.28",
+    "evmVersion": "cancun",
+    "viaIR": true,
+    "optimizerRuns": 50,
+    "runtimeTargetBytes": 23500
+  },
+  "v1Integrity": {"contracts/AgentMarketplace.sol": "bb803aa7561db194a446c31dac1e66df12de441c9f1dfdc51b5a117af814828f", "hardhat.config.js": "fe54bd4847177aae76cdb264f00c62a7118d9ed3076a829d32e5df31f1367806", "contracts/mocks/MockUSDC.sol": "d942f5acee59dbafaee2a398a80a811ae550ceb079c1feed708549b3884e7d8d", "matchesMain": true},
+  "steps": [
+    {
+      "step": "step3-current",
+      "changes": ["claim-time fault review deadline", "bidirectional fee policy", "renounce guard", "resolver guard", "dispute parameter removal", "V2 lifecycle/admin events", "dead-field cleanup"],
+      "marketplaceRuntimeBytes": 23057,
+      "marketplaceHeadroomBytes": 443,
+      "marketplaceRuntimeSha256": "0f28cde6547c421953228ca5696a8ae01312fac0214948750cadb7e1ab5c25e0",
+      "vaultRuntimeBytes": 6619,
+      "vaultHeadroomBytes": 16881,
+      "vaultRuntimeSha256": "dff8b2e98bbd99afe43ff32abb06eeb70165e44988777a833710ca84b464f311",
+      "compile": "passed",
+      "targetedTests": {"suite": "v2-core + v2-disputes", "passed": 20, "failed": 0}
+    }, {
+      "step": "deadline-counter-cleanup",
+      "change": "removed redundant per-job deadlineFailureCount and applicantNonceEpoch; retained public operator deadlineFailures and per-job deadlineFailureClaimed",
+      "marketplaceRuntimeBytes": 23118,
+      "marketplaceHeadroomBytes": 382,
+      "marketplaceRuntimeSha256": "ab57a7fb90ce598824db4ecd585b9f18186c51221c1965356b5da112cdeb35b2",
+      "vaultRuntimeBytes": 6619,
+      "vaultRuntimeSha256": "dff8b2e98bbd99afe43ff32abb06eeb70165e44988777a833710ca84b464f311",
+      "targetedTests": {"suite": "v2-matrix + v2-core affected rows", "passed": 7, "failed": 0}
+    }
+  ],
+  "newTests": [
+    "allows fee changes in both directions and snapshots each new job policy",
+    "starts a fresh seven-day fault review window at the claim receipt",
+    "blocks ownership renunciation and emits admin configuration changes"
+  ],
+  "verification": {
+    "fullV2Suite": {"command": "npx hardhat test --config hardhat.v2.config.js --network hardhat test/v2-*.test.js", "passed": 132, "failed": 0, "exitCode": 0},
+    "localE2E": {"status": "passed", "scenarioCount": 8, "receiptCount": 84, "expectedRevertCount": 3, "marketBalance": "0", "vaultBalance": "95000000", "jointExpected": "95000000", "tokenDecimals": 6},
+    "accountingEquations": "passed after receipts and expected reverts; final E=0, C=0, F=95000000, R=0, surplus=0",
+    "immutablePairReadback": "passed by deploy-v2-pair helper in targeted/full/E2E runs"
+  },
+  "notes": [
+    "V2 uses six-decimal token assertions in deploy-v2-pair; V1 sources/configuration were not changed.",
+    "Fault review is now claim receipt timestamp plus seven days; reward refund remains credited immediately while collateral remains pending.",
+    "Resolver policy zero retains the existing fallback-to-owner behavior; postJob explicitly rejects a zero resolved resolver before token pull and job-id mutation.",
+    "V2-016 through V2-025 passed; V2-021 exercised 256 real revisions. No external RPC, deployment, commit, or push was performed."
+  ]
+}

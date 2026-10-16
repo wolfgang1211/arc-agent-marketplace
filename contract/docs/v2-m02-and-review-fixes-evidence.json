@@ -1,0 +1,49 @@
+{
+  "scope": "V2-only M-02 fixed-reserve operator-fault dispute resolution; mandatory size gate",
+  "status": "stopped_oversize",
+  "profile": {
+    "solc": "0.8.28",
+    "evmVersion": "cancun",
+    "viaIR": true,
+    "optimizerRuns": 50,
+    "targetRuntimeBytes": 23500,
+    "artifactDirectory": "artifacts-v2-m02"
+  },
+  "baselineBeforeM02": {
+    "runtimeBytes": 23118,
+    "runtimeSha256": "b3169662c840e33374cafc09038be5eb8fa17e033fab02c9073ba1b8c896b8e4",
+    "sourceSha256": "186289e295c3147993471029ba55fde1168bc92f104adccaff01b29737a176f3",
+    "vaultRuntimeBytes": 6619
+  },
+  "m02Candidate": {
+    "runtimeBytes": 23863,
+    "runtimeSha256": "afcec7513a3a2e10a38de2bd04b7c7a72c6f2e21a842a420356116abe2a97628",
+    "sourceSha256": "cc0a80f213b812c9ce52e0318842ef35da76d4c93c90ea8786d682fb45fdf121",
+    "deltaFromBaselineBytes": 745,
+    "headroomBytes": -363,
+    "vaultRuntimeBytes": 6619,
+    "vaultRuntimeSha256": "ffeefa25fb90320f338441a8d0c67b693d4c789a875fccb7cdb82c9939cabcdf"
+  },
+  "m02Tests": {
+    "command": "V2_ARTIFACTS=artifacts-v2-m02 V2_CACHE=cache-v2-m02 npx hardhat test --config hardhat.v2.config.js --network hardhat test/v2-m02-fixed-reserve.test.js",
+    "passed": 3,
+    "failed": 0,
+    "exitCode": 0,
+    "rows": [
+      "pre-delivery operatorFault=true slashes the entire recorded reserve and credits client reward refund plus reserve",
+      "operatorFault=false releases reserve and charges fee only on gross payout",
+      "zero-refund operatorFault=true reverts before state/token mutation"
+    ]
+  },
+  "stopGate": {
+    "exceeded": true,
+    "reason": "M-02 isolated candidate runtime 23863 > 23500 by 363 bytes",
+    "requiredAction": "Do not implement H-01, M-01, or L-01-L-04 and do not run the complete matrix/E2E until a size-fitting design is approved."
+  },
+  "pendingReviewFixes": ["H-01", "M-01", "L-01", "L-02", "L-03", "L-04"],
+  "v1": {
+    "sourceAndConfigChanged": false,
+    "externalRpcOrDeployment": false,
+    "gitCommitOrPush": false
+  }
+}

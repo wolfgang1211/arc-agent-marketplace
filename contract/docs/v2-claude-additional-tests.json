@@ -1,0 +1,25 @@
+{
+  "scope": "Claude fixes: non-vacuous V2 regression coverage",
+  "tests": [
+    {
+      "file": "contract/test/v2-disputes.test.js",
+      "name": "starts a fresh seven-day fault review window at the claim receipt",
+      "coverage": "eight-day-late delivery claim followed by genuine 1 USDC fault slash; client credit, vault liability, token deltas, and returned free stake"
+    },
+    {
+      "file": "contract/test/v2-claude-zero-resolver.test.js",
+      "name": "Storage-corruption negative guard: rejects post when owner and resolver are zero",
+      "coverage": "current build-info storage layout owner-slot corruption; post reverts before job id, escrow, client balance, or market balance changes"
+    },
+    {
+      "file": "contract/test/v2-claude-zero-resolver.test.js",
+      "name": "preserves zero resolver policy fallback to owner for a normal post",
+      "coverage": "explicit zero resolver policy retains owner fallback semantics"
+    },
+    {
+      "file": "contract/test/v2-core.test.js",
+      "name": "preserves old fee snapshots and canonical hashes through policy decrease/re-increase settlement",
+      "coverage": "500/100/400-bps job snapshots survive 0/500 policy changes and settle with old fees; new 100/400-bps jobs settle with current fees"
+    }
+  ]
+}

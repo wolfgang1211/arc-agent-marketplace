@@ -1,0 +1,51 @@
+{
+  "productionProfile": {
+    "command": "npx hardhat compile --config hardhat.v2.config.js --network hardhat",
+    "solc": "0.8.28",
+    "evmVersion": "cancun",
+    "viaIR": true,
+    "optimizerRuns": 50,
+    "marketplaceV2RuntimeBytes": 23423,
+    "marketplaceV2RuntimeSha256": "a4c93988ba63e80782adec37c37a2a3ab832d491f664dbece7d5eb9738abcf7d",
+    "vaultV2RuntimeBytes": 5969,
+    "vaultV2RuntimeSha256": "051b77b69d2946826fd6dff7f08b1006d61e3a78d5eb5fb6cf147d1ccca6b5d1",
+    "targetRuntimeBytes": 23500,
+    "headroomBytes": 77,
+    "status": "within_v2_runtime_size_gate"
+  },
+  "v1Preservation": {
+    "command": "npx hardhat compile --config hardhat.config.js --network hardhat",
+    "marketplaceV1RuntimeBytes": 14177,
+    "marketplaceV1RuntimeSha256": "02c60677391d6eec30064cb72013fc455fee96a1f07805496386336e722277cd",
+    "sourceUnchanged": true
+  },
+  "tests": {
+    "command": "npx hardhat test --config hardhat.v2.config.js --network hardhat",
+    "passed": 213,
+    "failed": 0,
+    "exitCode": 0
+  },
+  "removedReadOnlyAbiGetters": [
+    "BPS()",
+    "USDC()",
+    "MIN_REWARD_DEFAULT()",
+    "MIN_DURATION()",
+    "MAX_APPLY()",
+    "MAX_DELIVERY()",
+    "MAX_REVIEW()",
+    "MAX_REVISION()",
+    "MAX_EXTENSION_TOTAL()",
+    "MAX_ARBITRATION()",
+    "STAKE_FLOOR()",
+    "STAKE_ROUND()",
+    "MAX_FEE_BPS()",
+    "APPLICATION_TYPEHASH()",
+    "requiredStake(uint256)"
+  ],
+  "notes": [
+    "No unlimited-contract-size setting was used.",
+    "V2 fixture custody and accounting read adapters use the deployed immutable vault.",
+    "Only V2 redundant constant getters and the V2 thin requiredStake read wrapper were internalized; workflow logic, authorization, accounting, events, and V1 source/configuration were not changed.",
+    "Marketplace V2 runtime is 77 bytes below the requested 23500-byte gate; deployment acceptance remains separate from this local build/test evidence."
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "schema": 1,
+  "scope": "V2 cumulative dispute-time finalization RED/GREEN evidence",
+  "profile": {
+    "solc": "0.8.28",
+    "evmVersion": "cancun",
+    "viaIR": true,
+    "optimizerRuns": 50,
+    "runtimeLimitBytes": 23500
+  },
+  "red": {
+    "command": "npx hardhat test --config hardhat.v2.config.js --network hardhat test/v2-dispute-budget-finalization.test.js",
+    "exitCode": 4,
+    "passing": 0,
+    "failing": 4,
+    "observedFailures": [
+      { "case": "timeout", "actualDisputeTimeUsed": "604800", "expectedCumulative": "1036801" },
+      { "case": "arbiter terminal", "actualDisputeTimeUsed": "432001", "expectedCumulative": "691202" },
+      { "case": "hard-budget fixture", "actualDisputeTimeUsed": "1123201", "expectedCumulative": "2592000" }
+    ],
+    "note": "The mutual case also exposed a test-construction TypeError before its semantic assertion; the three listed failures were the original cumulative-finalization regressions."
+  },
+  "green": {
+    "command": "npx hardhat test --config hardhat.v2.config.js --network hardhat test/v2-dispute-budget-finalization.test.js",
+    "exitCode": 0,
+    "passing": 4,
+    "failing": 0,
+    "cases": ["timeout cumulative", "arbiter terminal", "mutual terminal", "bounded heartbeat expiry"]
+  },
+  "sourceAnchors": {
+    "claimDisputeTimeout": "contracts/AgentMarketplaceV2.sol:338",
+    "centralFinalization": "contracts/AgentMarketplaceV2.sol:341",
+    "centralFinalizationRule": "prior disputeTimeUsed + elapsed episode time capped at effective dispute deadline before terminal status change"
+  },
+  "runtime": {
+    "marketplaceBytes": 23483,
+    "vaultBytes": 5969,
+    "marketplaceHeadroomBytes": 17,
+    "vaultHeadroomBytes": 17531,
+    "artifactSha256": {
+      "marketplace": "18ffdefedf4786948e749a8f93af60bf5e7a3546cba128ebfc0800e046a07ab1",
+      "vault": "eb0d4d31ec73a61d7536e8ac9267f98e7eed883e2113f98ff2a08afb37a696f8"
+    }
+  },
+  "sourceSha256": {
+    "contracts/AgentMarketplaceV2.sol": "186289e295c3147993471029ba55fde1168bc92f104adccaff01b29737a176e3",
+    "test/v2-dispute-budget-finalization.test.js": "bff1e2c3828e1d9953c438d29f49921a7c7bc4473c712b8e692f66f4e079d89b"
+  },
+  "fullSuite": {
+    "command": "npx hardhat test --config hardhat.v2.config.js --network hardhat",
+    "exitCode": 0,
+    "passing": 225,
+    "log": "docs/v2-final-budget-audited-suite.log"
+  },
+  "localE2E": {
+    "command": "npx hardhat run --config hardhat.v2.config.js --network hardhat scripts/e2e-v2-local.js",
+    "exitCode": 0,
+    "status": "passed",
+    "receiptCount": 84,
+    "expectedRevertCount": 3,
+    "scenarioCount": 8,
+    "finalJointBalance": "95000000",
+    "finalJointExpected": "95000000"
+  }
+}

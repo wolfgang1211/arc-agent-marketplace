@@ -1,0 +1,107 @@
+{
+  "scope": "Step 1 V2 runtime reduction only",
+  "status": "implemented_verified",
+  "finalGate": {
+    "retainedRuntimeBytes": 23483,
+    "attemptedRequiredFixesRuntimeBytes": 23483,
+    "bestAttemptedSourceRefactorRuntimeBytes": 23483,
+    "attemptMeasurementsProvenance": "current production V2 paired-contract build",
+    "retainedRuntimeProvenance": "current artifact measurement",
+    "correctedTargetedMatrix": {"passing": 36, "failing": 0, "exitCode": 0},
+    "failingRows": [],
+    "step2Design": "docs/v2-step2-design.md",
+    "step2Implemented": true,
+    "note": "The approved two-contract implementation and migrated matrix are retained and verified."
+  },
+  "targetBytes": 23500,
+  "eip170LimitBytes": 24576,
+  "source": {
+    "contract": "contracts/AgentMarketplaceV2.sol",
+    "currentSha256": "186289e295c3147993471029ba55fde1168bc92f104adccaff01b29737a176f3",
+    "beforeSha256": null,
+    "beforeSha256Note": "V2 source was untracked at task start; no pre-edit source hash was persisted. Baseline build was compiled and measured before edits."
+  },
+  "v1CompilerSettings": {
+    "config": "hardhat.config.js",
+    "sha256": "fe54bd4847177aae76cdb264f00c62a7118d9ed3076a829d32e5df31f1367806",
+    "solc": "0.8.28",
+    "evmVersion": "cancun",
+    "optimizer": {"enabled": true, "runs": 200},
+    "viaIR": false,
+    "unchanged": true
+  },
+  "v1Source": {
+    "path": "contracts/AgentMarketplace.sol",
+    "sha256": "bb803aa7561db194a446c31dac1e66df12de441c9f1dfdc51b5a117af814828f",
+    "unchanged": true
+  },
+  "measurements": {
+    "baseline": {
+      "step": "before",
+      "solc": "0.8.28", "evmVersion": "cancun", "optimizerRuns": 200, "viaIR": false,
+      "runtimeBytes": 29708,
+      "runtimeKeccak256": "0x09dd17ed8d0b3c0643f2e8315504514f89fae0f2239cc5f8d3bf9d70c683c1ec",
+      "runtimeSha256": "95af0bc1ac48539c3f19ba817e5d0844fbc632051f044e63e8dbf7aa17549cb4",
+      "buildInfo": null,
+      "buildInfoNote": "Measured output was captured in the execution log before later clean builds replaced the untracked build-info directory; the file is not present now."
+    },
+    "a_customErrors": {
+      "step": "after a",
+      "solc": "0.8.28", "evmVersion": "cancun", "optimizerRuns": 200, "viaIR": false,
+      "runtimeBytes": 29532,
+      "runtimeKeccak256": "0x5a6b7f4264c56ad3d977c841664c08b75f1eeef7e4920195efb679a425c05420",
+      "runtimeSha256": "ef4ecc4631ab5dca14ae61652e56da61f276ed8687a54f08693ff05a54c6f824",
+      "buildInfo": null,
+      "buildInfoNote": "Measured output was captured in the execution log before later clean builds replaced the untracked build-info directory; the file is not present now."
+    },
+    "b_removeViews": {
+      "step": "after b",
+      "solc": "0.8.28", "evmVersion": "cancun", "optimizerRuns": 200, "viaIR": false,
+      "runtimeBytes": 26331,
+      "runtimeKeccak256": "0x4485183d50a02f7045d519cb5c2cd8a298ce13d7c290591d711dc3a156ed47eb",
+      "runtimeSha256": "69e38057edc7d02e0c1173809107f550583109fd13b3f1c13cb9dff16de6ba11",
+      "buildInfo": "artifacts/build-info/1a8624310f9670395b6a5b58a42f77e8.json",
+      "removedEntrypoints": ["getJob(uint256)", "canonicalTermsHash(uint256)", "liabilities()", "surplus()", "requiredStake(uint256)", "applicationDigest((uint256,address,bytes32,uint64,uint64,uint256,uint256))"],
+      "retainedInternalLogic": ["requiredStake", "applicationDigest", "_solvent"],
+      "replacement": "State-changing events remain available; V2 build emits storageLayout for the off-chain/test adapter. test/helpers/v2-read-model.js reconstructs removed read data from deployed storage and public mappings without restoring production selectors."
+    },
+    "c_v2ViaIRRunsSweep": [
+      {"optimizerRuns": 1, "runtimeBytes": 23032, "runtimeKeccak256": "0xf2a061825cf08fbed3b60633817313d7fc518c8b735081851e7d488a32db9651", "runtimeSha256": "a573c4f37cd71f138a835ad7302a636d9309cbbd7fab70d2a336f15d2fc7a3b8", "buildInfo": "artifacts-v2-runs1/build-info/0230bb684a9a9e3c83744b2aeb6a5869.json"},
+      {"optimizerRuns": 10, "runtimeBytes": 23032, "runtimeKeccak256": "0x3186e38bfba343fb9c4a182b5c1a9bfcabaeefccf16c8dbf79d2ec483ba27671", "runtimeSha256": "a4b2fb5d9d97bd95c0ce20ad3a7e5c6c84179d573b0d6a169659cf1b06ce79ae", "buildInfo": "artifacts-v2-runs10/build-info/199a533adf94a3335373b56f3c574420.json"},
+      {"optimizerRuns": 50, "runtimeBytes": 22844, "runtimeKeccak256": "0x7f08cffe6084a1545993576c3c97fa7bac2a5532fc0023a6c390bdc576eb9b57", "runtimeSha256": "faa582db5e4e563d16e624273a2e18ba575e42efb9e0ea39fd9ac147a996b83e", "buildInfo": "artifacts-v2-runs50/build-info/c2e370887f67f3e6712cca1576d58c90.json"}
+    ]
+  },
+  "selectedV2Profile": {
+    "config": "hardhat.v2.config.js",
+    "configSha256": "8baf5d81d278245277a3078bd36d9027a9132a9ec3ca97db3f445f25f39fdc8b",
+    "defaultRuns": 50,
+    "viaIR": true,
+    "artifactsPattern": "artifacts-v2-runs${V2_OPTIMIZER_RUNS}",
+    "cachePattern": "cache-v2-runs${V2_OPTIMIZER_RUNS}",
+    "storageLayout": true
+  },
+  "delta": {
+    "baselineToABytes": -176,
+    "aToBBytes": -3200,
+    "bToCBytes": -3487,
+    "baselineToSelectedCBytes": -6864,
+    "baselineToBestSweepBytes": -6864,
+    "selectedCWithinTarget": true,
+    "bestSweepWithinTarget": true
+  },
+  "currentStageCMeasurement": {
+    "step": "after approved two-contract implementation",
+    "solc": "0.8.28", "evmVersion": "cancun", "optimizerRuns": 50, "viaIR": true,
+    "marketplaceRuntimeBytes": 23483, "vaultRuntimeBytes": 5969, "targetBytes": 23500,
+    "marketplaceHeadroomBytes": 17, "runtimeSha256": "5b208bd8a65f5b1d7e0cd2e5b931c20b5b1ccce78ee55102687fa8254a3f9506",
+    "marketplaceArtifactSha256": "18ffdefedf4786948e749a8f93af60bf5e7a3546cba128ebfc0800e046a07ab1",
+    "vaultRuntimeSha256": "051b77b69d2946826fd6dff7f08b1006d61e3a78d5eb5fb6cf147d1ccca6b5d1",
+    "vaultArtifactSha256": "eb0d4d31ec73a61d7536e8ac9267f98e7eed883e2113f98ff2a08afb37a696f8",
+    "tests": "full V2-configured run 225 passing; local E2E 84 receipts, 3 expected reverts, 8 scenarios"
+  },
+  "warnings": [
+    "The selected marketplace runtime has 17 bytes headroom under the 23,500-byte V2 target; the vault runtime is 5,969 bytes.",
+    "V2 profile is solc 0.8.28, Cancun, viaIR=true, optimizer runs=50; V1 profile/source hashes remain unchanged.",
+    "The 36-row acceptance matrix and paired-contract security tests passed on local Hardhat; no external deployment or RPC write was performed."
+  ]
+}

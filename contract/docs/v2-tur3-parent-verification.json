@@ -1,0 +1,31 @@
+{
+  "status": "YUSUFA_SOR_evidence_quality_findings_open",
+  "review": "C:/Users/wolfgang/AppData/Local/hermes/duo/tartismalar/2026-10-15-marketplace-v2-guvenlik-incelemesi-tur3.md",
+  "sourceHashesVerifiedByParent": {
+    "AgentMarketplaceV2.sol": "52641ab6c47b98da6454ddafa04a2e7895757d8b7ba10f132e76490a4a2f1720",
+    "OperatorCollateralVaultV2.sol": "58b95582923b33f170e0879c0eb9c5fede1d1dfc6553fc3a68ed04f03880f89f"
+  },
+  "priorReviewReportExists": "C:/Users/wolfgang/AppData/Local/hermes/duo/tartismalar/raw-marketplace-v2-tur2/review-report.json",
+  "runtime": {
+    "marketplace": {"bytes": 23908, "headroom": 92, "sha256": "e7132d4b49cb554c747786d5ad76e8dc4b71c4a3a3074b1d0845468a15800484", "artifactJsonSha256": "20b84d17546c867a5b5d636537d16a1238638a5dc3b475d40d706d85315155e8"},
+    "vault": {"bytes": 4854, "headroom": 19146, "sha256": "d347274acba982afd60956008affb1dff16a8faa984582c28edd2536f492388d", "artifactJsonSha256": "3044c40fa10ed18f7e29d89e4964c5bb0ead960d72e11e5d88adc2811790c40f"}
+  },
+  "roleMatrix": {
+    "rows": 168, "uniqueCells": 168, "allow": 139, "revert": 29,
+    "declaredPrerequisiteBlocked": 24,
+    "awardRevertReasonMismatches": 2,
+    "approvalCoverage": "Incomplete: house/testClient flags not activated in many nominal collision cells; prerequisite reverts are not target-path guard coverage.",
+    "closure": "NOT accepted as exhaustive role assurance despite 168 passing assertions"
+  },
+  "tests": {
+    "implementationFullSuiteReported": 239,
+    "roleMatrixReportedPassing": 168,
+    "dedicatedClosureReportedPassing": 9,
+    "latestParentFullSuite": {"session": "proc_ce8784fb0ef4", "status": "running_at_report_creation"},
+    "parentFreshE2E": {"exitCode": 0, "scenarios": 8, "receipts": 84, "expectedReverts": 3, "marketBalance": "0", "escrowed": "0", "creditsLiability": "0", "vaultBalance": "95000000", "freeStake": "95000000", "reservedStake": "0", "jointExpected": "95000000"}
+  },
+  "newFindingsRequiringApproval": ["E-01 medium: closure after hook writes verifiedpass unconditionally", "E-02 medium: role setup/guard assertions/coverage inadequate", "E-03 low: dedicated size acceptance test does not read actual artifacts"],
+  "noNewCriticalOrHighInThirdReview": true,
+  "commitPushDeployEnvExternalRpcOrSharing": false,
+  "note": "Parent verified source hash equality and existence of the previous review report, which Claude could not independently locate. This does not repair test-evidence defects. No finding is accepted closed solely from generated verifiedpass labels."
+}

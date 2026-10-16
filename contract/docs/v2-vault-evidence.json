@@ -1,0 +1,60 @@
+{
+  "artifact": {
+    "contract": "OperatorCollateralVaultV2",
+    "path": "artifacts/contracts/OperatorCollateralVaultV2.sol/OperatorCollateralVaultV2.json",
+    "compiler": "solc 0.8.28",
+    "evmVersion": "cancun",
+    "optimizerRuns": 200,
+    "runtimeBytes": 5890,
+    "runtimeSha256": "1f7f2251cd2523b49f99b9d88e4264e85018f50866e68b566d62fbeb8b1a65d7",
+    "targetRuntimeBytes": 23500,
+    "targetPass": true
+  },
+  "commands": [
+    {
+      "command": "npx hardhat compile",
+      "result": "pass",
+      "notes": "Compiled 3 Solidity files successfully (evm target: cancun). Existing AgentMarketplaceV2 size warning is unrelated and was not modified."
+    },
+    {
+      "command": "npx hardhat test test/v2-vault.test.js",
+      "result": "pass",
+      "tests": 14,
+      "failures": 0,
+      "notes": "Local Hardhat network only; no external RPC or deployment."
+    }
+  ],
+  "deploymentPlan": {
+    "vaultNonce": "n",
+    "marketplaceNonce": "n+1",
+    "note": "The test authority is deployed after the vault at the precomputed marketplace address; the vault is never rebound."
+  },
+  "coverage": {
+    "immutablePairing": true,
+    "constructorZeroAddressGuards": true,
+    "operatorOnlyDepositAndFreeWithdrawal": true,
+    "marketplaceOnlyReserveLifecycle": true,
+    "duplicateAndZeroReserveRejection": true,
+    "sameOperatorJobIsolation": true,
+    "normalReleaseReplayProtection": true,
+    "faultDMinusOneAndDeadline": true,
+    "lateFaultNoFreshWindow": true,
+    "surplusOnlySweep": true,
+    "falseReturnAtomicRollback": true,
+    "callbackReentryBlocked": true,
+    "slashReceiverFailureAtomicRollback": true
+  },
+  "changedFiles": [
+    "contract/contracts/OperatorCollateralVaultV2.sol",
+    "contract/contracts/test/V2VaultAuthority.sol",
+    "contract/test/v2-vault.test.js",
+    "contract/docs/v2-vault-evidence.json"
+  ],
+  "scope": {
+    "marketplaceModified": false,
+    "sharedFixturesModified": false,
+    "configModified": false,
+    "externalDeployment": false,
+    "commitOrPush": false
+  }
+}

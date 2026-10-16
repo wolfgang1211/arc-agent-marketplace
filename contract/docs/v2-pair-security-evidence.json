@@ -1,0 +1,25 @@
+{
+  "suite": "contract/test/v2-pair-security.test.js",
+  "scope": "internal V2 paired-contract acceptance verification; local Hardhat only",
+  "command": "V2_ARTIFACTS=./artifacts-v2-runs50 V2_CACHE=./cache-v2-runs50 npx hardhat test --config hardhat.v2.config.js test/v2-pair-security.test.js",
+  "result": {"passing": 5, "failing": 0},
+  "rows": [
+    {"id":"PAIR-IMMUTABLE","title":"constructor nonce pairing and wrong-pair rejection","status":"pass","test":"constructs only the nonce-paired vault/market and exposes no rebinding path"},
+    {"id":"SLASH-ROLLBACK","title":"blocked and false-return slash transfer rollback","status":"pass","test":"rolls back both ledgers when a real slash transfer is blocked or returns false"},
+    {"id":"FALSE-RETURN","title":"deposit, stake withdrawal, escrow settlement and credit withdrawal atomicity","status":"pass","test":"rejects false-return deposit, escrow pull, and credit withdrawal atomically"},
+    {"id":"CALLBACK-REENTRANCY","title":"vault and market callback attempts fail under reentrancy guards","status":"pass","test":"blocks token callbacks before authorization and preserves both ledgers"},
+    {"id":"SURPLUS-SWEEP","title":"vault donation-only treasury sweep with blocked-recipient rollback","status":"pass","test":"sweeps only exact vault donations and cannot encroach on free or reserved stake"}
+  ],
+  "ledger_checks": {
+    "successful_protocol_actions": "pairLedger checked after each checked receipt",
+    "expected_reverts": "pairLedger checked before and after; full pair-ledger snapshot must be unchanged",
+    "buckets": ["vault freeStake", "vault reservedStake", "vault stakeLiability", "market credits", "market creditsLiability", "live job escrow", "market token balance", "vault token balance", "market surplus", "vault surplus"],
+    "slash_pending_state": "reserve amount, FaultReview disposition, and faultPending are explicitly read back after both failed slash variants"
+  },
+  "identity": {"checked":"source SHA-256 identities and current paired build-info paths at suite start/end"},
+  "remaining_gaps": [
+    "This is not an independent audit and does not constitute external-chain or production acceptance.",
+    "The existing legacy V2 fixtures were not retrofitted by this change; their afterEach invariant coverage remains a separate verification gap.",
+    "Administrative/setup receipts (mint, approve, token flags, callback configuration, and time-control RPC calls) are harness preparation rather than protocol ledger transitions and are not each included in the checked-action receipt count."
+  ]
+}

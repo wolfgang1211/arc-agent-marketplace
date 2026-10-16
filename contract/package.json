@@ -5,6 +5,9 @@
   "scripts": {
     "build": "hardhat compile",
     "test": "hardhat test",
+    "build:v2": "hardhat clean --config hardhat.v2.config.js && hardhat compile --config hardhat.v2.config.js",
+    "test:v2": "hardhat test --config hardhat.v2.config.js --network hardhat",
+    "size:v2": "npm run build:v2 && node scripts/check-v2-size.js",
     "verify:config": "hardhat run --no-compile scripts/verify-build-config.js && node scripts/verify-deployment-manifests.js",
     "verify:artifact": "node scripts/verify-artifact-identity.js",
     "attest:deployment": "node scripts/attest-deployment.js",

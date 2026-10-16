@@ -1,0 +1,384 @@
+{
+  "name": "v2-full-acceptance-matrix",
+  "generatedAt": "2026-10-15T20:55:29.630Z",
+  "command": "npx hardhat test --config hardhat.v2.config.js --network hardhat test/v2-matrix.test.js",
+  "rows": [
+    {
+      "id": "V2-001",
+      "testTitle": "D-1 delivery submit is rejected while exact D claim opens fault review",
+      "status": "verifiedpass",
+      "tags": [
+        "timing",
+        "delivery"
+      ],
+      "caseErrors": [],
+      "actualCommandExit": 0
+    },
+    {
+      "id": "V2-002",
+      "testTitle": "D+1 review timeout settles submitted work exactly once",
+      "status": "verifiedpass",
+      "tags": [
+        "timing",
+        "review"
+      ],
+      "caseErrors": [],
+      "actualCommandExit": 0
+    },
+    {
+      "id": "V2-003",
+      "testTitle": "InProgress dispute pauses the active financial clock and blocks worker claim",
+      "status": "verifiedpass",
+      "tags": [
+        "dispute",
+        "InProgress"
+      ],
+      "caseErrors": [],
+      "actualCommandExit": 0
+    },
+    {
+      "id": "V2-004",
+      "testTitle": "Submitted dispute pauses the active financial clock and blocks worker claim",
+      "status": "verifiedpass",
+      "tags": [
+        "dispute",
+        "Submitted"
+      ],
+      "caseErrors": [],
+      "actualCommandExit": 0
+    },
+    {
+      "id": "V2-005",
+      "testTitle": "RevisionPending dispute pauses the active financial clock and blocks worker claim",
+      "status": "verifiedpass",
+      "tags": [
+        "dispute",
+        "RevisionPending"
+      ],
+      "caseErrors": [],
+      "actualCommandExit": 0
+    },
+    {
+      "id": "V2-006",
+      "testTitle": "AccessRecovery dispute pauses the active financial clock and blocks worker claim",
+      "status": "verifiedpass",
+      "tags": [
+        "dispute",
+        "AccessRecovery"
+      ],
+      "caseErrors": [],
+      "actualCommandExit": 0
+    },
+    {
+      "id": "V2-007",
+      "testTitle": "Dispute resolver heartbeat and resume consume elapsed time once; second resume and nested dispute reject",
+      "status": "verifiedpass",
+      "tags": [
+        "dispute",
+        "budget"
+      ],
+      "caseErrors": [],
+      "actualCommandExit": 0
+    },
+    {
+      "id": "V2-008",
+      "testTitle": "Hard dispute deadline D-1 permits resolver and D rejects resolver while idle deadline is seven days",
+      "status": "verifiedpass",
+      "tags": [
+        "dispute",
+        "hard-deadline"
+      ],
+      "caseErrors": [],
+      "actualCommandExit": 0
+    },
+    {
+      "id": "V2-009",
+      "testTitle": "Same-contract two-job collateral isolation survives A deadline failure and B completion",
+      "status": "verifiedpass",
+      "tags": [
+        "isolation",
+        "collateral"
+      ],
+      "caseErrors": [],
+      "actualCommandExit": 0
+    },
+    {
+      "id": "V2-010",
+      "testTitle": "Fault review D-1, D, D+1 resolves slash bounds and no automatic slash",
+      "status": "verifiedpass",
+      "tags": [
+        "fault-review",
+        "stake"
+      ],
+      "caseErrors": [],
+      "actualCommandExit": 0
+    },
+    {
+      "id": "V2-011",
+      "testTitle": "Access recovery preserves remaining review time and third report opens permissionless dispute only after repair deadline",
+      "status": "verifiedpass",
+      "tags": [
+        "access-recovery"
+      ],
+      "caseErrors": [],
+      "actualCommandExit": 0
+    },
+    {
+      "id": "V2-012",
+      "testTitle": "House job requires operator-listed house plus test client and blocks administrative dispute actions",
+      "status": "verifiedpass",
+      "tags": [
+        "house",
+        "authorization"
+      ],
+      "caseErrors": [],
+      "actualCommandExit": 0
+    },
+    {
+      "id": "V2-013",
+      "testTitle": "Mutual proposal is versioned, opposite party accepts once, proposer cannot accept, expiry rejects",
+      "status": "verifiedpass",
+      "tags": [
+        "mutual"
+      ],
+      "caseErrors": [],
+      "actualCommandExit": 0
+    },
+    {
+      "id": "V2-014",
+      "testTitle": "Open cancellation and apply expiry refund escrow without touching another positive escrow",
+      "status": "verifiedpass",
+      "tags": [
+        "open",
+        "escrow"
+      ],
+      "caseErrors": [],
+      "actualCommandExit": 0
+    },
+    {
+      "id": "V2-015",
+      "testTitle": "Same-block late ordering is receipt-observed and stale second transaction fails",
+      "status": "verifiedpass",
+      "tags": [
+        "same-block",
+        "ordering"
+      ],
+      "caseErrors": [],
+      "actualCommandExit": 0
+    },
+    {
+      "id": "V2-016",
+      "testTitle": "Every dispute state × client/operator × wrong-role/open/terminal/nested/wrong-resolver authorization table",
+      "status": "unimplemented",
+      "tags": [
+        "unimplemented"
+      ],
+      "caseErrors": [],
+      "actualCommandExit": null
+    },
+    {
+      "id": "V2-017",
+      "testTitle": "Dispute hard-budget first 5D resume, second 30D work, and 16D extra-delivery ceiling",
+      "status": "unimplemented",
+      "tags": [
+        "unimplemented"
+      ],
+      "caseErrors": [],
+      "actualCommandExit": null
+    },
+    {
+      "id": "V2-018",
+      "testTitle": "Dispute quota two job-wide episodes with third episode rejection",
+      "status": "unimplemented",
+      "tags": [
+        "unimplemented"
+      ],
+      "caseErrors": [],
+      "actualCommandExit": null
+    },
+    {
+      "id": "V2-019",
+      "testTitle": "Separate first 5D no-reset, second 6D heartbeat, and 12D heartbeat hard/idle D±1 matrix",
+      "status": "unimplemented",
+      "tags": [
+        "unimplemented"
+      ],
+      "caseErrors": [],
+      "actualCommandExit": null
+    },
+    {
+      "id": "V2-020",
+      "testTitle": "Expired revision zero cannot create review or silent payout",
+      "status": "unimplemented",
+      "tags": [
+        "unimplemented"
+      ],
+      "caseErrors": [],
+      "actualCommandExit": null
+    },
+    {
+      "id": "V2-021",
+      "testTitle": "Revision unlimited 256 real request/submit receipts and revision counter",
+      "status": "unimplemented",
+      "tags": [
+        "unimplemented"
+      ],
+      "caseErrors": [],
+      "actualCommandExit": null
+    },
+    {
+      "id": "V2-022",
+      "testTitle": "Access recovery repeated report quota, duplicate count, and review remaining preservation",
+      "status": "unimplemented",
+      "tags": [
+        "unimplemented"
+      ],
+      "caseErrors": [],
+      "actualCommandExit": null
+    },
+    {
+      "id": "V2-023",
+      "testTitle": "Access recovery late upload before trigger guard and 30D-late worker plus 7D fallback",
+      "status": "unimplemented",
+      "tags": [
+        "unimplemented"
+      ],
+      "caseErrors": [],
+      "actualCommandExit": null
+    },
+    {
+      "id": "V2-024",
+      "testTitle": "House false flags, non-allowlisted client, policy snapshot, and all admin action blocks",
+      "status": "unimplemented",
+      "tags": [
+        "unimplemented"
+      ],
+      "caseErrors": [],
+      "actualCommandExit": null
+    },
+    {
+      "id": "V2-025",
+      "testTitle": "Fault slash zero/nonzero/max/excess, D±1, repeated deadline claim, late claim, and no auto-slash",
+      "status": "unimplemented",
+      "tags": [
+        "unimplemented"
+      ],
+      "caseErrors": [],
+      "actualCommandExit": null
+    },
+    {
+      "id": "V2-026",
+      "testTitle": "Blocked client token withdrawal does not block claims, releases, or unrelated payments",
+      "status": "unimplemented",
+      "tags": [
+        "unimplemented"
+      ],
+      "caseErrors": [],
+      "actualCommandExit": null
+    },
+    {
+      "id": "V2-027",
+      "testTitle": "Free reserved stake overdraw rejection and stake conservation across terminal/pending/fault jobs",
+      "status": "unimplemented",
+      "tags": [
+        "unimplemented"
+      ],
+      "caseErrors": [],
+      "actualCommandExit": null
+    },
+    {
+      "id": "V2-028",
+      "testTitle": "Open bystander failure, expiry D±1, signed application award on terminal job",
+      "status": "unimplemented",
+      "tags": [
+        "unimplemented"
+      ],
+      "caseErrors": [],
+      "actualCommandExit": null
+    },
+    {
+      "id": "V2-029",
+      "testTitle": "Mutual stale version, reject, expiry, proposer revoke behavior, and during-dispute elapsed time",
+      "status": "unimplemented",
+      "tags": [
+        "unimplemented"
+      ],
+      "caseErrors": [],
+      "actualCommandExit": null
+    },
+    {
+      "id": "V2-030",
+      "testTitle": "Mutual full/partial payout fee 5 percent and full refund fee zero",
+      "status": "unimplemented",
+      "tags": [
+        "unimplemented"
+      ],
+      "caseErrors": [],
+      "actualCommandExit": null
+    },
+    {
+      "id": "V2-031",
+      "testTitle": "Pre-existing mutual proposal invalidation after approval/delivery and replay rejection",
+      "status": "unimplemented",
+      "tags": [
+        "unimplemented"
+      ],
+      "caseErrors": [],
+      "actualCommandExit": null
+    },
+    {
+      "id": "V2-032",
+      "testTitle": "Same-block review late report/dispute/revision and dispute heartbeat/resume/resolve orderings",
+      "status": "unimplemented",
+      "tags": [
+        "unimplemented"
+      ],
+      "caseErrors": [],
+      "actualCommandExit": null
+    },
+    {
+      "id": "V2-033",
+      "testTitle": "Same-block ordered receipts for claim then late action and late action then claim across all phases",
+      "status": "unimplemented",
+      "tags": [
+        "unimplemented"
+      ],
+      "caseErrors": [],
+      "actualCommandExit": null
+    },
+    {
+      "id": "V2-034",
+      "testTitle": "Extension count above two, 180-day exact/+1 cap, non-InProgress extension rejection",
+      "status": "unimplemented",
+      "tags": [
+        "unimplemented"
+      ],
+      "caseErrors": [],
+      "actualCommandExit": null
+    },
+    {
+      "id": "V2-035",
+      "testTitle": "Canonical terms/deadline/stateVersion event observability and no plaintext locator",
+      "status": "unimplemented",
+      "tags": [
+        "unimplemented"
+      ],
+      "caseErrors": [],
+      "actualCommandExit": null
+    },
+    {
+      "id": "V2-036",
+      "testTitle": "Stage A fee policy/min reward/terms snapshot and EIP-1271 coverage reference rows",
+      "status": "unimplemented",
+      "tags": [
+        "unimplemented"
+      ],
+      "caseErrors": [],
+      "actualCommandExit": null
+    }
+  ],
+  "counts": {
+    "verifiedpass": 15,
+    "unimplemented": 21
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "name": "v2-matrix-clocks",
+  "generatedAt": "2026-10-15T20:52:25.445Z",
+  "command": "npx hardhat test --config hardhat.v2.config.js --network hardhat test/v2-matrix-clocks.test.js",
+  "rows": [
+    {
+      "id": "V2-016",
+      "testTitle": "Every dispute state × client/operator × wrong-role/open/terminal/nested/wrong-resolver authorization table",
+      "status": "verifiedpass",
+      "caseErrors": [],
+      "actualCommandExit": 0
+    },
+    {
+      "id": "V2-017",
+      "testTitle": "Dispute hard-budget first 5D resume, second 30D work, and 16D remaining dispute budget",
+      "status": "verifiedpass",
+      "caseErrors": [],
+      "actualCommandExit": 0
+    },
+    {
+      "id": "V2-018",
+      "testTitle": "Dispute quota two job-wide episodes with third episode rejection",
+      "status": "verifiedpass",
+      "caseErrors": [],
+      "actualCommandExit": 0
+    },
+    {
+      "id": "V2-019",
+      "testTitle": "Separate first 5D no-reset, second 6D heartbeat, and 12D heartbeat hard/idle D±1 matrix",
+      "status": "verifiedpass",
+      "caseErrors": [],
+      "actualCommandExit": 0
+    },
+    {
+      "id": "V2-020",
+      "testTitle": "Expired revision zero cannot create review or silent payout",
+      "status": "verifiedpass",
+      "caseErrors": [],
+      "actualCommandExit": 0
+    },
+    {
+      "id": "V2-021",
+      "testTitle": "Revision unlimited 256 real request/submit receipts and revision counter",
+      "status": "verifiedpass",
+      "caseErrors": [],
+      "actualCommandExit": 0
+    },
+    {
+      "id": "V2-022",
+      "testTitle": "Access recovery repeated report quota, duplicate count, and review remaining preservation",
+      "status": "verifiedpass",
+      "caseErrors": [],
+      "actualCommandExit": 0
+    },
+    {
+      "id": "V2-023",
+      "testTitle": "Access recovery late upload before trigger guard and 30D-late worker plus 7D fallback",
+      "status": "verifiedpass",
+      "caseErrors": [],
+      "actualCommandExit": 0
+    },
+    {
+      "id": "V2-024",
+      "testTitle": "House false flags, non-allowlisted client, policy snapshot, and all admin action blocks",
+      "status": "verifiedpass",
+      "caseErrors": [],
+      "actualCommandExit": 0
+    },
+    {
+      "id": "V2-025",
+      "testTitle": "Fault slash zero/nonzero/max/excess, D±1, repeated deadline claim, late claim, and no auto-slash",
+      "status": "verifiedpass",
+      "caseErrors": [],
+      "actualCommandExit": 0
+    }
+  ],
+  "counts": {
+    "verifiedpass": 10
+  }
+}

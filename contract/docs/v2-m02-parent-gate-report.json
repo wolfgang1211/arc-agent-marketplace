@@ -1,0 +1,15 @@
+{
+  "status": "stopped_size_gate_candidate_not_accepted",
+  "parentVerifiedRuntime": {"marketplace": 23863, "vault": 6619, "limit": 23500, "m02MarketplaceDelta": 745, "marketplaceOverTarget": 363, "vaultHeadroom": 16881},
+  "parentVerification": "Canonical hardhat.v2.config.js compile succeeded; deployedBytecode lengths measured from fresh canonical artifacts.",
+  "reportedFocusedTests": {"passing": 3, "provenance": "implementer focused run; not full acceptance"},
+  "pending": ["H-01", "M-01 complete coverage", "L-01", "L-02", "L-03", "L-04", "full acceptance matrix", "current local E2E", "plan rule update"],
+  "sourceReviewIssuesInCandidate": [
+    {"file": "contracts/AgentMarketplaceV2.sol:333", "issue": "Candidate restricts operatorFault to previousStatus InProgress and deliveryVersion zero, although latest user instruction does not authorize this additional restriction.", "status": "not corrected due mandatory stop gate"},
+    {"file": "contracts/AgentMarketplaceV2.sol:333,347", "issue": "Candidate sets faultReviewPending before _settle to avoid normal reserve release; _settle decrements activeJobs only when faultReviewPending is false, and candidate does not subsequently decrement it. Operator-fault terminal settlement leaves active count unchanged.", "status": "source-level verified; regression test still required"},
+    {"file": "test/v2-m02-fixed-reserve.test.js:11,30", "issue": "Focused scenarios open dispute as client, not the operator initiation explicitly requested in acceptance case 1."}
+  ],
+  "requestedAcceptance": {"case1": "partial mechanism evidence only; requested operator initiation untested", "case2": "false release focused test passed", "case3": "zero-refund rollback focused test passed", "case4": "new timeout-no-slash test not executed", "case5": "three focused cases check conservation; full requested paths unverified"},
+  "implementationState": "M-02 candidate remains uncommitted in working tree; no claim of accepted full implementation.",
+  "externalActions": "No commit/push/external deployment/env changes/messages or second Ortak Masa round."
+}

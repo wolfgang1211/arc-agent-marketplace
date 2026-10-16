@@ -1,0 +1,15 @@
+{
+  "scope": "V2 Stage C semantic gap TDD ledger",
+  "status": "historical_partial_green_current_acceptance_blocked",
+  "currentAcceptance": {"passing": 17, "failing": 4, "exitCode": 4, "failingRows": ["V2-023", "V2-024", "V2-029", "V2-035"], "note": "The earlier seven tests did not prove the complete acceptance matrix. Required-fix attempts exceed the 23,500-byte gate; see v2-step2-design.md."},
+  "items": [
+    {"id":"C-openDispute-nested","status":"green","tests":"v2-disputes.test.js: nested/third-party resolver disputes and terminal replay","fix":"reject Disputed re-entry; resolver/client/operator conflict guards"},
+    {"id":"C-effective-budget-delay","status":"green","tests":"v2-disputes.test.js; existing Stage B window suite","fix":"timeout vests effective min(idle, hard) deadline rather than late claim timestamp"},
+    {"id":"C-dispute-auto-trigger-repair-deadline","status":"green","tests":"v2-disputes.test.js: late AccessRecovery permissionless trigger","fix":"permissionless one-shot trigger after repair deadline; preserves zero repair remaining"},
+    {"id":"C-fault-review-claim-time","status":"green","tests":"v2-disputes.test.js and v2-stake-review.test.js: delivery-anchored review and full release","fix":"fault review deadline anchored to deliveryDeadline + 7 days"},
+    {"id":"C-house-dispute-entry","status":"green","tests":"v2-disputes.test.js: snapshotted house client enters dispute; resolver cannot resolve house dispute","fix":"house entry is permitted while house resolution remains prohibited"},
+    {"id":"C-open-refund","status":"green","tests":"v2-disputes.test.js: client cancel before applyBy and permissionless exact/late refund","fix":"added cancelOpenJob and claimOpenJobTimeout with terminal/state guards"},
+    {"id":"C-mutual-terminal-replay","status":"green","tests":"v2-stake-review.test.js: terminal mutual acceptance replay","fix":"strict terminal _settle guard and invalidate active mutual proposal on settlement"}
+  ],
+  "verification": {"targetedStageC":"7 passing, 0 failing","v2LocalSuite":"163 passing, 0 failing","v1LocalSuite":"included in 163-suite run; unchanged V1 tests passed","runtimeBytes":23344,"runtimeLimit":23500,"headroomBytes":156,"productionSelectorsRestored":false,"readModel":"derived from compiler build-info storageLayout"}
+}

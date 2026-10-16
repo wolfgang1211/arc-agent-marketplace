@@ -1,0 +1,5081 @@
+{
+  "name": "v2-role-collision-matrix",
+  "generatedAt": "2026-10-15T20:57:30.120Z",
+  "command": "npx hardhat test --no-compile --config hardhat.v2.config.js --network hardhat test/v2-role-collision.test.js",
+  "roles": [
+    "client",
+    "operator",
+    "resolver",
+    "house",
+    "testClient",
+    "owner",
+    "treasury"
+  ],
+  "paths": [
+    "post",
+    "award",
+    "dispute",
+    "resolve",
+    "recovery",
+    "fault-review",
+    "mutual",
+    "timeout"
+  ],
+  "pairCount": 21,
+  "cellCount": 168,
+  "counts": {
+    "verifiedpass": 168
+  },
+  "sourceFiles": [
+    [
+      "contracts/AgentMarketplaceV2.sol",
+      "52641ab6c47b98da6454ddafa04a2e7895757d8b7ba10f132e76490a4a2f1720"
+    ],
+    [
+      "contracts/OperatorCollateralVaultV2.sol",
+      "58b95582923b33f170e0879c0eb9c5fede1d1dfc6553fc3a68ed04f03880f89f"
+    ]
+  ],
+  "rows": [
+    {
+      "id": "R-001",
+      "equalRoles": [
+        "client",
+        "operator"
+      ],
+      "lifecycle": "post",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x653c8c0550948ea3a3a7ea7b83767e5354746c67f36dc75250b260149a881785",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-001 client=operator post",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-002",
+      "equalRoles": [
+        "client",
+        "operator"
+      ],
+      "lifecycle": "award",
+      "expected": "revert:Conflict",
+      "actual": "revert",
+      "actualTxHash": "0xd4b3a5cbb83cbafbf719dd958905f5c5b76275e20439020770943fe14e704ecf",
+      "revertError": "InvalidSignature",
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-002 client=operator award",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-003",
+      "equalRoles": [
+        "client",
+        "operator"
+      ],
+      "lifecycle": "dispute",
+      "expected": "prerequisite-blocked",
+      "actual": "revert",
+      "actualTxHash": "0x42598f980933b59aa3ca9d8d8808efd10d36198af60899dbe1a8c0ced59d62de",
+      "revertError": "Conflict",
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-003 client=operator dispute",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-004",
+      "equalRoles": [
+        "client",
+        "operator"
+      ],
+      "lifecycle": "resolve",
+      "expected": "prerequisite-blocked",
+      "actual": "revert",
+      "actualTxHash": "0xc1d40a0a340b451e921f173bce7b6f08bd9a3834f8f2628110db54fcb6327a7a",
+      "revertError": "Unauthorized",
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-004 client=operator resolve",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-005",
+      "equalRoles": [
+        "client",
+        "operator"
+      ],
+      "lifecycle": "recovery",
+      "expected": "prerequisite-blocked",
+      "actual": "revert",
+      "actualTxHash": "0xe542a894c416069e70e8c3f152720d8c9d316cbf0a674c59e157e80b0b142f81",
+      "revertError": "Conflict",
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-005 client=operator recovery",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-006",
+      "equalRoles": [
+        "client",
+        "operator"
+      ],
+      "lifecycle": "fault-review",
+      "expected": "prerequisite-blocked",
+      "actual": "revert",
+      "actualTxHash": "0x93456f0d14e25f371c466c2cb42c4f496f9ad381ed7fe8a526ac2167fca131d7",
+      "revertError": "Unauthorized",
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-006 client=operator fault-review",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-007",
+      "equalRoles": [
+        "client",
+        "operator"
+      ],
+      "lifecycle": "mutual",
+      "expected": "prerequisite-blocked",
+      "actual": "revert",
+      "actualTxHash": "0x146fbbfae9abdb9acc183a67f7c0fb27635c03bff5eb106f6b7b3b0f73a7e9d0",
+      "revertError": "InvalidTerms",
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-007 client=operator mutual",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-008",
+      "equalRoles": [
+        "client",
+        "operator"
+      ],
+      "lifecycle": "timeout",
+      "expected": "prerequisite-blocked",
+      "actual": "revert",
+      "actualTxHash": "0x5097cdcb0a4d5294fd546ff5cb455ef4ea3fb1a8dfda2e30eca74824c40371a5",
+      "revertError": "Deadline",
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-008 client=operator timeout",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-009",
+      "equalRoles": [
+        "client",
+        "resolver"
+      ],
+      "lifecycle": "post",
+      "expected": "revert:Conflict",
+      "actual": "revert",
+      "actualTxHash": "0x1118bb23fd24dc9475f1516e5dfc3300dee541173b3cc7461ee8ce0d650c386b",
+      "revertError": "Conflict",
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-009 client=resolver post",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-010",
+      "equalRoles": [
+        "client",
+        "resolver"
+      ],
+      "lifecycle": "award",
+      "expected": "revert:Conflict",
+      "actual": "revert",
+      "actualTxHash": "0x7c0d252a1cebf3795d05bdda54d7ad107ae7323bafaefc9165e0952b76c8c6f1",
+      "revertError": "InvalidSignature",
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-010 client=resolver award",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-011",
+      "equalRoles": [
+        "client",
+        "resolver"
+      ],
+      "lifecycle": "dispute",
+      "expected": "prerequisite-blocked",
+      "actual": "revert",
+      "actualTxHash": null,
+      "revertError": "VM Exception while processing transaction: reverted with an unrecognized custom error (return data: 0x82b42900)",
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-011 client=resolver dispute",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-012",
+      "equalRoles": [
+        "client",
+        "resolver"
+      ],
+      "lifecycle": "resolve",
+      "expected": "prerequisite-blocked",
+      "actual": "revert",
+      "actualTxHash": "0x6f51e9a83eb153f3d34e3ac6116ca5d2a9dc37c322d0222587e6b881d79b7cb1",
+      "revertError": "Conflict",
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-012 client=resolver resolve",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-013",
+      "equalRoles": [
+        "client",
+        "resolver"
+      ],
+      "lifecycle": "recovery",
+      "expected": "prerequisite-blocked",
+      "actual": "revert",
+      "actualTxHash": "0xc518d5760fa4915441a4f8b22570edd5b14b0049a41af89bb83e52daea38c1d9",
+      "revertError": "Conflict",
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-013 client=resolver recovery",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-014",
+      "equalRoles": [
+        "client",
+        "resolver"
+      ],
+      "lifecycle": "fault-review",
+      "expected": "prerequisite-blocked",
+      "actual": "revert",
+      "actualTxHash": "0xac0f317b4953827f7a475607a0699b388c2e2fca879d79efa321721130fec150",
+      "revertError": "Conflict",
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-014 client=resolver fault-review",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-015",
+      "equalRoles": [
+        "client",
+        "resolver"
+      ],
+      "lifecycle": "mutual",
+      "expected": "prerequisite-blocked",
+      "actual": "revert",
+      "actualTxHash": "0xbf74f04ebe0a9f7d8bd07ab8bac91fb708f966237ada7fb4f8ebeb46e4119845",
+      "revertError": "Unauthorized",
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-015 client=resolver mutual",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-016",
+      "equalRoles": [
+        "client",
+        "resolver"
+      ],
+      "lifecycle": "timeout",
+      "expected": "prerequisite-blocked",
+      "actual": "revert",
+      "actualTxHash": "0x3a86d68699fa0adf2bddcefca8a6b5c9f4b6117faa18e4bc5c02fa0d3d1c7d43",
+      "revertError": "Deadline",
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-016 client=resolver timeout",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-017",
+      "equalRoles": [
+        "client",
+        "house"
+      ],
+      "lifecycle": "post",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x107a70c6ef54c17ffb9555dff6849c2d0d27f9afd972d68c4db29622eaca221b",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-017 client=house post",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-018",
+      "equalRoles": [
+        "client",
+        "house"
+      ],
+      "lifecycle": "award",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x861b2a9adb1eab90703245d6d9c6436eef79ab3f8f536f2a70649d045acbf5fc",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-018 client=house award",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-019",
+      "equalRoles": [
+        "client",
+        "house"
+      ],
+      "lifecycle": "dispute",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xce0672f46b46355644a99f8120d63a3cdbd7fa21ef0af1b913a1d1a0602ef9ce",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-019 client=house dispute",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-020",
+      "equalRoles": [
+        "client",
+        "house"
+      ],
+      "lifecycle": "resolve",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x0b677ee3d1bf80b3741fe11b98a4230f4f092092b948f430976a35380f2f3b9a",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-020 client=house resolve",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-021",
+      "equalRoles": [
+        "client",
+        "house"
+      ],
+      "lifecycle": "recovery",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x9c4ce14abaf6a509a5b0032d6ae5970fc160a64cc6771aee11e50289060cae18",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-021 client=house recovery",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-022",
+      "equalRoles": [
+        "client",
+        "house"
+      ],
+      "lifecycle": "fault-review",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x276ab31c8bddb660c1b7f6116a062138b3586eb86a499ce12724caedf9091ba1",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-022 client=house fault-review",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-023",
+      "equalRoles": [
+        "client",
+        "house"
+      ],
+      "lifecycle": "mutual",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x3674442546367ba9b0adbf9ffeb2c6b2641fbffbbe0c4cfe80b2947500d11ba6",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-023 client=house mutual",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-024",
+      "equalRoles": [
+        "client",
+        "house"
+      ],
+      "lifecycle": "timeout",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xcd1fc95a36a75a1b4a85e7724ecc83ad617f4246c19ef48d38e2f48dceeef416",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-024 client=house timeout",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-025",
+      "equalRoles": [
+        "client",
+        "testClient"
+      ],
+      "lifecycle": "post",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xa7f2c17cfe0858b463e5dfc72affefa5b41223ddab3937d85323ff9e819faf42",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-025 client=testClient post",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-026",
+      "equalRoles": [
+        "client",
+        "testClient"
+      ],
+      "lifecycle": "award",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xbcc3e19a98df4b1897e6ff9088da52390ac515765e17689610d488e54c35f0d1",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-026 client=testClient award",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-027",
+      "equalRoles": [
+        "client",
+        "testClient"
+      ],
+      "lifecycle": "dispute",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xfc379890ea666878f706390272d394ae28ae0483e37c7d81ad389093ddc15b57",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-027 client=testClient dispute",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-028",
+      "equalRoles": [
+        "client",
+        "testClient"
+      ],
+      "lifecycle": "resolve",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xdf8546cabfe2e03a03e9fbc86a1627ba34094c202dee9a828fd63c5435e5d97c",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-028 client=testClient resolve",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-029",
+      "equalRoles": [
+        "client",
+        "testClient"
+      ],
+      "lifecycle": "recovery",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x09c149175af47cc2035fa2233bf428db9e2defa75361c8f77a3518e220f27264",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-029 client=testClient recovery",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-030",
+      "equalRoles": [
+        "client",
+        "testClient"
+      ],
+      "lifecycle": "fault-review",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x2d080d966114b50ac143baeca2899ae47d9e8e5fd9afbfdd3b93b300dfd2aa1a",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-030 client=testClient fault-review",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-031",
+      "equalRoles": [
+        "client",
+        "testClient"
+      ],
+      "lifecycle": "mutual",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x4b39f8049a1e1dfe983909da75f549051323d6141473ece46af45565a52d292a",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-031 client=testClient mutual",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-032",
+      "equalRoles": [
+        "client",
+        "testClient"
+      ],
+      "lifecycle": "timeout",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xa396abf99291a31fd1b8d4a5cb733938e8c7097d522ad22cb0d2578f6986dc32",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-032 client=testClient timeout",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-033",
+      "equalRoles": [
+        "client",
+        "owner"
+      ],
+      "lifecycle": "post",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x8f0d24ef517050e8c79991b272758408573e084108bde90226aa936669c63972",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-033 client=owner post",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-034",
+      "equalRoles": [
+        "client",
+        "owner"
+      ],
+      "lifecycle": "award",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xccd85131bb0bf150a807e81918bec3de6f2616ebab57ddbe9e60347defb5a7c8",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-034 client=owner award",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-035",
+      "equalRoles": [
+        "client",
+        "owner"
+      ],
+      "lifecycle": "dispute",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xcef1dad80d986579872aa6e7015d9ac5232c80bff26695be8e8eb5f3a353b315",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-035 client=owner dispute",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-036",
+      "equalRoles": [
+        "client",
+        "owner"
+      ],
+      "lifecycle": "resolve",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x1181da862f5709a1ffb6ee0b1e7fd0b96beb9db333742e0292bc41c54eb574fd",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-036 client=owner resolve",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-037",
+      "equalRoles": [
+        "client",
+        "owner"
+      ],
+      "lifecycle": "recovery",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xf0dad67476fe7b55d3dec9e4877de27b32611603f500913887173cbb1cfffacf",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-037 client=owner recovery",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-038",
+      "equalRoles": [
+        "client",
+        "owner"
+      ],
+      "lifecycle": "fault-review",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xbc1a4ef5e9f7ca68bfc6e8e50f138f1005fa57cb2d02f88a0f8e52da5fa3325a",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-038 client=owner fault-review",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-039",
+      "equalRoles": [
+        "client",
+        "owner"
+      ],
+      "lifecycle": "mutual",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x6a68e3b13e409b195f2fc7354146a3bbf4d198f2615524410794121d2ac9ae0f",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-039 client=owner mutual",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-040",
+      "equalRoles": [
+        "client",
+        "owner"
+      ],
+      "lifecycle": "timeout",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x8cd0b962d5eb446627c637b0d2a55c4e3fde360d3b72aa54ce9ace01ef671431",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-040 client=owner timeout",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-041",
+      "equalRoles": [
+        "client",
+        "treasury"
+      ],
+      "lifecycle": "post",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x4c541d5ecf4b2563736a7a806af8fada2255a699f00df8dd56529b526b2a8219",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-041 client=treasury post",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-042",
+      "equalRoles": [
+        "client",
+        "treasury"
+      ],
+      "lifecycle": "award",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xf818776791b45cf90c8c53e1fb8279ba522c5dbe005bb65a798a2b4dad5e7456",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-042 client=treasury award",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-043",
+      "equalRoles": [
+        "client",
+        "treasury"
+      ],
+      "lifecycle": "dispute",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x014009bc74887c10b9a8d817e8e12ed4a40a17533244e40f87b54a4c11a9e2d3",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-043 client=treasury dispute",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-044",
+      "equalRoles": [
+        "client",
+        "treasury"
+      ],
+      "lifecycle": "resolve",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x9d29c756c08a41786dae14643d34e0852a8ac8f33aea679640a8f03914803013",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-044 client=treasury resolve",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-045",
+      "equalRoles": [
+        "client",
+        "treasury"
+      ],
+      "lifecycle": "recovery",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x4bd268172863f43288af8f67bbfd57d490a92f23016b78fec3dde414a6e65a0d",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-045 client=treasury recovery",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-046",
+      "equalRoles": [
+        "client",
+        "treasury"
+      ],
+      "lifecycle": "fault-review",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x29ccdcf9f19aea100cb5316b28dfab7cf3a6e81b2da6841de602e062b97b3450",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-046 client=treasury fault-review",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-047",
+      "equalRoles": [
+        "client",
+        "treasury"
+      ],
+      "lifecycle": "mutual",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x1c618f43ce6f54f40c4fc8aefae6dfec91c7a3b1815d9a36f24c5e320ee51522",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-047 client=treasury mutual",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-048",
+      "equalRoles": [
+        "client",
+        "treasury"
+      ],
+      "lifecycle": "timeout",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x1805d593b6f7f1e7dad06181aba8af7555476a2ed7b3639bd1a6b74e66efcde5",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-048 client=treasury timeout",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-049",
+      "equalRoles": [
+        "operator",
+        "resolver"
+      ],
+      "lifecycle": "post",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x0c3dbaa911ca4c657286f3e04286ff42cbaa52948d12d45eb301d421111fe28c",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-049 operator=resolver post",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-050",
+      "equalRoles": [
+        "operator",
+        "resolver"
+      ],
+      "lifecycle": "award",
+      "expected": "revert:Conflict",
+      "actual": "revert",
+      "actualTxHash": "0x7ebb4a8d1db99ce991cb0831447b5d143d40400aa6e4b7c6795372f86c5dcaba",
+      "revertError": "Conflict",
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-050 operator=resolver award",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-051",
+      "equalRoles": [
+        "operator",
+        "resolver"
+      ],
+      "lifecycle": "dispute",
+      "expected": "prerequisite-blocked",
+      "actual": "revert",
+      "actualTxHash": "0x7d6dfac610743dcd0f697a819952dfa33ca3c41696c0938857fef18fed9fb460",
+      "revertError": "Conflict",
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-051 operator=resolver dispute",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-052",
+      "equalRoles": [
+        "operator",
+        "resolver"
+      ],
+      "lifecycle": "resolve",
+      "expected": "prerequisite-blocked",
+      "actual": "revert",
+      "actualTxHash": "0x01539b117b4e9c004e8785246b9d17afc25a4de2806e03ddcb82660be9a7195d",
+      "revertError": "Unauthorized",
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-052 operator=resolver resolve",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-053",
+      "equalRoles": [
+        "operator",
+        "resolver"
+      ],
+      "lifecycle": "recovery",
+      "expected": "prerequisite-blocked",
+      "actual": "revert",
+      "actualTxHash": "0x9d191545d37da80dd669129d1fb420d54321c97d69d394dcc0bfd19bc92ae4b0",
+      "revertError": "Conflict",
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-053 operator=resolver recovery",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-054",
+      "equalRoles": [
+        "operator",
+        "resolver"
+      ],
+      "lifecycle": "fault-review",
+      "expected": "prerequisite-blocked",
+      "actual": "revert",
+      "actualTxHash": "0xb72e1ef5c59a9f26913428e20bfa047c85839bd9104e831831ecf2c69e4a1d68",
+      "revertError": "Unauthorized",
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-054 operator=resolver fault-review",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-055",
+      "equalRoles": [
+        "operator",
+        "resolver"
+      ],
+      "lifecycle": "mutual",
+      "expected": "prerequisite-blocked",
+      "actual": "revert",
+      "actualTxHash": "0xdd98e847e14057d9dfe41829014b3c62bf7e9312dbc71a45f2b6234bf16af46a",
+      "revertError": "Unauthorized",
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-055 operator=resolver mutual",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-056",
+      "equalRoles": [
+        "operator",
+        "resolver"
+      ],
+      "lifecycle": "timeout",
+      "expected": "prerequisite-blocked",
+      "actual": "revert",
+      "actualTxHash": "0x341be23a33697646ebc46aed4466429d572b9527ad1d058e3dfb4820d250f3b0",
+      "revertError": "Deadline",
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-056 operator=resolver timeout",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-057",
+      "equalRoles": [
+        "operator",
+        "house"
+      ],
+      "lifecycle": "post",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xc4aa6bf15832efbe7fba4980ec85008bd6348c7102b491310a3635419b99c58d",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-057 operator=house post",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-058",
+      "equalRoles": [
+        "operator",
+        "house"
+      ],
+      "lifecycle": "award",
+      "expected": "revert:Conflict",
+      "actual": "revert",
+      "actualTxHash": "0xaac12aaee46c27f56f028107028b3bf3f453cae770e35837b09c4cc3b393af22",
+      "revertError": "Conflict",
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-058 operator=house award",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-059",
+      "equalRoles": [
+        "operator",
+        "house"
+      ],
+      "lifecycle": "dispute",
+      "expected": "prerequisite-blocked",
+      "actual": "revert",
+      "actualTxHash": "0x0d47e23efa136d94a378e03e681914c9bf2453506ace03c150056430f84c9299",
+      "revertError": "Conflict",
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-059 operator=house dispute",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-060",
+      "equalRoles": [
+        "operator",
+        "house"
+      ],
+      "lifecycle": "resolve",
+      "expected": "prerequisite-blocked",
+      "actual": "revert",
+      "actualTxHash": "0xd8954cd8cd02312019887c6f325d7f804653163319d1277b9d23fb745774fc91",
+      "revertError": "Unauthorized",
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-060 operator=house resolve",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-061",
+      "equalRoles": [
+        "operator",
+        "house"
+      ],
+      "lifecycle": "recovery",
+      "expected": "prerequisite-blocked",
+      "actual": "revert",
+      "actualTxHash": "0xb306aeb59d625c6e1463be77c3d1cb1c10363c0d778775ea9eec17ed82808cdd",
+      "revertError": "Conflict",
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-061 operator=house recovery",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-062",
+      "equalRoles": [
+        "operator",
+        "house"
+      ],
+      "lifecycle": "fault-review",
+      "expected": "prerequisite-blocked",
+      "actual": "revert",
+      "actualTxHash": "0xcf11b0d79b751b5de736716b04c3b383eb93bc77360fb20c0c75707143936e7b",
+      "revertError": "Unauthorized",
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-062 operator=house fault-review",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-063",
+      "equalRoles": [
+        "operator",
+        "house"
+      ],
+      "lifecycle": "mutual",
+      "expected": "prerequisite-blocked",
+      "actual": "revert",
+      "actualTxHash": "0xc46635ffcecd7ed8c34a44da40de1f513fa51de6209ffe77eb5f1bde156704c7",
+      "revertError": "Unauthorized",
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-063 operator=house mutual",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-064",
+      "equalRoles": [
+        "operator",
+        "house"
+      ],
+      "lifecycle": "timeout",
+      "expected": "prerequisite-blocked",
+      "actual": "revert",
+      "actualTxHash": "0x27e5d95743b6169341f255abe81c4575c6dd04be402f7df225654d7265de5637",
+      "revertError": "Deadline",
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-064 operator=house timeout",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-065",
+      "equalRoles": [
+        "operator",
+        "testClient"
+      ],
+      "lifecycle": "post",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xd4ae22100e01c5534766f50d303619e3dbaf30ad02adcd05c9ebd563d3ad1a2e",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-065 operator=testClient post",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-066",
+      "equalRoles": [
+        "operator",
+        "testClient"
+      ],
+      "lifecycle": "award",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xeab01d213ca321f927fd69ec61cf9afb0db6596631d7ffffed30f3c7a81f6f5f",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-066 operator=testClient award",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-067",
+      "equalRoles": [
+        "operator",
+        "testClient"
+      ],
+      "lifecycle": "dispute",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x537dab79616bc4be395ae738f4fc6f06677b94659a24c24d50494bfc220286bb",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-067 operator=testClient dispute",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-068",
+      "equalRoles": [
+        "operator",
+        "testClient"
+      ],
+      "lifecycle": "resolve",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x4df852092d7b93b5e8d58d92e5a6704fafb1f82924f810a5f0bd5ff307be0a9b",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-068 operator=testClient resolve",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-069",
+      "equalRoles": [
+        "operator",
+        "testClient"
+      ],
+      "lifecycle": "recovery",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x1ade6ea3b372a62dd24ff1f848cfaed5277b2d26f3cb1e63322c1e199b3837cf",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-069 operator=testClient recovery",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-070",
+      "equalRoles": [
+        "operator",
+        "testClient"
+      ],
+      "lifecycle": "fault-review",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xecdccfaebde6c0229ff9cde85353bd3c20707386e7549e13c64650cede665b1e",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-070 operator=testClient fault-review",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-071",
+      "equalRoles": [
+        "operator",
+        "testClient"
+      ],
+      "lifecycle": "mutual",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xbfe2ea53f6f8a3087a43e21ddb402c9b89977cd1eec460f4546e1a71ae08567b",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-071 operator=testClient mutual",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-072",
+      "equalRoles": [
+        "operator",
+        "testClient"
+      ],
+      "lifecycle": "timeout",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x53a8d9868c11efcf519a9d7a20322b6908d336fe75abd1d2fe8926961c33c941",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-072 operator=testClient timeout",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-073",
+      "equalRoles": [
+        "operator",
+        "owner"
+      ],
+      "lifecycle": "post",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x1373ef6f22c7b40106999d7e7f77ee18f0d5dda2d94488b73e58eae605af0cde",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-073 operator=owner post",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-074",
+      "equalRoles": [
+        "operator",
+        "owner"
+      ],
+      "lifecycle": "award",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x8d7726d7d0809f89973ab70b045bdafc8b837730c11f9ca70fa1e4f069c32bc9",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-074 operator=owner award",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-075",
+      "equalRoles": [
+        "operator",
+        "owner"
+      ],
+      "lifecycle": "dispute",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x2a289ce9853d4471b44ec55cbc03d5a41b2ff0bdc9f568bc9635366174e1b688",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-075 operator=owner dispute",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-076",
+      "equalRoles": [
+        "operator",
+        "owner"
+      ],
+      "lifecycle": "resolve",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xf573058e2109c647679c630771fc6e4302a5222331846967d19034c5f1a6bd12",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-076 operator=owner resolve",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-077",
+      "equalRoles": [
+        "operator",
+        "owner"
+      ],
+      "lifecycle": "recovery",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xe0dc9fd774ad5369598c3d415cc36473e02fd6c789cd708edc8b24e66a6ee1bf",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-077 operator=owner recovery",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-078",
+      "equalRoles": [
+        "operator",
+        "owner"
+      ],
+      "lifecycle": "fault-review",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x49b61d02cac9ca8e000e04dd522921fb7b68a419d2bb0e690baf3d3e2b9a3912",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-078 operator=owner fault-review",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-079",
+      "equalRoles": [
+        "operator",
+        "owner"
+      ],
+      "lifecycle": "mutual",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xf7c32c71443d2b4b21ebc20f0a29bfef7695e2f76e1e102c61a6302a88ef1b3d",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-079 operator=owner mutual",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-080",
+      "equalRoles": [
+        "operator",
+        "owner"
+      ],
+      "lifecycle": "timeout",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x333ef814a8b30345a810df2a1e8a73f668ff362e923b218ffb7910198c32e67f",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-080 operator=owner timeout",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-081",
+      "equalRoles": [
+        "operator",
+        "treasury"
+      ],
+      "lifecycle": "post",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x9443a53d85e5abc1527ca1a9a64902f9e25fb1acf92e37fb91a024205b288c48",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-081 operator=treasury post",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-082",
+      "equalRoles": [
+        "operator",
+        "treasury"
+      ],
+      "lifecycle": "award",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xbea03a61bd1f88f4d14d755b17eaaf384873b576ac4b75458d229702ca25c024",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-082 operator=treasury award",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-083",
+      "equalRoles": [
+        "operator",
+        "treasury"
+      ],
+      "lifecycle": "dispute",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xb1dbb778a01de30834bc1cbec3dec922948503dc23ae6e59602e8566f6350878",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-083 operator=treasury dispute",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-084",
+      "equalRoles": [
+        "operator",
+        "treasury"
+      ],
+      "lifecycle": "resolve",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x951aa4060a6a4767390dcee856494bdc40fb4dbebe1d7dab7b6794f54044549c",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-084 operator=treasury resolve",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-085",
+      "equalRoles": [
+        "operator",
+        "treasury"
+      ],
+      "lifecycle": "recovery",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x8188d33f80b83bc29421f8fb97b55bd8b21d50e61e4d23adc5804b0d3485e2c7",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-085 operator=treasury recovery",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-086",
+      "equalRoles": [
+        "operator",
+        "treasury"
+      ],
+      "lifecycle": "fault-review",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x7c31ad81c9d851432b45c347eea00b1496e67656fb07fff5181da21f4eac60fa",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-086 operator=treasury fault-review",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-087",
+      "equalRoles": [
+        "operator",
+        "treasury"
+      ],
+      "lifecycle": "mutual",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xc14a3956c373a9de7ecef900945c925d15946c8659829f24ca69f4db4b32edab",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-087 operator=treasury mutual",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-088",
+      "equalRoles": [
+        "operator",
+        "treasury"
+      ],
+      "lifecycle": "timeout",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x0e2179aa3b46cf7c0b057fc103bf3ab410e11948f9f49a7942c04bf7c2f007af",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-088 operator=treasury timeout",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-089",
+      "equalRoles": [
+        "resolver",
+        "house"
+      ],
+      "lifecycle": "post",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x5ba32edc209dbde58bc384b912237c5781fbd701d3dd82d309e7644980b82fa6",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-089 resolver=house post",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-090",
+      "equalRoles": [
+        "resolver",
+        "house"
+      ],
+      "lifecycle": "award",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x833b01f2612a9223a1f9b1db780dbbdd8f21a8ac67bb571767bf3923c115b0c2",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-090 resolver=house award",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-091",
+      "equalRoles": [
+        "resolver",
+        "house"
+      ],
+      "lifecycle": "dispute",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x88de47636f358b23c2a3c3d9c1f36e70f17741404a630a5c102ad32f85851546",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-091 resolver=house dispute",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-092",
+      "equalRoles": [
+        "resolver",
+        "house"
+      ],
+      "lifecycle": "resolve",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x66f7d7a09dd50358c2e322dbed0f4b110ca8172bd92bb0378c3dc03403062f2c",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-092 resolver=house resolve",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-093",
+      "equalRoles": [
+        "resolver",
+        "house"
+      ],
+      "lifecycle": "recovery",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xf2b7b224163a2d6d53675ad4cf964bdeb319f8f1554c370599fa3874c3332ddd",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-093 resolver=house recovery",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-094",
+      "equalRoles": [
+        "resolver",
+        "house"
+      ],
+      "lifecycle": "fault-review",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xd0c02547805a08bba1594fb8b7dc9870e98ed8f7f7fad2569b3ae7d4e05db63f",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-094 resolver=house fault-review",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-095",
+      "equalRoles": [
+        "resolver",
+        "house"
+      ],
+      "lifecycle": "mutual",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x00af144a0941d4131fcf457611c249b022d4792fd8511c66f62209bc08c6d81f",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-095 resolver=house mutual",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-096",
+      "equalRoles": [
+        "resolver",
+        "house"
+      ],
+      "lifecycle": "timeout",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xaa0609d53d1fa27d73add0c667e05c0ca855df807c1630a746fe819ab6f2808f",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-096 resolver=house timeout",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-097",
+      "equalRoles": [
+        "resolver",
+        "testClient"
+      ],
+      "lifecycle": "post",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xc5ad34818fb86ef2deb0cf07e02010c9b4d80200082cee508ff16cb6e16b3995",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-097 resolver=testClient post",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-098",
+      "equalRoles": [
+        "resolver",
+        "testClient"
+      ],
+      "lifecycle": "award",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xb43b8a3d4292ebef872699622c9374d949355fe2ea6be5a7d62944d4b8349dce",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-098 resolver=testClient award",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-099",
+      "equalRoles": [
+        "resolver",
+        "testClient"
+      ],
+      "lifecycle": "dispute",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x7f5a207360777f4fb2bb32e6f92eaf3fe6448329cdb03497a6f4021694596757",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-099 resolver=testClient dispute",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-100",
+      "equalRoles": [
+        "resolver",
+        "testClient"
+      ],
+      "lifecycle": "resolve",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x72eda4bd0ca28235097af507c9bd4223b46f5e6606d1cb272bf8f13ae59a82c1",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-100 resolver=testClient resolve",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-101",
+      "equalRoles": [
+        "resolver",
+        "testClient"
+      ],
+      "lifecycle": "recovery",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x79681cfe844aaa8a3b028a1ebb4eb48971b6cd78409cff747fddbfd8b07f827a",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-101 resolver=testClient recovery",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-102",
+      "equalRoles": [
+        "resolver",
+        "testClient"
+      ],
+      "lifecycle": "fault-review",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x6d6b2091fb39fc4b39fa2934af06162ab768b666b4107a9ce70b44d5ca5b9f50",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-102 resolver=testClient fault-review",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-103",
+      "equalRoles": [
+        "resolver",
+        "testClient"
+      ],
+      "lifecycle": "mutual",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x6d75f6e3c7d36d3c9327f5edeea9945b3a725d2d90534e5c22334228f48255be",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-103 resolver=testClient mutual",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-104",
+      "equalRoles": [
+        "resolver",
+        "testClient"
+      ],
+      "lifecycle": "timeout",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xcda9ff6dd35e278df0ace5cfe9814ebc180f6dbb4dcc89cd6282d45603015b0f",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-104 resolver=testClient timeout",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-105",
+      "equalRoles": [
+        "resolver",
+        "owner"
+      ],
+      "lifecycle": "post",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x2c4883ed6c958793c0190032ccde01767b9cf6a697153daa0b4fdeb42f67a747",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-105 resolver=owner post",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-106",
+      "equalRoles": [
+        "resolver",
+        "owner"
+      ],
+      "lifecycle": "award",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x5a52e55c0e39cce02405a61c8a43632ae60d0066f19993f24edf5f6d8c25f834",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-106 resolver=owner award",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-107",
+      "equalRoles": [
+        "resolver",
+        "owner"
+      ],
+      "lifecycle": "dispute",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x0bbf740046023184b1efd6027b5676318338fe7285b975c2823c9688b06f4ba3",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-107 resolver=owner dispute",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-108",
+      "equalRoles": [
+        "resolver",
+        "owner"
+      ],
+      "lifecycle": "resolve",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xa47e6b30e3e319f61bbdabfb4eaea79c9f48ac61cc4f814f8db655f4e623768f",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-108 resolver=owner resolve",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-109",
+      "equalRoles": [
+        "resolver",
+        "owner"
+      ],
+      "lifecycle": "recovery",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x88c437cc09d43bffdb50e6ae7a86b44f4def6ed483febe1674fa9d56ae8290e5",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-109 resolver=owner recovery",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-110",
+      "equalRoles": [
+        "resolver",
+        "owner"
+      ],
+      "lifecycle": "fault-review",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xca442f7e0530a29813798d111a176df1e1f4dc30a564dd1b4f1bc2db88f508a4",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-110 resolver=owner fault-review",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-111",
+      "equalRoles": [
+        "resolver",
+        "owner"
+      ],
+      "lifecycle": "mutual",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x3a927198346b570e3126807e6ca87c5a93abf94fb4c994bf5931094d08c44627",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-111 resolver=owner mutual",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-112",
+      "equalRoles": [
+        "resolver",
+        "owner"
+      ],
+      "lifecycle": "timeout",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xc382937ce5f336812c648b5d9c0fd91bec861151200ee15cf341b8383d11f9f4",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-112 resolver=owner timeout",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-113",
+      "equalRoles": [
+        "resolver",
+        "treasury"
+      ],
+      "lifecycle": "post",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xca88d24d858bdcdd0964e600d62b067d8f7d0652551e544d2e709760d945ced0",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-113 resolver=treasury post",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-114",
+      "equalRoles": [
+        "resolver",
+        "treasury"
+      ],
+      "lifecycle": "award",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xd6971bfe3e4da4a3320a035007ea7671b9a940b71ebc6109953ae4c4669edde1",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-114 resolver=treasury award",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-115",
+      "equalRoles": [
+        "resolver",
+        "treasury"
+      ],
+      "lifecycle": "dispute",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x43cdedf11982a4cef5f69dc75173895c86c29f8701b61b0be47ee8ca42ce9c86",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-115 resolver=treasury dispute",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-116",
+      "equalRoles": [
+        "resolver",
+        "treasury"
+      ],
+      "lifecycle": "resolve",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xbba715e7f9db89919bf63881a332da25410a39b2b0c459ff7ec2447968fb626e",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-116 resolver=treasury resolve",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-117",
+      "equalRoles": [
+        "resolver",
+        "treasury"
+      ],
+      "lifecycle": "recovery",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xe1f92b0bdf4a741b6c733ac0f971635edf8fe9762e0b907f4997c25398aea32d",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-117 resolver=treasury recovery",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-118",
+      "equalRoles": [
+        "resolver",
+        "treasury"
+      ],
+      "lifecycle": "fault-review",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x5c1c1d84dca4cdef7c22df9499dbc1a03bbe6a8b3474c8f6c123fe059390962b",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-118 resolver=treasury fault-review",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-119",
+      "equalRoles": [
+        "resolver",
+        "treasury"
+      ],
+      "lifecycle": "mutual",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xdcefecf5cc4a5025e2c7d4d82442814f2176bb3ea16abd688c85cfc6883ecc54",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-119 resolver=treasury mutual",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-120",
+      "equalRoles": [
+        "resolver",
+        "treasury"
+      ],
+      "lifecycle": "timeout",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x3b73314ee820ddb943a7f18820a0f5310e62b1ff6a1f87cd942262caf1e51195",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-120 resolver=treasury timeout",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-121",
+      "equalRoles": [
+        "house",
+        "testClient"
+      ],
+      "lifecycle": "post",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xc28c16fd11af6dc9dd155c160770b9ad2cfa0c91cbfd42520787043e73cf07e8",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-121 house=testClient post",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-122",
+      "equalRoles": [
+        "house",
+        "testClient"
+      ],
+      "lifecycle": "award",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xc757fca868963b7e0004d0a84a18a08585a2640d89992a8752557ecd5dd8152c",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-122 house=testClient award",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-123",
+      "equalRoles": [
+        "house",
+        "testClient"
+      ],
+      "lifecycle": "dispute",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x79f89218f47aa7cdb38187e471fe57b5ec404d7e653a8a2aead626ef92550bf7",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-123 house=testClient dispute",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-124",
+      "equalRoles": [
+        "house",
+        "testClient"
+      ],
+      "lifecycle": "resolve",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x51889ab8a4a4c5ee86e6344debfeeb431ddcb28f4edf335b4bb1cbc45d19d12b",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-124 house=testClient resolve",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-125",
+      "equalRoles": [
+        "house",
+        "testClient"
+      ],
+      "lifecycle": "recovery",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xf4be453f40186f05fb00ea6089de930b61078a6b43f169cf05d2f8366c895e26",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-125 house=testClient recovery",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-126",
+      "equalRoles": [
+        "house",
+        "testClient"
+      ],
+      "lifecycle": "fault-review",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x6e56a57a9253adf4073f46fa9132195031f78e5ff2926198578b45634ff6072c",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-126 house=testClient fault-review",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-127",
+      "equalRoles": [
+        "house",
+        "testClient"
+      ],
+      "lifecycle": "mutual",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x0e581e2dd687da420a4ebfac9fb63429e3c6b094ed6bc228565f12ae441042cd",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-127 house=testClient mutual",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-128",
+      "equalRoles": [
+        "house",
+        "testClient"
+      ],
+      "lifecycle": "timeout",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xe4334a3af49a189b80753550be732383f6d73a8d90f5298c7e8888040ec320ea",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-128 house=testClient timeout",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-129",
+      "equalRoles": [
+        "house",
+        "owner"
+      ],
+      "lifecycle": "post",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xf3d8377fbba7c8fc886e91dfdd29c4e061ae597cdbada0066b7030deb2ca7770",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-129 house=owner post",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-130",
+      "equalRoles": [
+        "house",
+        "owner"
+      ],
+      "lifecycle": "award",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xb5eb9527aea6c8484f13914fb43ba0f352060549aa211dc9959d50dd5b225aff",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-130 house=owner award",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-131",
+      "equalRoles": [
+        "house",
+        "owner"
+      ],
+      "lifecycle": "dispute",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x4bce55c020a71a735d832995d37fef40d3d214f82d9c32af94076e2d299a3a95",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-131 house=owner dispute",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-132",
+      "equalRoles": [
+        "house",
+        "owner"
+      ],
+      "lifecycle": "resolve",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x1797f57c69ae0bf93b27bccec880d2418d273fa8a75854230d798930c2533e6d",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-132 house=owner resolve",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-133",
+      "equalRoles": [
+        "house",
+        "owner"
+      ],
+      "lifecycle": "recovery",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x913f24b0a01769e96365b96a4c79267e55b189dad22d7ea0a855fdbabb338f88",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-133 house=owner recovery",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-134",
+      "equalRoles": [
+        "house",
+        "owner"
+      ],
+      "lifecycle": "fault-review",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xb5a24368525848f73a8a55b19b50efbc5683c610bffe725ace371ef4429a01ac",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-134 house=owner fault-review",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-135",
+      "equalRoles": [
+        "house",
+        "owner"
+      ],
+      "lifecycle": "mutual",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xbf2b16b5198dd93c62c1894035654f88870752b5e8c514adbc1ee1542e0f0dd0",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-135 house=owner mutual",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-136",
+      "equalRoles": [
+        "house",
+        "owner"
+      ],
+      "lifecycle": "timeout",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x9f6c0328f3752f41293705290b08848d296b2330ce163f10825665315fd179ce",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-136 house=owner timeout",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-137",
+      "equalRoles": [
+        "house",
+        "treasury"
+      ],
+      "lifecycle": "post",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xfd8b87da2a7fd2700ecb7c8fc5067ab55d189153341320f22c4a044983ff8cc9",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-137 house=treasury post",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-138",
+      "equalRoles": [
+        "house",
+        "treasury"
+      ],
+      "lifecycle": "award",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x212551a8b49ce8277e0f675cf5c76594e2c5d1f286c65cb9c18f96544b8e33c2",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-138 house=treasury award",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-139",
+      "equalRoles": [
+        "house",
+        "treasury"
+      ],
+      "lifecycle": "dispute",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x303a19c6b9e86e3a2983b65a29ba0083ba78e3436a45443bca34b9ad3eb780d5",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-139 house=treasury dispute",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-140",
+      "equalRoles": [
+        "house",
+        "treasury"
+      ],
+      "lifecycle": "resolve",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x638bb54c2e81bad93cedd2e888ee600aa3572bbc12da36163cd1c16ee9e61d45",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-140 house=treasury resolve",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-141",
+      "equalRoles": [
+        "house",
+        "treasury"
+      ],
+      "lifecycle": "recovery",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x69560a0389dc94f22df17935103d1b9fe13f5a1b5be7343e64252c222f56100a",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-141 house=treasury recovery",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-142",
+      "equalRoles": [
+        "house",
+        "treasury"
+      ],
+      "lifecycle": "fault-review",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x567950be6b906458345341d2ca1c32e2463c66eb5736f6b472a90c7628d5cb3b",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-142 house=treasury fault-review",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-143",
+      "equalRoles": [
+        "house",
+        "treasury"
+      ],
+      "lifecycle": "mutual",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x30f38583005d73682708b85287738982ecb067b354abba196d76a4819c14a0da",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-143 house=treasury mutual",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-144",
+      "equalRoles": [
+        "house",
+        "treasury"
+      ],
+      "lifecycle": "timeout",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xea30d89493530d78070df87cd4f5f1239d5b9b05d485fbfae3435dc12703f213",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-144 house=treasury timeout",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-145",
+      "equalRoles": [
+        "testClient",
+        "owner"
+      ],
+      "lifecycle": "post",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xa3c6e4baa53ffa04cd6d3e76af9540b80b7c6b09d1b41b105d5aa14f81c5a282",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-145 testClient=owner post",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-146",
+      "equalRoles": [
+        "testClient",
+        "owner"
+      ],
+      "lifecycle": "award",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xce9d180e8fd12319326a67b6484d52189bd69162fa66dfc4893206c7a09193e8",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-146 testClient=owner award",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-147",
+      "equalRoles": [
+        "testClient",
+        "owner"
+      ],
+      "lifecycle": "dispute",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x7aed45d1a78ab444527fcfe193a07ab481bcbdaeb825afa1d3a31cbda9176841",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-147 testClient=owner dispute",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-148",
+      "equalRoles": [
+        "testClient",
+        "owner"
+      ],
+      "lifecycle": "resolve",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x35aaac3a708be2ebdb6e734d2bf131ff715454173f484040845abd330bf94c9f",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-148 testClient=owner resolve",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-149",
+      "equalRoles": [
+        "testClient",
+        "owner"
+      ],
+      "lifecycle": "recovery",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x7ef00efc91cd469ab236cb3d9f1ac96db0cb180018607d536d80e2b137b89e5b",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-149 testClient=owner recovery",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-150",
+      "equalRoles": [
+        "testClient",
+        "owner"
+      ],
+      "lifecycle": "fault-review",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x1f986d8ad039ec6f8382ab74314d869a915f73a86d013bd6cfc94f8bb6baba0b",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-150 testClient=owner fault-review",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-151",
+      "equalRoles": [
+        "testClient",
+        "owner"
+      ],
+      "lifecycle": "mutual",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x50192446625e0ec0d54fd1d6999fbe949a57762834b9e4ab40e2fd9737f76b58",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-151 testClient=owner mutual",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-152",
+      "equalRoles": [
+        "testClient",
+        "owner"
+      ],
+      "lifecycle": "timeout",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xf743df9e1d0be50352cf043018195ca757ec937e07ace461f11a865ccecde647",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-152 testClient=owner timeout",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-153",
+      "equalRoles": [
+        "testClient",
+        "treasury"
+      ],
+      "lifecycle": "post",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x2326366bfc38387622beda3448dbba11b7b9b7dd6d799d77313e3165176f6503",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-153 testClient=treasury post",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-154",
+      "equalRoles": [
+        "testClient",
+        "treasury"
+      ],
+      "lifecycle": "award",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xe7d6fa794ebc906a1ec804dcc509f956922e831b21d585964e215c0e0a1d0be5",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-154 testClient=treasury award",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-155",
+      "equalRoles": [
+        "testClient",
+        "treasury"
+      ],
+      "lifecycle": "dispute",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xc8aa2a35e555c38367a2a57696e82ececd2a46d546c21ac61c018f9455d378ec",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-155 testClient=treasury dispute",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-156",
+      "equalRoles": [
+        "testClient",
+        "treasury"
+      ],
+      "lifecycle": "resolve",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xdab8fa7a5a35c72b180bec8dc731143c7f23c8b890cc9a563dfff7b58f0f4a7c",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-156 testClient=treasury resolve",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-157",
+      "equalRoles": [
+        "testClient",
+        "treasury"
+      ],
+      "lifecycle": "recovery",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xaeafd0b4f88a2a6c5772f1e0a73817b8ea35a4f3f5ce0968fae0403ecde52db6",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-157 testClient=treasury recovery",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-158",
+      "equalRoles": [
+        "testClient",
+        "treasury"
+      ],
+      "lifecycle": "fault-review",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xecbd2936530fbdddaa798b96fec098df7fbc63f124f65a2285081e8ec3aa6a69",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-158 testClient=treasury fault-review",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-159",
+      "equalRoles": [
+        "testClient",
+        "treasury"
+      ],
+      "lifecycle": "mutual",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xbe16c36a57237ef8ab7b189a534e69f1dcf3fdad872ce72848112984014e6d3f",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-159 testClient=treasury mutual",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-160",
+      "equalRoles": [
+        "testClient",
+        "treasury"
+      ],
+      "lifecycle": "timeout",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x2612f8d9c30ae6b849fbd591c3293bac3aee3deb541fe5f072eed8d27feec9e1",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-160 testClient=treasury timeout",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-161",
+      "equalRoles": [
+        "owner",
+        "treasury"
+      ],
+      "lifecycle": "post",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x30e1337acded2e5f0344e02f54c97c077d1edd319390573fa14c377cd1d2ce5f",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-161 owner=treasury post",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-162",
+      "equalRoles": [
+        "owner",
+        "treasury"
+      ],
+      "lifecycle": "award",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xae252ec27ccc175214a5385182bd190ab5fa2804544393c2124bd6a66e2062a2",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-162 owner=treasury award",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-163",
+      "equalRoles": [
+        "owner",
+        "treasury"
+      ],
+      "lifecycle": "dispute",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xd0a103904069f56759bcdb6f2217b371aca995584e91ccf2672b6cb253ad4afc",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-163 owner=treasury dispute",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-164",
+      "equalRoles": [
+        "owner",
+        "treasury"
+      ],
+      "lifecycle": "resolve",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x2aa25f9c11f6fa99adc42f5613a90a85cc414cd5d0e76ec5a8ccead4267ef571",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-164 owner=treasury resolve",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-165",
+      "equalRoles": [
+        "owner",
+        "treasury"
+      ],
+      "lifecycle": "recovery",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xf651a0b41984af97b854cd412e101c09c5eb432c8537250b4dec325d4f56dbfc",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-165 owner=treasury recovery",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "0",
+        "escrow": "10000000",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-166",
+      "equalRoles": [
+        "owner",
+        "treasury"
+      ],
+      "lifecycle": "fault-review",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0x4f84eedd68d085b325c7707d69044acbfaa919ab88e5e43e6e3ac86a6074b1c2",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-166 owner=treasury fault-review",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-167",
+      "equalRoles": [
+        "owner",
+        "treasury"
+      ],
+      "lifecycle": "mutual",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xb44a1f0c798afdcc2b2ee82c926fec32986e433d8390e90c04695aee235b0aaa",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-167 owner=treasury mutual",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    },
+    {
+      "id": "R-168",
+      "equalRoles": [
+        "owner",
+        "treasury"
+      ],
+      "lifecycle": "timeout",
+      "expected": "allow",
+      "actual": "allow",
+      "actualTxHash": "0xe650276a36ce833fd99eb7c599a4683dad06b4019182c3885995aff911564dc2",
+      "revertError": null,
+      "testFullName": "V2 role-collision acceptance matrix (21 pairs x 8 real paths) R-168 owner=treasury timeout",
+      "accountingBefore": {
+        "free": "1000000000",
+        "reserved": "0",
+        "credits": "0",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "0"
+      },
+      "accountingAfter": {
+        "free": "995000000",
+        "reserved": "5000000",
+        "credits": "10000000",
+        "escrow": "0",
+        "vaultBalance": "1000000000",
+        "marketBalance": "10000000"
+      },
+      "status": "verifiedpass"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "name": "v2-tur3-fixes-evidence",
+  "status": "implementation-and-suite-verified; role-collision-ledger-open",
+  "approvedFixes": {
+    "N-01": {"source": "contracts/AgentMarketplaceV2.sol:273", "behavior": "operator equal to frozen resolver reverts Conflict before reservation/state writes", "dedicatedTest": "V2 Tur3 approved N-01/N-02 fixes N-01 rejects an operator equal to the frozen resolver before any mutation", "result": "pass"},
+    "N-02": {"source": "contracts/AgentMarketplaceV2.sol:226", "behavior": "setHouse(false) always reverts; house membership cannot be removed; normal house award rejected", "dedicatedTest": "V2 Tur3 approved N-01/N-02 fixes N-02 makes house membership permanent and rejects house operators on normal jobs", "result": "pass"},
+    "L-02": {"source": "package.json:8-10, hardhat.v2.config.js:35-42", "behavior": "V2 build/test/size scripts and canonical profile", "result": "pass"}
+  },
+  "targeted": {"command": "npx hardhat test --config hardhat.v2.config.js --network hardhat test/v2-size-gate.test.js test/v2-tur3-fixes.test.js", "passing": 5, "result": "pass"},
+  "fullSuite": {"command": "npm run test:v2", "passing": 239, "exitCode": 0, "result": "pass"},
+  "size": {"command": "npm run size:v2", "compiler": "0.8.28", "evmVersion": "cancun", "runs": 50, "limitBytes": 24000, "warnBytes": 23500, "marketplaceRuntimeBytes": 23908, "marketplaceRuntimeSha256": "e7132d4b49cb554c747786d5ad76e8dc4b71c4a3a3074b1d0845468a15800484", "vaultRuntimeBytes": 4854, "vaultRuntimeSha256": "d347274acba982afd60956008affb1dff16a8faa984582c28edd2536f492388d", "boundaryTest": "24000 accepted, 24001 rejected", "result": "pass-with-warning-marketplace-above-23500"},
+  "roleCollisionLedger": {"pairs": 21, "paths": 8, "cells": 168, "verified": 0, "unverified": 168, "artifacts": ["docs/rolecollisionmatrix.json", "docs/rolecollisionmatrix.md"], "result": "open; not represented as pass"},
+  "sourceSha256": {"AgentMarketplaceV2.sol": "52641ab6c47b98da6454ddafa04a2e7895757d8b7ba10f132e76490a4a2f1720", "OperatorCollateralVaultV2.sol": "58b95582923b33f170e0879c0eb9c5fede1d1dfc6553fc3a68ed04f03880f89f", "hardhat.v2.config.js": "67d84a9fbba1b28ab87f9f7d9d798037c72e01d84255271086f6f7a826f218ab", "package.json": "7a528aca75e88bbd251be2676cc9369b3f483336826fb0219bcea8bc000430f8"}
+}

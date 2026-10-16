@@ -1,0 +1,57 @@
+{
+  "status": "accepted_local_only",
+  "scope": ["H-01", "L-01", "M-01", "L-02", "L-03", "L-04", "M-02"],
+  "gate": {"runtimeCeilingBytes": 24000, "goalBytes": 23500, "eip170Bytes": 24576, "secondOrtakMasa": "left to parent", "externalDeployment": false},
+  "tree": {
+    "head": "31a72eb27ce07ed38d89bdb98117e073ecaf76a5",
+    "branch": "feat/marketplace-v2",
+    "beforeSnapshot": "not captured by this subagent; source was already untracked at start",
+    "afterTrackedDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "afterStatusSha256": "e9e07d664700b14a34700d5471a0611147c9da66c63b5141e67291239d34ffff",
+    "relevantAfterSha256": {
+      "contract/contracts/AgentMarketplaceV2.sol": "acd600bdccbd0cb5983c98609d70274f8bdeede22016375dde22671f91bc705f",
+      "contract/contracts/OperatorCollateralVaultV2.sol": "58b95582923b33f170e0879c0eb9c5fede1d1dfc6553fc3a68ed04f03880f89f",
+      "contract/hardhat.v2.config.js": "d02f47635242ee4fc1a7fc0c9d1887cedd427aef15b86b27c9a6c51dcd4680c6",
+      "contract/scripts/e2e-v2-local.js": "7319b9fcefe0ce7a9c763e1c781076cf974d1a0ce4c3d415400bd2fd7e40bd6c",
+      "contract/test/helpers/deploy-v2-pair.js": "33c30b3dc94a8e8135a0942b6b18acbd6b40241dd2c4a531c64bcd860f1cac26",
+      "contract/test/v2-m02-fixed-reserve.test.js": "2fb970e84bd7d0480c3140dd29122bcc6fd6ebc5d5d37dfe4233e8d268c8bb7e"
+    }
+  },
+  "build": {
+    "config": "contract/hardhat.v2.config.js",
+    "solc": "0.8.28",
+    "evmVersion": "cancun",
+    "viaIR": true,
+    "optimizerRuns": 50,
+    "ambientOptimizerEnv": "removed from canonical config",
+    "buildInfo": "artifacts-v2-runs50/build-info/9e703e390cbfe2e1c9756d0d17610198.json"
+  },
+  "runtime": {
+    "marketplace": {"bytes": 23852, "runtimeSha256Hex": "b3b57cf002b7f328c5f5af56ada033ab9df57f481d2fc8a17fae49d8165d6eee", "artifactJsonSha256": "9511957f0ff5a5d62ec1d401647c5ced2178bc59d8c21c3c58103b1a0750db02"},
+    "vault": {"bytes": 6619, "runtimeSha256Hex": "dff8b2e98bbd99afe43ff32abb06eeb70165e44988777a833710ca84b464f311", "artifactJsonSha256": "215b7f3f379cea622a5334a35fadabcbddcd8267b7a895bc6284166d74259a9a"},
+    "ceilingResult": "pass; marketplace headroom 148 bytes, vault headroom 17381 bytes",
+    "hashMeaning": "runtimeSha256Hex hashes deployedBytecode hex bytes without 0x; artifactJsonSha256 hashes the complete artifact JSON file"
+  },
+  "strategyMeasurements": {
+    "a_sharedAccounting": {"status": "implemented", "currentIsolatedSize": "not separately recompiled; included in final canonical build", "priorRecordedBaseline": 29532, "priorRecordedAfterA": 29532, "gas": "not run"},
+    "b_vaultCollateral": {"status": "implemented", "currentIsolatedSize": "not separately recompiled; included in final canonical build", "priorRecordedAfterB": 26331, "gas": "not run"},
+    "c_profile": {"status": "canonical selected", "runsSweepPriorObserved": [{"runs":1,"bytes":23032},{"runs":10,"bytes":23032},{"runs":50,"bytes":22844}], "finalCanonicalBytes": {"marketplace":23852,"vault":6619}, "gas": "not changed or measured; canonical runs=50 retained"}
+  },
+  "fixes": {
+    "H-01": "mutual proposal/reject/revoke use read-only expected state; accept binds explicit request version and recorded job state snapshot",
+    "L-01": "old mutual offers are rejected after work/state changes; mutual version remains monotonic",
+    "M-01": "resolver conflict guard is shared across post, award, dispute, heartbeat, resume, fault resolve/release; house restrictions retained",
+    "L-02": "canonical pinned V2 config uses 0.8.28/Cancun/viaIR/runs50 with no ambient profile overrides",
+    "L-03": "marketplace inherits Ownable2Step; renounce remains blocked",
+    "L-04": "pair helper checks owner nonce after vault deployment and refuses orphan-fund continuation",
+    "M-02": "bool operatorFault; positive-refund true path slashes full fixed reserve, false releases, zero-refund true rejects before writes, timeout/mutual/resume do not slash; active count closes once"
+  },
+  "tests": {
+    "focusedM02": {"passing": 6, "failing": 0, "commandExit": 0, "file": "test/v2-m02-fixed-reserve.test.js"},
+    "fullSuite": {"passing": 234, "failing": 0, "commandExit": 0, "command": "npx hardhat test --config hardhat.v2.config.js --network hardhat"},
+    "targetedRegression": {"passing": 15, "failing": 0, "commandExit": 0, "files": ["v2-acceptance.test.js", "v2-claude-zero-resolver.test.js", "v2-dispute-budget-finalization.test.js", "v2-disputes.test.js", "v2-matrix-clocks.test.js"]},
+    "e2e": {"status": "passed", "scenarios": 8, "receipts": 84, "expectedReverts": 3, "jointFinalBalance": "95000000", "jointEquation": "95000000", "evidence": "docs/v2-local-e2e-evidence.json"},
+    "matrix": {"verifiedRows": 36, "commandExit": 0, "evidence": "docs/v2-acceptance-consolidated.json"}
+  },
+  "remaining": ["parent second Ortak Masa review", "no commit/push/deploy performed"]
+}
