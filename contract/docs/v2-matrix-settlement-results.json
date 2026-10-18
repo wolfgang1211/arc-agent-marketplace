@@ -1,6 +1,6 @@
 {
   "name": "v2-settlement-acceptance-rows",
-  "generatedAt": "2026-10-15T20:53:49.477Z",
+  "generatedAt": "2026-10-16T11:41:51.612Z",
   "command": "npx hardhat test --config hardhat.v2.config.js --network hardhat test/v2-matrix-settlement.test.js",
   "rows": [
     {

@@ -8,7 +8,7 @@ const H = (s) => ethers.keccak256(ethers.toUtf8Bytes(s));
 const ROLE_NAMES = ["client", "operator", "resolver", "house", "testClient", "owner", "treasury"];
 const PATHS = ["post", "award", "dispute", "resolve", "recovery", "fault-review", "mutual", "timeout"];
 
-async function deployRoleCollisionFixture(equalRoles) {
+async function deployRoleCollisionFixture(equalRoles, options = {}) {
   const signers = await ethers.getSigners();
   const [owner, client, operator, resolver, house, testClient, treasury, outsider] = signers;
   const byRole = { client, operator, resolver, house, testClient, owner, treasury };
@@ -25,15 +25,19 @@ async function deployRoleCollisionFixture(equalRoles) {
   // The policy is explicit for every fixture; the default owner resolver is never relied on.
   const policyResolver = roles.resolver.address;
   await (await market.connect(owner).setResolverForClient(roles.client.address, policyResolver)).wait();
+  // These flags are deliberately installed for the mapped role addresses on
+  // every fixture.  A collision must not make the matrix vacuous by omitting
+  // the membership predicate it is meant to exercise.
   await (await market.connect(owner).setTestClient(roles.testClient.address, true)).wait();
-  if (roles.operator.address === roles.house.address) {
-    await (await market.connect(owner).setHouse(roles.operator.address, true)).wait();
-  }
+  await (await market.connect(owner).setHouse(roles.house.address, true)).wait();
+  // The positive house/test-job control has a distinct client role address;
+  // grant that address the independent test-client membership explicitly.
+  if (options.allowClientTestJob) await (await market.connect(owner).setTestClient(roles.client.address, true)).wait();
   const op = roles.operator;
   await (await token.connect(op).approve(await vault.getAddress(), 1_000n * U)).wait();
   await (await vault.connect(op).depositStake(1_000n * U)).wait();
   await (await market.connect(op).registerOperator()).wait();
-  return { owner, client, operator, resolver, house, testClient, treasury, outsider, roles, equalRoles, token, market, vault };
+  return { owner, client, operator, resolver, house, testClient, treasury, outsider, roles, equalRoles, token, market, vault, options };
 }
 
 async function latest() { return (await ethers.provider.getBlock("latest")).timestamp; }
@@ -44,7 +48,7 @@ async function post(e, opts = {}) {
   const tx = await e.market.connect(e.roles.client).postJob(
     reward, BigInt(opts.applyBy ?? now + 2 * DAY), BigInt(opts.delivery ?? 2 * DAY),
     BigInt(opts.review ?? 2 * DAY), BigInt(opts.revision ?? 12 * 3600), 2, false,
-    H(`role-collision-criteria-${now}`), H(`role-collision-description-${now}`), false,
+    H(`role-collision-criteria-${now}`), H(`role-collision-description-${now}`), opts.testJob ?? false,
     opts.gasLimit ? { gasLimit: opts.gasLimit } : {},
   );
   const receipt = await tx.wait();

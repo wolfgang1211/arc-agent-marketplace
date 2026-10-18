@@ -1,0 +1,20 @@
+
+
+  E01 generated failure-record proof
+    1) E01 intentional reporter failure probe
+
+
+  0 passing (21ms)
+  1 failing
+
+  1) E01 generated failure-record proof
+       E01 intentional reporter failure probe:
+
+      intentional E-01 failure probe
+      + expected - actual
+
+      -false
+      +true
+
+      at Context.<anonymous> (test\e01-intentional-failure.test.js:5:82)
+      at processImmediate (node:internal/timers:574:21)

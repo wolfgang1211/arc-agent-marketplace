@@ -1,0 +1,9 @@
+const { expect } = require('chai');
+const { writeEvidence } = require('./helpers/v2-evidence-reporter');
+const names = { E01: 'E01 intentional reporter failure probe' };
+describe('E01 generated failure-record proof', function () {
+  it(names.E01, function () { expect(false, 'intentional E-01 failure probe').to.equal(true); });
+  after(function () {
+    writeEvidence({ suite: this.test.parent, names, outputPath: 'docs/e01-intentional-failure.json', command: 'npx hardhat test --no-compile --config hardhat.v2.config.js --network hardhat test/e01-intentional-failure.test.js', testFile: 'test/e01-intentional-failure.test.js' });
+  });
+});

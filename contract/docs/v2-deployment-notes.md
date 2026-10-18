@@ -59,6 +59,24 @@ decision does not renew a window.
 ## Runtime gate
 
 The canonical V2 build is Solidity 0.8.28, Cancun, viaIR, optimizer runs 50.
-The marketplace and vault runtimes must each remain at or below 24,000 bytes;
-the measured final local artifacts are recorded in
-`docs/v2-review-fixes-final-evidence.json`.
+The marketplace and vault runtimes must each remain at or below 24,000 bytes.
+The post-tur3 marketplace runtime is 23,908 bytes, leaving only **92 bytes**
+below that acceptance ceiling. No new features will be added to this contract;
+Package 2/3 features must be planned off-chain or in separate contracts.
+Historical measurement reports are snapshots, not approval of their test
+coverage. The vault's source-preserving compiler-profile reduction is documented
+in `v2-vault-runtime-profile-audit.md`. Rebuild with `npm run size:v2` and use the current verification
+artifacts before any separately approved deployment.
+
+## Resolver and treasury operational separation
+
+On mainnet, the resolver and treasury will use **separate wallets**. This is an
+operational requirement, not a new on-chain address-inequality restriction.
+The contract continues to allow the addresses to coincide.
+
+The fee is charged only on gross operator payout, not on a client refund or a
+collateral slash. A resolver who also controls the treasury therefore has a
+financial incentive connected to the payout allocation. This conflict risk
+must be disclosed to users. The deployment checklist must record and verify
+the separate resolver and treasury wallet addresses before funding or use;
+this document does not authorize deployment or wallet transactions.

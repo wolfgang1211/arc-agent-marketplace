@@ -1,9 +1,9 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const fs = require("fs");
-const crypto = require("crypto");
 const { deployFixture, post, award, submit, application, mineExact, latest, DAY, H, U } = require("./helpers/v2-matrix-fixture");
 const { checkBytes } = require("../scripts/check-v2-size");
+const { writeEvidence } = require("./helpers/v2-evidence-reporter");
 
 const names = {
   H01: "H01 same-block intent ordering closes mutual and extension races without a state-version bump",
@@ -20,6 +20,26 @@ const names = {
 async function realJob(e, opts = {}) { return award(e, (await post(e, opts)).id); }
 async function resolver(e, id = 1) { return (await e.market.getJob(id)).resolver; }
 async function advanceTo(ts) { await mineExact(ts); }
+
+async function sameBlockPair(sendFirst, sendSecond) {
+  await ethers.provider.send("evm_setAutomine", [false]);
+  try {
+    const first = await sendFirst({ gasLimit: 500000n, gasPrice: 1_000_000_000n });
+    const second = await sendSecond({ gasLimit: 500000n, gasPrice: 1_000_000_000n });
+    await ethers.provider.send("evm_mine");
+    const receipts = [await first.wait(), await second.wait()];
+    const blocks = await Promise.all(receipts.map((r) => ethers.provider.getBlock(r.blockNumber)));
+    expect(receipts[0].blockNumber).to.equal(receipts[1].blockNumber);
+    expect(receipts[0].blockHash).to.equal(receipts[1].blockHash);
+    expect(receipts[0].index).to.equal(0);
+    expect(receipts[1].index).to.equal(1);
+    expect(blocks[0].timestamp).to.equal(blocks[1].timestamp);
+    console.log(JSON.stringify({ h01SameBlock: receipts.map((receipt, i) => ({ blockNumber: receipt.blockNumber, blockHash: receipt.blockHash, transactionIndex: receipt.index, timestamp: blocks[i].timestamp })) }));
+    return receipts;
+  } finally {
+    await ethers.provider.send("evm_setAutomine", [true]);
+  }
+}
 
 async function deployInterleavedPair() {
   const [owner, , , treasury] = await ethers.getSigners();
@@ -41,25 +61,20 @@ describe("V2 TUR3 dedicated closure evidence", function () {
   this.timeout(240000);
 
   it(names.H01, async function () {
-    const e = await deployFixture(); const j = await realJob(e);
-    let now = await latest();
-    await e.market.connect(e.operator).requestDeliveryExtension(1, BigInt(j.deliveryDeadline) + 3600n, BigInt(now + 1800), j.stateVersion);
-    await expect(e.market.connect(e.client).rejectDeliveryExtension(1, 1, (await e.market.getJob(1)).stateVersion)).to.not.be.reverted;
-    let x = await e.market.getJob(1); expect(x.stateVersion).to.equal(j.stateVersion);
-    now = await latest();
-    await e.market.connect(e.operator).requestDeliveryExtension(1, BigInt(x.deliveryDeadline) + 3600n, BigInt(now + 1800), x.stateVersion);
-    x = await e.market.getJob(1);
-    await expect(e.market.connect(e.operator).revokeDeliveryExtension(1, 2, x.stateVersion)).to.not.be.reverted;
-    await submit(e, 1); x = await e.market.getJob(1);
-    now = await latest();
-    await e.market.connect(e.client).proposeMutual(1, 4n * U, 6n * U, BigInt(now + DAY), x.stateVersion);
-    x = await e.market.getJob(1);
-    await expect(e.market.connect(e.operator).rejectMutual(1, x.stateVersion)).to.not.be.reverted;
-    x = await e.market.getJob(1);
-    await e.market.connect(e.client).proposeMutual(1, 4n * U, 6n * U, BigInt((await latest()) + DAY), x.stateVersion);
-    x = await e.market.getJob(1);
-    await expect(e.market.connect(e.client).revokeMutual(1, x.stateVersion)).to.not.be.reverted;
-    expect((await e.market.getJob(1)).status).to.equal(2n);
+    const extension = await deployFixture(); const job = await realJob(extension); const now = await latest();
+    const version = job.stateVersion;
+    await sameBlockPair(
+      (overrides) => extension.market.connect(extension.operator).requestDeliveryExtension(1, BigInt(job.deliveryDeadline) + 3600n, BigInt(now + 1800), version, overrides),
+      (overrides) => extension.market.connect(extension.client).rejectDeliveryExtension(1, 1, version, overrides),
+    );
+    expect((await extension.market.getJob(1)).stateVersion).to.equal(version);
+    const mutual = await deployFixture(); await realJob(mutual); await submit(mutual, 1); const submitted = await mutual.market.getJob(1);
+    const mutualNow = await latest(); const mutualVersion = submitted.stateVersion;
+    await sameBlockPair(
+      (overrides) => mutual.market.connect(mutual.client).proposeMutual(1, 4n * U, 6n * U, BigInt(mutualNow + DAY), mutualVersion, overrides),
+      (overrides) => mutual.market.connect(mutual.operator).rejectMutual(1, mutualVersion, overrides),
+    );
+    expect((await mutual.market.getJob(1)).stateVersion).to.equal(mutualVersion);
   });
 
   it(names.L01, async function () {
@@ -132,10 +147,12 @@ describe("V2 TUR3 dedicated closure evidence", function () {
   });
 
   after(function () {
-    const source = ["contracts/AgentMarketplaceV2.sol", "contracts/OperatorCollateralVaultV2.sol"].map((file) => ({ file, sha256: crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex") }));
-    const testLines = fs.readFileSync("test/v2-tur3-closure.test.js", "utf8").split(/\r?\n/);
-    const findings = Object.entries(names).map(([finding, testFullName]) => ({ finding, testFile: "test/v2-tur3-closure.test.js", testFullName, sourceFileLine: testLines.findIndex((line) => line.includes(`it(names.${finding}`)) + 1, status: "verifiedpass" }));
-    const out = { name: "v2-tur3-closure-evidence", command: "npx hardhat test --no-compile --config hardhat.v2.config.js --network hardhat test/v2-tur3-closure.test.js", findings, source, mainHash: "52641ab6c47b98da6454ddafa04a2e7895757d8b7ba10f132e76490a4a2f1720", vaultHash: "58b95582923b33f170e0879c0eb9c5fede1d1dfc6553fc3a68ed04f03880f89f" };
-    fs.writeFileSync("docs/v2-tur3-closure-evidence.json", JSON.stringify(out, null, 2) + "\n");
+    writeEvidence({
+      suite: this.test.parent,
+      names,
+      testFile: "test/v2-tur3-closure.test.js",
+      outputPath: "docs/v2-tur3-closure-evidence.json",
+      command: "npx hardhat test --no-compile --config hardhat.v2.config.js --network hardhat test/v2-tur3-closure.test.js",
+    });
   });
 });

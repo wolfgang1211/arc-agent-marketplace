@@ -6,64 +6,73 @@
       "finding": "H01",
       "testFile": "test/v2-tur3-closure.test.js",
       "testFullName": "H01 same-block intent ordering closes mutual and extension races without a state-version bump",
-      "sourceFileLine": 43,
-      "status": "verifiedpass"
+      "testLine": 63,
+      "status": "pass",
+      "error": null
     },
     {
       "finding": "L01",
       "testFile": "test/v2-tur3-closure.test.js",
       "testFullName": "L01 delivery changes and replacement mutual requests reject stale state and request versions",
-      "sourceFileLine": 65,
-      "status": "verifiedpass"
+      "testLine": 80,
+      "status": "pass",
+      "error": null
     },
     {
       "finding": "L03",
       "testFile": "test/v2-tur3-closure.test.js",
       "testFullName": "L03 Ownable2Step transfer retains old owner until acceptance and blocks renounce",
-      "sourceFileLine": 82,
-      "status": "verifiedpass"
+      "testLine": 97,
+      "status": "pass",
+      "error": null
     },
     {
       "finding": "L04",
       "testFile": "test/v2-tur3-closure.test.js",
       "testFullName": "L04 paired deployment aborts on a real intervening owner transaction before funding",
-      "sourceFileLine": 95,
-      "status": "verifiedpass"
+      "testLine": 110,
+      "status": "pass",
+      "error": null
     },
     {
       "finding": "M02",
       "testFile": "test/v2-tur3-closure.test.js",
       "testFullName": "M02 every terminal settlement path closes active accounting exactly once",
-      "sourceFileLine": 97,
-      "status": "verifiedpass"
+      "testLine": 112,
+      "status": "pass",
+      "error": null
     },
     {
       "finding": "N01",
       "testFile": "test/v2-tur3-closure.test.js",
       "testFullName": "N01 resolver/operator conflict is rejected before job mutation",
-      "sourceFileLine": 113,
-      "status": "verifiedpass"
+      "testLine": 128,
+      "status": "pass",
+      "error": null
     },
     {
       "finding": "N02",
       "testFile": "test/v2-tur3-closure.test.js",
       "testFullName": "N02 house membership is permanent and normal-house award is forbidden",
-      "sourceFileLine": 119,
-      "status": "verifiedpass"
+      "testLine": 134,
+      "status": "pass",
+      "error": null
     },
     {
       "finding": "L02",
       "testFile": "test/v2-tur3-closure.test.js",
       "testFullName": "L02 both V2 runtimes enforce the 24000-byte boundary and V1 gate remains unchanged",
-      "sourceFileLine": 124,
-      "status": "verifiedpass"
+      "testLine": 139,
+      "status": "pass",
+      "error": null
     },
     {
       "finding": "L05",
       "testFile": "test/v2-tur3-closure.test.js",
       "testFullName": "L05 outsiders can perform timed fault release and dispute-timeout settlement",
-      "sourceFileLine": 129,
-      "status": "verifiedpass"
+      "testLine": 144,
+      "status": "pass",
+      "error": null
     }
   ],
   "source": [
@@ -75,7 +84,5 @@
       "file": "contracts/OperatorCollateralVaultV2.sol",
       "sha256": "58b95582923b33f170e0879c0eb9c5fede1d1dfc6553fc3a68ed04f03880f89f"
     }
-  ],
-  "mainHash": "52641ab6c47b98da6454ddafa04a2e7895757d8b7ba10f132e76490a4a2f1720",
-  "vaultHash": "58b95582923b33f170e0879c0eb9c5fede1d1dfc6553fc3a68ed04f03880f89f"
+  ]
 }

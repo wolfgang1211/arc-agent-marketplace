@@ -1,0 +1,24 @@
+{
+  "name": "v2-tur3-closure-evidence",
+  "command": "npx hardhat test --no-compile --config hardhat.v2.config.js --network hardhat test/e01-intentional-failure.test.js",
+  "findings": [
+    {
+      "finding": "E01",
+      "testFile": "test/e01-intentional-failure.test.js",
+      "testFullName": "E01 intentional reporter failure probe",
+      "testLine": 5,
+      "status": "fail",
+      "error": "intentional E-01 failure probe: expected false to equal true"
+    }
+  ],
+  "source": [
+    {
+      "file": "contracts/AgentMarketplaceV2.sol",
+      "sha256": "52641ab6c47b98da6454ddafa04a2e7895757d8b7ba10f132e76490a4a2f1720"
+    },
+    {
+      "file": "contracts/OperatorCollateralVaultV2.sol",
+      "sha256": "58b95582923b33f170e0879c0eb9c5fede1d1dfc6553fc3a68ed04f03880f89f"
+    }
+  ]
+}

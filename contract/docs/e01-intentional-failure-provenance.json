@@ -1,0 +1,8 @@
+{
+  "exitCode": 1,
+  "removedTemporaryTest": true,
+  "sourceSnapshot": "docs\\e01-intentional-failure-source.txt",
+  "sourceSha256": "693c04c2d3cb9fb0fc7f226d5a3d084ace3bc5e1758720c80fbfa13d093c98bc",
+  "report": "docs/e01-intentional-failure.json",
+  "log": "docs/e01-intentional-failure.log"
+}

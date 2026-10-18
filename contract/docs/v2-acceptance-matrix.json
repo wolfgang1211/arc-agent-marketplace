@@ -1,6 +1,6 @@
 {
   "name": "v2-full-acceptance-matrix",
-  "generatedAt": "2026-10-15T20:55:29.630Z",
+  "generatedAt": "2026-10-16T11:43:05.456Z",
   "command": "npx hardhat test --config hardhat.v2.config.js --network hardhat test/v2-matrix.test.js",
   "rows": [
     {

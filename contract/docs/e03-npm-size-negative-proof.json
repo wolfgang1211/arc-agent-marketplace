@@ -1,0 +1,28 @@
+{
+  "scope": "isolated negative artifact fixtures, not a real compiler/deployment run",
+  "buildStep": "explicit no-op in scratch fixture; production size:v2 script and checker are unchanged, prepopulated artifacts are deliberately synthetic",
+  "results": [
+    {
+      "target": "AgentMarketplaceV2",
+      "runtimeBytes": 24001,
+      "command": "npm run size:v2",
+      "exitCode": 1,
+      "stdout": "\n> isolated-negative-artifact-fixture@1.0.0 size:v2\n> npm run build:v2 && node scripts/check-v2-size.js\n\n\n> isolated-negative-artifact-fixture@1.0.0 build:v2\n> node -e \"process.exit(0)\"\n\n",
+      "stderr": "AgentMarketplaceV2 runtime 24001 exceeds 24000\n",
+      "sizeScriptMatchesProduction": true,
+      "checkerSha256": "860bd1c0201fe15675e3948797331c138f5d384de106a0279857f089cab75c2d",
+      "fixture": "C:\\Users\\wolfgang\\AppData\\Local\\hermes\\cache\\scratch\\v2-npm-size-negative-b_pgzqjv\\AgentMarketplaceV2"
+    },
+    {
+      "target": "OperatorCollateralVaultV2",
+      "runtimeBytes": 24001,
+      "command": "npm run size:v2",
+      "exitCode": 1,
+      "stdout": "\n> isolated-negative-artifact-fixture@1.0.0 size:v2\n> npm run build:v2 && node scripts/check-v2-size.js\n\n\n> isolated-negative-artifact-fixture@1.0.0 build:v2\n> node -e \"process.exit(0)\"\n\n",
+      "stderr": "WARN AgentMarketplaceV2 runtime 23908 is above 23500\nOperatorCollateralVaultV2 runtime 24001 exceeds 24000\n",
+      "sizeScriptMatchesProduction": true,
+      "checkerSha256": "860bd1c0201fe15675e3948797331c138f5d384de106a0279857f089cab75c2d",
+      "fixture": "C:\\Users\\wolfgang\\AppData\\Local\\hermes\\cache\\scratch\\v2-npm-size-negative-b_pgzqjv\\OperatorCollateralVaultV2"
+    }
+  ]
+}

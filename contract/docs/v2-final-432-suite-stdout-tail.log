@@ -1,0 +1,35 @@
+
+  OperatorCollateralVaultV2
+    ✔ pins token, marketplace, and treasury immutables to the predicted pair (543ms)
+    ✔ rejects zero constructor addresses and does not expose an admin/bind path (180ms)
+    ✔ deposits only the caller's stake, with exact received accounting (1150ms)
+(node:23236) PromiseRejectionHandledWarning: Promise rejection was handled asynchronously (rejection id: 34)
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:23236) PromiseRejectionHandledWarning: Promise rejection was handled asynchronously (rejection id: 33)
+(node:23236) PromiseRejectionHandledWarning: Promise rejection was handled asynchronously (rejection id: 35)
+(node:23236) PromiseRejectionHandledWarning: Promise rejection was handled asynchronously (rejection id: 36)
+    ✔ rejects unauthorized reserve lifecycle calls and preserves all accounting (1497ms)
+    ✔ reserves two jobs for one operator and isolates slash/release to the selected job (1275ms)
+    ✔ rejects zero/duplicate reservations without changing state (1121ms)
+    ✔ withdraws only free stake and leaves reserved collateral locked (1199ms)
+    ✔ releases a normal reserve exactly once (1334ms)
+    ✔ permits D-1 slash, rejects D slash, and permits D release (1395ms)
+    ✔ accepts a late markFault deadline and gives no fresh interval (1394ms)
+    ✔ sweeps only donated surplus and cannot encroach on free or reserved liabilities (1677ms)
+    ✔ uses checked ceil-ten-percent collateral, five-USDC floor, and cent rounding (629ms)
+    ✔ rejects false-return transfers atomically and swallows callback reentry (1756ms)
+    ✔ rolls back slash state when the marketplace receiver rejects the token (1296ms)
+
+  AgentMarketplaceV2 Stage B work-clock workflows
+    ✔ accepts unlimited client-approved extensions, including cumulative count above two (3577ms)
+    ✔ enforces extension roles, one pending request, expiry and exact 180-day cap (4642ms)
+    ✔ accepts extension expiry at D-1 and D, rejects D+1, and rejects stale/request-id mutations (4419ms)
+    ✔ does not pause delivery while an extension is pending and invalidates it on delivery (3456ms)
+    ✔ uses strict revision windows, full review reset, immutable delivery history and client expiry approval (7464ms)
+    ✔ allows only client access reports, max two per delivery version, and bounded repair (8072ms)
+    ✔ pins revision and review boundaries, rejects exhausted/zero evidence, and rejects late approval (7458ms)
+    ✔ restores the saved review window for identical-hash access repair and resets quota only on a new version (8518ms)
+    ✔ blocks late financial-right reversal at the delivery deadline (3799ms)
+
+
+  432 passing (15m)
