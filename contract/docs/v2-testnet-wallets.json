@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "network": "Arc Testnet",
+  "chainId": 5042002,
+  "roles": {
+    "deployer": "0xb86786b6683c0d057cbfe4513881870568c94d22",
+    "owner": "0xf5e14962e46f80faa40570bd86bcce83aa6626ff",
+    "treasury": "0xd520bee785a4b6bea15c94f20f640aaad00088ab",
+    "resolver": "0x8c1e3668528c7f1f2e56becdddb4f368de12d8d3",
+    "testOperator": "0x7c3a84c2f23b50cd7a70a597641776475abb59e7",
+    "testClient2": "0x64b223aa99f0a1e3cd151fb982e2fff9255035c8",
+    "house": "0x843dD6a6153D73d17dAA5D7fB0e8E3e250A76505",
+    "testClient": "0x305E306d13c1cF49E5023E13D19caC59072EC59e"
+  },
+  "manualClient": {
+    "address": "0x460EBe282Fb0e42B4d682a7f9EF408302417F780",
+    "control": "Yusuf",
+    "privateMaterial": "manual external wallet; not stored in this repository."
+  },
+  "privateMaterial": "Not stored in this repository. This manifest contains public addresses only.",
+  "mainnetReuse": "Forbidden"
+}
