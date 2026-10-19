@@ -1,0 +1,1801 @@
+{
+  "status": "passed",
+  "mode": "LOCAL_HARDHAT_ONLY",
+  "chainId": "31337",
+  "source": "in-process Hardhat; no Arc RPC",
+  "command": "npx hardhat run --no-compile --config hardhat.v2.config.js --network hardhat scripts/e2e-v2-testnet-local.js",
+  "scenarios": [
+    {
+      "name": "normal-delivery-approve-withdraw",
+      "status": "passed"
+    },
+    {
+      "name": "revision-corrected-submit-approve",
+      "status": "passed"
+    },
+    {
+      "name": "delivery-timeout-refund-fault-review-slash",
+      "status": "passed"
+    },
+    {
+      "name": "operator-fault-dispute-slash",
+      "status": "passed"
+    },
+    {
+      "name": "mutual-refund-no-fee-no-slash",
+      "status": "passed"
+    },
+    {
+      "name": "house-testjob-resolver-rejects",
+      "status": "passed"
+    }
+  ],
+  "receipts": [
+    {
+      "scenario": "setup",
+      "label": "deploy-vault",
+      "hash": "0x337d724a8fb4da8748f7deb5eee49933a33458aa4ee8ba21cab62335dd68be61",
+      "status": 1,
+      "block": 3,
+      "gasUsed": "1127885",
+      "from": "0xB86786b6683c0d057Cbfe4513881870568C94D22"
+    },
+    {
+      "scenario": "setup",
+      "label": "deploy-market",
+      "hash": "0x4d4424b93f6fc3bfcfc98c4ec7c6368b5c4c28039fd23689385d4abe3cc64731",
+      "status": 1,
+      "block": 4,
+      "gasUsed": "5392115",
+      "from": "0xB86786b6683c0d057Cbfe4513881870568C94D22"
+    },
+    {
+      "scenario": "setup",
+      "label": "set-resolver-client2",
+      "hash": "0x5f1f99f3ad4d2380833f92169079a9f4e509faa483e31ddd7a85e1f45957471e",
+      "status": 1,
+      "block": 5,
+      "gasUsed": "49449",
+      "from": "0xB86786b6683c0d057Cbfe4513881870568C94D22",
+      "jobs": {}
+    },
+    {
+      "scenario": "setup",
+      "label": "set-resolver-client",
+      "hash": "0xac447eed0e2c05989048d39ee701844c8a927a3ec784dc1535cd16676e811a22",
+      "status": 1,
+      "block": 6,
+      "gasUsed": "49449",
+      "from": "0xB86786b6683c0d057Cbfe4513881870568C94D22",
+      "jobs": {}
+    },
+    {
+      "scenario": "setup",
+      "label": "set-house",
+      "hash": "0x31ec0a5d79b4e10bd662ac6013ff5e4c36bbb61cfeefe522d8a41024887d7ecb",
+      "status": 1,
+      "block": 7,
+      "gasUsed": "49061",
+      "from": "0xB86786b6683c0d057Cbfe4513881870568C94D22",
+      "jobs": {}
+    },
+    {
+      "scenario": "setup",
+      "label": "set-test-client",
+      "hash": "0x1e7d710b48a1a7fad4d042a914b49f960fe4cecc269ec41e7fdc853246460650",
+      "status": 1,
+      "block": 8,
+      "gasUsed": "48951",
+      "from": "0xB86786b6683c0d057Cbfe4513881870568C94D22",
+      "jobs": {}
+    },
+    {
+      "scenario": "setup",
+      "label": "transfer-ownership",
+      "hash": "0xd1bfed24e8ce84e1fdaa2a5c6c26f2a0634e3c14124ee45911e913dd3fa6596d",
+      "status": 1,
+      "block": 9,
+      "gasUsed": "48760",
+      "from": "0xB86786b6683c0d057Cbfe4513881870568C94D22",
+      "jobs": {}
+    },
+    {
+      "scenario": "setup",
+      "label": "accept-ownership",
+      "hash": "0x8a96286a6973b2eada1fd391289d1314d6559d19cc8d40d1db44c4a3efa65625",
+      "status": 1,
+      "block": 10,
+      "gasUsed": "28730",
+      "from": "0xf5e14962e46F80fAA40570bD86BccE83AA6626fF",
+      "jobs": {}
+    },
+    {
+      "scenario": "setup",
+      "label": "set-policy",
+      "hash": "0x783c1cf9ad09a59cc433fc28b174e26060bee71fc5f19af6c7b5770955826e88",
+      "status": 1,
+      "block": 11,
+      "gasUsed": "30017",
+      "from": "0xf5e14962e46F80fAA40570bD86BccE83AA6626fF",
+      "jobs": {}
+    },
+    {
+      "scenario": "setup",
+      "label": "testOperator-approve-stake",
+      "hash": "0xbde64784ca0460ce566bc99aee2f968994bea8ea9affdf90cd272ade88a2daa3",
+      "status": 1,
+      "block": 17,
+      "gasUsed": "46330",
+      "from": "0x7c3A84C2F23B50Cd7A70A597641776475abb59e7",
+      "jobs": {}
+    },
+    {
+      "scenario": "setup",
+      "label": "testOperator-deposit-stake",
+      "hash": "0x8baf74f492e8ae0c75cf549bd434ffadfe715315c1a04cd72ba9103c66e9f572",
+      "status": 1,
+      "block": 18,
+      "gasUsed": "101469",
+      "from": "0x7c3A84C2F23B50Cd7A70A597641776475abb59e7",
+      "jobs": {}
+    },
+    {
+      "scenario": "setup",
+      "label": "testOperator-register-operator",
+      "hash": "0x030c48d69e018e7be47d1310631992598bb21ac77970b0778a7d114bb73e3e03",
+      "status": 1,
+      "block": 19,
+      "gasUsed": "44913",
+      "from": "0x7c3A84C2F23B50Cd7A70A597641776475abb59e7",
+      "jobs": {}
+    },
+    {
+      "scenario": "setup",
+      "label": "house-approve-stake",
+      "hash": "0x6f70f5deb289164e3820a5d63b0d01056d8be3835a4ab5cbb04d76f0e76413db",
+      "status": 1,
+      "block": 20,
+      "gasUsed": "46330",
+      "from": "0x843dD6a6153D73d17dAA5D7fB0e8E3e250A76505",
+      "jobs": {}
+    },
+    {
+      "scenario": "setup",
+      "label": "house-deposit-stake",
+      "hash": "0x0c2ca22edefc3f1557cb45e5c2b57f45b50c8c3386635ac230a9ea919cb48957",
+      "status": 1,
+      "block": 21,
+      "gasUsed": "67269",
+      "from": "0x843dD6a6153D73d17dAA5D7fB0e8E3e250A76505",
+      "jobs": {}
+    },
+    {
+      "scenario": "setup",
+      "label": "house-register-operator",
+      "hash": "0x3cd2d4983ed92b2c70106be08659070d22bdf9eaa29caf66c9baa26db41aaa0d",
+      "status": 1,
+      "block": 22,
+      "gasUsed": "44913",
+      "from": "0x843dD6a6153D73d17dAA5D7fB0e8E3e250A76505",
+      "jobs": {}
+    },
+    {
+      "scenario": "normal",
+      "label": "approve-job",
+      "hash": "0x0a03268793312e9a17f64af80248ae92a7f42c0518f74a8f4f8260038e296ae5",
+      "status": 1,
+      "block": 23,
+      "gasUsed": "46330",
+      "from": "0x64b223Aa99F0a1e3CD151fb982E2ffF9255035c8",
+      "jobs": {}
+    },
+    {
+      "scenario": "normal",
+      "label": "post-job",
+      "hash": "0x58bb4cf91514cdd99d13f14b5a17dd544893d5274a815e0ec770e076f4b8cb8a",
+      "status": 1,
+      "block": 24,
+      "gasUsed": "401130",
+      "from": "0x64b223Aa99F0a1e3CD151fb982E2ffF9255035c8",
+      "jobs": {
+        "1": {
+          "status": 0,
+          "stateVersion": "1",
+          "operator": "0x0000000000000000000000000000000000000000",
+          "client": "0x64b223Aa99F0a1e3CD151fb982E2ffF9255035c8",
+          "reward": "1000000",
+          "reserved": "0",
+          "active": "0"
+        }
+      }
+    },
+    {
+      "scenario": "normal",
+      "label": "award-job",
+      "hash": "0x572db8f7c1c746cfc0e8a40be94b03345a508a020867a81a4a78854635025f36",
+      "status": 1,
+      "block": 25,
+      "gasUsed": "298815",
+      "from": "0x64b223Aa99F0a1e3CD151fb982E2ffF9255035c8",
+      "jobs": {
+        "1": {
+          "status": 1,
+          "stateVersion": "2",
+          "operator": "0x7c3A84C2F23B50Cd7A70A597641776475abb59e7",
+          "client": "0x64b223Aa99F0a1e3CD151fb982E2ffF9255035c8",
+          "reward": "1000000",
+          "reserved": "5000000",
+          "active": "1"
+        }
+      }
+    },
+    {
+      "scenario": "normal",
+      "label": "submit-delivery",
+      "hash": "0x68b486909d004e990faa6f5e509f7407c036b49e38a0fed2641f674749f4c5d1",
+      "status": 1,
+      "block": 26,
+      "gasUsed": "124386",
+      "from": "0x7c3A84C2F23B50Cd7A70A597641776475abb59e7",
+      "jobs": {
+        "1": {
+          "status": 2,
+          "stateVersion": "3",
+          "operator": "0x7c3A84C2F23B50Cd7A70A597641776475abb59e7",
+          "client": "0x64b223Aa99F0a1e3CD151fb982E2ffF9255035c8",
+          "reward": "1000000",
+          "reserved": "5000000",
+          "active": "1"
+        }
+      }
+    },
+    {
+      "scenario": "normal",
+      "label": "approve",
+      "hash": "0x300409fe2be587e61a38e5ae2e1827ff1f7e9ac31a7d09d6950c275bd5eb2c38",
+      "status": 1,
+      "block": 27,
+      "gasUsed": "163011",
+      "from": "0x64b223Aa99F0a1e3CD151fb982E2ffF9255035c8",
+      "jobs": {
+        "1": {
+          "status": 6,
+          "stateVersion": "4",
+          "operator": "0x7c3A84C2F23B50Cd7A70A597641776475abb59e7",
+          "client": "0x64b223Aa99F0a1e3CD151fb982E2ffF9255035c8",
+          "reward": "1000000",
+          "reserved": "0",
+          "active": "0"
+        }
+      }
+    },
+    {
+      "scenario": "normal",
+      "label": "operator-withdraw",
+      "hash": "0xf8f6aebd4641eec7fce32fbacab3317736e23f4b5ce0553c174887c0215b4798",
+      "status": 1,
+      "block": 28,
+      "gasUsed": "67532",
+      "from": "0x7c3A84C2F23B50Cd7A70A597641776475abb59e7",
+      "jobs": {}
+    },
+    {
+      "scenario": "normal",
+      "label": "treasury-withdraw",
+      "hash": "0x049924169a5501853fa2cef6e478f7a9b4f4b8b11b00f592f5791432ce1bcc9e",
+      "status": 1,
+      "block": 29,
+      "gasUsed": "60106",
+      "from": "0xD520BEe785A4B6BEA15C94f20F640AAAd00088Ab",
+      "jobs": {}
+    },
+    {
+      "scenario": "revision",
+      "label": "approve-job",
+      "hash": "0xb9172d0d9683e26894de7e84505ce3566f2f75a3b995bdef35d2be99d318de10",
+      "status": 1,
+      "block": 30,
+      "gasUsed": "46330",
+      "from": "0x64b223Aa99F0a1e3CD151fb982E2ffF9255035c8",
+      "jobs": {}
+    },
+    {
+      "scenario": "revision",
+      "label": "post-job",
+      "hash": "0x4dd1dc9710efa3338f9b9150ec0395fc6ffe231db22f27df84c13b731855168d",
+      "status": 1,
+      "block": 31,
+      "gasUsed": "401130",
+      "from": "0x64b223Aa99F0a1e3CD151fb982E2ffF9255035c8",
+      "jobs": {
+        "2": {
+          "status": 0,
+          "stateVersion": "1",
+          "operator": "0x0000000000000000000000000000000000000000",
+          "client": "0x64b223Aa99F0a1e3CD151fb982E2ffF9255035c8",
+          "reward": "1000000",
+          "reserved": "0",
+          "active": "0"
+        }
+      }
+    },
+    {
+      "scenario": "revision",
+      "label": "award-job",
+      "hash": "0x50b940089321a65cf60b70746a2ca772aacb5386480c14b8111e34518cb2533e",
+      "status": 1,
+      "block": 32,
+      "gasUsed": "298791",
+      "from": "0x64b223Aa99F0a1e3CD151fb982E2ffF9255035c8",
+      "jobs": {
+        "2": {
+          "status": 1,
+          "stateVersion": "2",
+          "operator": "0x7c3A84C2F23B50Cd7A70A597641776475abb59e7",
+          "client": "0x64b223Aa99F0a1e3CD151fb982E2ffF9255035c8",
+          "reward": "1000000",
+          "reserved": "5000000",
+          "active": "1"
+        }
+      }
+    },
+    {
+      "scenario": "revision",
+      "label": "submit-bad",
+      "hash": "0xf308a536741a096c363dc0499791c4c3bdf238a04c405ac1e89056b062b7d5ad",
+      "status": 1,
+      "block": 33,
+      "gasUsed": "124386",
+      "from": "0x7c3A84C2F23B50Cd7A70A597641776475abb59e7",
+      "jobs": {
+        "2": {
+          "status": 2,
+          "stateVersion": "3",
+          "operator": "0x7c3A84C2F23B50Cd7A70A597641776475abb59e7",
+          "client": "0x64b223Aa99F0a1e3CD151fb982E2ffF9255035c8",
+          "reward": "1000000",
+          "reserved": "5000000",
+          "active": "1"
+        }
+      }
+    },
+    {
+      "scenario": "revision",
+      "label": "request-revision",
+      "hash": "0xc39b120bb54c9bee856201c1b4eabfc1591c3965f76d76c7a4a596ba8f7893ec",
+      "status": 1,
+      "block": 34,
+      "gasUsed": "130843",
+      "from": "0x64b223Aa99F0a1e3CD151fb982E2ffF9255035c8",
+      "jobs": {
+        "2": {
+          "status": 3,
+          "stateVersion": "4",
+          "operator": "0x7c3A84C2F23B50Cd7A70A597641776475abb59e7",
+          "client": "0x64b223Aa99F0a1e3CD151fb982E2ffF9255035c8",
+          "reward": "1000000",
+          "reserved": "5000000",
+          "active": "1"
+        }
+      }
+    },
+    {
+      "scenario": "revision",
+      "label": "submit-correction",
+      "hash": "0xc7c798e73e5e57d56a1348e4363dcf1ea1ecc2e966fc2a80c2c992e2ec405dbb",
+      "status": 1,
+      "block": 35,
+      "gasUsed": "96599",
+      "from": "0x7c3A84C2F23B50Cd7A70A597641776475abb59e7",
+      "jobs": {
+        "2": {
+          "status": 2,
+          "stateVersion": "5",
+          "operator": "0x7c3A84C2F23B50Cd7A70A597641776475abb59e7",
+          "client": "0x64b223Aa99F0a1e3CD151fb982E2ffF9255035c8",
+          "reward": "1000000",
+          "reserved": "5000000",
+          "active": "1"
+        }
+      }
+    },
+    {
+      "scenario": "revision",
+      "label": "approve",
+      "hash": "0x9fa5f0dcea9fe2ed661c40fe7464626d9510eeb5e957ca6502e6940ca15c34e0",
+      "status": 1,
+      "block": 36,
+      "gasUsed": "163011",
+      "from": "0x64b223Aa99F0a1e3CD151fb982E2ffF9255035c8",
+      "jobs": {
+        "2": {
+          "status": 6,
+          "stateVersion": "6",
+          "operator": "0x7c3A84C2F23B50Cd7A70A597641776475abb59e7",
+          "client": "0x64b223Aa99F0a1e3CD151fb982E2ffF9255035c8",
+          "reward": "1000000",
+          "reserved": "0",
+          "active": "0"
+        }
+      }
+    },
+    {
+      "scenario": "revision",
+      "label": "operator-withdraw",
+      "hash": "0x3167189e926e342d81c218d7fb203c352fba43e16c4e07b52c844c24b212353d",
+      "status": 1,
+      "block": 37,
+      "gasUsed": "50432",
+      "from": "0x7c3A84C2F23B50Cd7A70A597641776475abb59e7",
+      "jobs": {}
+    },
+    {
+      "scenario": "revision",
+      "label": "treasury-withdraw",
+      "hash": "0x66eb94f6764cb1ff1dba2a27dd3a6ee04acaccf75de1a4bf257c8be1149cb8cc",
+      "status": 1,
+      "block": 38,
+      "gasUsed": "46426",
+      "from": "0xD520BEe785A4B6BEA15C94f20F640AAAd00088Ab",
+      "jobs": {}
+    },
+    {
+      "scenario": "timeout",
+      "label": "approve-job",
+      "hash": "0x9e66f7a302eb52c0bf9197995db1f0fb6bc1997566a8c9cf0065b57654dbbc1e",
+      "status": 1,
+      "block": 39,
+      "gasUsed": "46330",
+      "from": "0x64b223Aa99F0a1e3CD151fb982E2ffF9255035c8",
+      "jobs": {}
+    },
+    {
+      "scenario": "timeout",
+      "label": "post-job",
+      "hash": "0xb4b651bdd3c6a8541d4f868057e741dd64f91705ea860cd2da26bc5ab2db3616",
+      "status": 1,
+      "block": 40,
+      "gasUsed": "401130",
+      "from": "0x64b223Aa99F0a1e3CD151fb982E2ffF9255035c8",
+      "jobs": {
+        "3": {
+          "status": 0,
+          "stateVersion": "1",
+          "operator": "0x0000000000000000000000000000000000000000",
+          "client": "0x64b223Aa99F0a1e3CD151fb982E2ffF9255035c8",
+          "reward": "1000000",
+          "reserved": "0",
+          "active": "0"
+        }
+      }
+    },
+    {
+      "scenario": "timeout",
+      "label": "award-job",
+      "hash": "0xe1a9d5aa8471ae79629086093d6e306cf7633aae3109a6506b72e6297f71e108",
+      "status": 1,
+      "block": 41,
+      "gasUsed": "298815",
+      "from": "0x64b223Aa99F0a1e3CD151fb982E2ffF9255035c8",
+      "jobs": {
+        "3": {
+          "status": 1,
+          "stateVersion": "2",
+          "operator": "0x7c3A84C2F23B50Cd7A70A597641776475abb59e7",
+          "client": "0x64b223Aa99F0a1e3CD151fb982E2ffF9255035c8",
+          "reward": "1000000",
+          "reserved": "5000000",
+          "active": "1"
+        }
+      }
+    },
+    {
+      "scenario": "timeout",
+      "label": "claim-timeout",
+      "hash": "0x4ac35c160eb330a2b7ea21501b36c0d85bd4d8a2f6f622cf26a101b716c1c0fa",
+      "status": 1,
+      "block": 43,
+      "gasUsed": "175838",
+      "from": "0x8c1E3668528c7F1f2e56becddDb4f368De12D8d3",
+      "jobs": {
+        "3": {
+          "status": 7,
+          "stateVersion": "3",
+          "operator": "0x7c3A84C2F23B50Cd7A70A597641776475abb59e7",
+          "client": "0x64b223Aa99F0a1e3CD151fb982E2ffF9255035c8",
+          "reward": "1000000",
+          "reserved": "5000000",
+          "active": "0"
+        }
+      }
+    },
+    {
+      "scenario": "timeout",
+      "label": "resolve-fault-review-full-slash",
+      "hash": "0x956e9b264784ab8c5145ff6c54300d2f38b2fa647e37aca9c8612b3ee452f2ba",
+      "status": 1,
+      "block": 44,
+      "gasUsed": "111253",
+      "from": "0x8c1E3668528c7F1f2e56becddDb4f368De12D8d3",
+      "jobs": {
+        "3": {
+          "status": 7,
+          "stateVersion": "4",
+          "operator": "0x7c3A84C2F23B50Cd7A70A597641776475abb59e7",
+          "client": "0x64b223Aa99F0a1e3CD151fb982E2ffF9255035c8",
+          "reward": "1000000",
+          "reserved": "0",
+          "active": "0"
+        }
+      }
+    },
+    {
+      "scenario": "timeout",
+      "label": "client-withdraw",
+      "hash": "0x126433171c5770cd0b12961ae9b831cca94f9d8385a648068b2a324c91d1e78f",
+      "status": 1,
+      "block": 46,
+      "gasUsed": "46426",
+      "from": "0x64b223Aa99F0a1e3CD151fb982E2ffF9255035c8",
+      "jobs": {}
+    },
+    {
+      "scenario": "fault",
+      "label": "approve-job",
+      "hash": "0x884924e6533dc64a3aff45f3cb562982877dd259d749642e3deae250f2e77e9c",
+      "status": 1,
+      "block": 47,
+      "gasUsed": "46330",
+      "from": "0x64b223Aa99F0a1e3CD151fb982E2ffF9255035c8",
+      "jobs": {}
+    },
+    {
+      "scenario": "fault",
+      "label": "post-job",
+      "hash": "0x0906ce65fec96fb9553455a568965f3eb2774671f0040dbcc031fecdfc952f54",
+      "status": 1,
+      "block": 48,
+      "gasUsed": "401130",
+      "from": "0x64b223Aa99F0a1e3CD151fb982E2ffF9255035c8",
+      "jobs": {
+        "4": {
+          "status": 0,
+          "stateVersion": "1",
+          "operator": "0x0000000000000000000000000000000000000000",
+          "client": "0x64b223Aa99F0a1e3CD151fb982E2ffF9255035c8",
+          "reward": "1000000",
+          "reserved": "0",
+          "active": "0"
+        }
+      }
+    },
+    {
+      "scenario": "fault",
+      "label": "award-job",
+      "hash": "0xbca8b483e25772baeb38b51ca0699b69b1d0cc7688d4d0b21918a1823863d4dd",
+      "status": 1,
+      "block": 49,
+      "gasUsed": "298815",
+      "from": "0x64b223Aa99F0a1e3CD151fb982E2ffF9255035c8",
+      "jobs": {
+        "4": {
+          "status": 1,
+          "stateVersion": "2",
+          "operator": "0x7c3A84C2F23B50Cd7A70A597641776475abb59e7",
+          "client": "0x64b223Aa99F0a1e3CD151fb982E2ffF9255035c8",
+          "reward": "1000000",
+          "reserved": "5000000",
+          "active": "1"
+        }
+      }
+    },
+    {
+      "scenario": "fault",
+      "label": "operator-open-dispute",
+      "hash": "0x65cab9e3853c41627c54b87d116d2a697ac974ab73091858c2145faddf43d566",
+      "status": 1,
+      "block": 50,
+      "gasUsed": "107667",
+      "from": "0x7c3A84C2F23B50Cd7A70A597641776475abb59e7",
+      "jobs": {
+        "4": {
+          "status": 5,
+          "stateVersion": "3",
+          "operator": "0x7c3A84C2F23B50Cd7A70A597641776475abb59e7",
+          "client": "0x64b223Aa99F0a1e3CD151fb982E2ffF9255035c8",
+          "reward": "1000000",
+          "reserved": "5000000",
+          "active": "1"
+        }
+      }
+    },
+    {
+      "scenario": "fault",
+      "label": "resolve-operator-fault",
+      "hash": "0x0be19bf003a31cf00c89ead5c85b96fbf4ba6c2bea1106fd01a4854810416898",
+      "status": 1,
+      "block": 51,
+      "gasUsed": "218162",
+      "from": "0x8c1E3668528c7F1f2e56becddDb4f368De12D8d3",
+      "jobs": {
+        "4": {
+          "status": 6,
+          "stateVersion": "4",
+          "operator": "0x7c3A84C2F23B50Cd7A70A597641776475abb59e7",
+          "client": "0x64b223Aa99F0a1e3CD151fb982E2ffF9255035c8",
+          "reward": "1000000",
+          "reserved": "0",
+          "active": "0"
+        }
+      }
+    },
+    {
+      "scenario": "fault",
+      "label": "client-withdraw",
+      "hash": "0x7fc01bdbd1d48eca6ea0bf001a445664fa9159cfdb153f7fb84baa4026a1ff35",
+      "status": 1,
+      "block": 52,
+      "gasUsed": "50432",
+      "from": "0x64b223Aa99F0a1e3CD151fb982E2ffF9255035c8",
+      "jobs": {}
+    },
+    {
+      "scenario": "fault",
+      "label": "treasury-withdraw",
+      "hash": "0x63583bde653b178a83f816d18c4cb8c345e663ccbf2945bf59b29014fda71dc5",
+      "status": 1,
+      "block": 53,
+      "gasUsed": "50432",
+      "from": "0xD520BEe785A4B6BEA15C94f20F640AAAd00088Ab",
+      "jobs": {}
+    },
+    {
+      "scenario": "fault",
+      "label": "operator-withdraw",
+      "hash": "0x673d98c2667cf4a04f9a870602ba3bc86dfc38c8db8225ba24c993cc816e77fc",
+      "status": 1,
+      "block": 54,
+      "gasUsed": "46426",
+      "from": "0x7c3A84C2F23B50Cd7A70A597641776475abb59e7",
+      "jobs": {}
+    },
+    {
+      "scenario": "mutual",
+      "label": "approve-job",
+      "hash": "0xc62b2e36f6c87fbeb45275ddde73c0ebac83b823e9ebd5b7d83f4499cee01dd3",
+      "status": 1,
+      "block": 55,
+      "gasUsed": "46330",
+      "from": "0x64b223Aa99F0a1e3CD151fb982E2ffF9255035c8",
+      "jobs": {}
+    },
+    {
+      "scenario": "mutual",
+      "label": "post-job",
+      "hash": "0x55a51a9b4546f5cc7585e869aac015c870cc7adeb2303db63eaaa095e92e67c7",
+      "status": 1,
+      "block": 56,
+      "gasUsed": "401118",
+      "from": "0x64b223Aa99F0a1e3CD151fb982E2ffF9255035c8",
+      "jobs": {
+        "5": {
+          "status": 0,
+          "stateVersion": "1",
+          "operator": "0x0000000000000000000000000000000000000000",
+          "client": "0x64b223Aa99F0a1e3CD151fb982E2ffF9255035c8",
+          "reward": "1000000",
+          "reserved": "0",
+          "active": "0"
+        }
+      }
+    },
+    {
+      "scenario": "mutual",
+      "label": "award-job",
+      "hash": "0xbc23c11f7a8aa3a598f96f3a6f3e6354829affdd9b3b4eb5af94c272c454dc61",
+      "status": 1,
+      "block": 57,
+      "gasUsed": "294003",
+      "from": "0x64b223Aa99F0a1e3CD151fb982E2ffF9255035c8",
+      "jobs": {
+        "5": {
+          "status": 1,
+          "stateVersion": "2",
+          "operator": "0x7c3A84C2F23B50Cd7A70A597641776475abb59e7",
+          "client": "0x64b223Aa99F0a1e3CD151fb982E2ffF9255035c8",
+          "reward": "1000000",
+          "reserved": "5000000",
+          "active": "1"
+        }
+      }
+    },
+    {
+      "scenario": "mutual",
+      "label": "propose-mutual",
+      "hash": "0x19461966de9773a86b225f82fe92af29a904580587c998c168775e127de3f944",
+      "status": 1,
+      "block": 58,
+      "gasUsed": "128862",
+      "from": "0x64b223Aa99F0a1e3CD151fb982E2ffF9255035c8",
+      "jobs": {
+        "5": {
+          "status": 1,
+          "stateVersion": "2",
+          "operator": "0x7c3A84C2F23B50Cd7A70A597641776475abb59e7",
+          "client": "0x64b223Aa99F0a1e3CD151fb982E2ffF9255035c8",
+          "reward": "1000000",
+          "reserved": "5000000",
+          "active": "1"
+        }
+      }
+    },
+    {
+      "scenario": "mutual",
+      "label": "accept-mutual",
+      "hash": "0x956b20c2860adfd9b301d5cfd6db658bb36b13844bf2ba82d1f44f1128af4ab0",
+      "status": 1,
+      "block": 59,
+      "gasUsed": "172756",
+      "from": "0x7c3A84C2F23B50Cd7A70A597641776475abb59e7",
+      "jobs": {
+        "5": {
+          "status": 7,
+          "stateVersion": "3",
+          "operator": "0x7c3A84C2F23B50Cd7A70A597641776475abb59e7",
+          "client": "0x64b223Aa99F0a1e3CD151fb982E2ffF9255035c8",
+          "reward": "1000000",
+          "reserved": "0",
+          "active": "0"
+        }
+      }
+    },
+    {
+      "scenario": "mutual",
+      "label": "client-withdraw",
+      "hash": "0xe7921023f1dd422df77e691fd567176f084234ce031f59e04f70da767157b7d8",
+      "status": 1,
+      "block": 60,
+      "gasUsed": "46426",
+      "from": "0x64b223Aa99F0a1e3CD151fb982E2ffF9255035c8",
+      "jobs": {}
+    },
+    {
+      "scenario": "house",
+      "label": "approve-job",
+      "hash": "0xbef6ad1de8649c740f6c5ba08149f0b69e66988d0ddf771f53aae2e90509f671",
+      "status": 1,
+      "block": 61,
+      "gasUsed": "46330",
+      "from": "0x305E306d13c1cF49E5023E13D19caC59072EC59e",
+      "jobs": {}
+    },
+    {
+      "scenario": "house",
+      "label": "post-job",
+      "hash": "0x04a426464bb252413a0ec67474d77436782702ba02f118594a4a20412a8c73c7",
+      "status": 1,
+      "block": 62,
+      "gasUsed": "418430",
+      "from": "0x305E306d13c1cF49E5023E13D19caC59072EC59e",
+      "jobs": {
+        "6": {
+          "status": 0,
+          "stateVersion": "1",
+          "operator": "0x0000000000000000000000000000000000000000",
+          "client": "0x305E306d13c1cF49E5023E13D19caC59072EC59e",
+          "reward": "1000000",
+          "reserved": "0",
+          "active": "0"
+        }
+      }
+    },
+    {
+      "scenario": "house",
+      "label": "award-house",
+      "hash": "0x259e7a5a364d7378838870e9c1f19957f823c23294b8735066b865d0448e4a80",
+      "status": 1,
+      "block": 63,
+      "gasUsed": "280179",
+      "from": "0x305E306d13c1cF49E5023E13D19caC59072EC59e",
+      "jobs": {
+        "6": {
+          "status": 1,
+          "stateVersion": "2",
+          "operator": "0x843dD6a6153D73d17dAA5D7fB0e8E3e250A76505",
+          "client": "0x305E306d13c1cF49E5023E13D19caC59072EC59e",
+          "reward": "1000000",
+          "reserved": "5000000",
+          "active": "1"
+        }
+      }
+    },
+    {
+      "scenario": "house",
+      "label": "open-dispute",
+      "hash": "0xf325707e0d39bcb044a64a170f4db6ac1de7a1109e60c003c5d5541f45e60b6c",
+      "status": 1,
+      "block": 64,
+      "gasUsed": "107455",
+      "from": "0x305E306d13c1cF49E5023E13D19caC59072EC59e",
+      "jobs": {
+        "6": {
+          "status": 5,
+          "stateVersion": "3",
+          "operator": "0x843dD6a6153D73d17dAA5D7fB0e8E3e250A76505",
+          "client": "0x305E306d13c1cF49E5023E13D19caC59072EC59e",
+          "reward": "1000000",
+          "reserved": "5000000",
+          "active": "1"
+        }
+      }
+    },
+    {
+      "scenario": "house",
+      "label": "claim-dispute-timeout",
+      "hash": "0xcf56525085c38959527288abc4a95126f2bfa4ba3e67d65e88ee0e8e04a0f3ef",
+      "status": 1,
+      "block": 67,
+      "gasUsed": "166718",
+      "from": "0x8c1E3668528c7F1f2e56becddDb4f368De12D8d3",
+      "jobs": {
+        "6": {
+          "status": 7,
+          "stateVersion": "4",
+          "operator": "0x843dD6a6153D73d17dAA5D7fB0e8E3e250A76505",
+          "client": "0x305E306d13c1cF49E5023E13D19caC59072EC59e",
+          "reward": "1000000",
+          "reserved": "0",
+          "active": "0"
+        }
+      }
+    },
+    {
+      "scenario": "house",
+      "label": "client-withdraw",
+      "hash": "0xbb1a1d7639be872ad7f847085e1d8853713ff6c21923a1655bd37d1c8bc750c1",
+      "status": 1,
+      "block": 68,
+      "gasUsed": "60106",
+      "from": "0x305E306d13c1cF49E5023E13D19caC59072EC59e",
+      "jobs": {}
+    }
+  ],
+  "expectedReverts": [
+    {
+      "scenario": "timeout",
+      "label": "double-slash-revert",
+      "error": "VM Exception while processing transaction: reverted with custom error 'Unauthorized()'",
+      "jobsBefore": {
+        "3": {
+          "status": 7,
+          "stateVersion": "4",
+          "operator": "0x7c3A84C2F23B50Cd7A70A597641776475abb59e7",
+          "client": "0x64b223Aa99F0a1e3CD151fb982E2ffF9255035c8",
+          "reward": "1000000",
+          "reserved": "0",
+          "active": "0"
+        }
+      },
+      "jobsAfter": {
+        "3": {
+          "status": 7,
+          "stateVersion": "4",
+          "operator": "0x7c3A84C2F23B50Cd7A70A597641776475abb59e7",
+          "client": "0x64b223Aa99F0a1e3CD151fb982E2ffF9255035c8",
+          "reward": "1000000",
+          "reserved": "0",
+          "active": "0"
+        }
+      }
+    },
+    {
+      "scenario": "house",
+      "label": "house-resolver-rejected-by-policy",
+      "error": "VM Exception while processing transaction: reverted with custom error 'Unauthorized()'",
+      "jobsBefore": {
+        "6": {
+          "status": 5,
+          "stateVersion": "3",
+          "operator": "0x843dD6a6153D73d17dAA5D7fB0e8E3e250A76505",
+          "client": "0x305E306d13c1cF49E5023E13D19caC59072EC59e",
+          "reward": "1000000",
+          "reserved": "5000000",
+          "active": "1"
+        }
+      },
+      "jobsAfter": {
+        "6": {
+          "status": 5,
+          "stateVersion": "3",
+          "operator": "0x843dD6a6153D73d17dAA5D7fB0e8E3e250A76505",
+          "client": "0x305E306d13c1cF49E5023E13D19caC59072EC59e",
+          "reward": "1000000",
+          "reserved": "5000000",
+          "active": "1"
+        }
+      }
+    }
+  ],
+  "accounting": [
+    {
+      "label": "setup:set-resolver-client2",
+      "marketBalance": "0",
+      "vaultBalance": "0",
+      "escrowed": "0",
+      "creditsLiability": "0",
+      "freeStake": "0",
+      "reservedStake": "0",
+      "stakeLiability": "0",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "0"
+    },
+    {
+      "label": "setup:set-resolver-client",
+      "marketBalance": "0",
+      "vaultBalance": "0",
+      "escrowed": "0",
+      "creditsLiability": "0",
+      "freeStake": "0",
+      "reservedStake": "0",
+      "stakeLiability": "0",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "0"
+    },
+    {
+      "label": "setup:set-house",
+      "marketBalance": "0",
+      "vaultBalance": "0",
+      "escrowed": "0",
+      "creditsLiability": "0",
+      "freeStake": "0",
+      "reservedStake": "0",
+      "stakeLiability": "0",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "0"
+    },
+    {
+      "label": "setup:set-test-client",
+      "marketBalance": "0",
+      "vaultBalance": "0",
+      "escrowed": "0",
+      "creditsLiability": "0",
+      "freeStake": "0",
+      "reservedStake": "0",
+      "stakeLiability": "0",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "0"
+    },
+    {
+      "label": "setup:transfer-ownership",
+      "marketBalance": "0",
+      "vaultBalance": "0",
+      "escrowed": "0",
+      "creditsLiability": "0",
+      "freeStake": "0",
+      "reservedStake": "0",
+      "stakeLiability": "0",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "0"
+    },
+    {
+      "label": "setup:accept-ownership",
+      "marketBalance": "0",
+      "vaultBalance": "0",
+      "escrowed": "0",
+      "creditsLiability": "0",
+      "freeStake": "0",
+      "reservedStake": "0",
+      "stakeLiability": "0",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "0"
+    },
+    {
+      "label": "setup:set-policy",
+      "marketBalance": "0",
+      "vaultBalance": "0",
+      "escrowed": "0",
+      "creditsLiability": "0",
+      "freeStake": "0",
+      "reservedStake": "0",
+      "stakeLiability": "0",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "0"
+    },
+    {
+      "label": "setup:testOperator-approve-stake",
+      "marketBalance": "0",
+      "vaultBalance": "0",
+      "escrowed": "0",
+      "creditsLiability": "0",
+      "freeStake": "0",
+      "reservedStake": "0",
+      "stakeLiability": "0",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "0"
+    },
+    {
+      "label": "setup:testOperator-deposit-stake",
+      "marketBalance": "0",
+      "vaultBalance": "15000000",
+      "escrowed": "0",
+      "creditsLiability": "0",
+      "freeStake": "15000000",
+      "reservedStake": "0",
+      "stakeLiability": "15000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "0"
+    },
+    {
+      "label": "setup:testOperator-register-operator",
+      "marketBalance": "0",
+      "vaultBalance": "15000000",
+      "escrowed": "0",
+      "creditsLiability": "0",
+      "freeStake": "15000000",
+      "reservedStake": "0",
+      "stakeLiability": "15000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "0"
+    },
+    {
+      "label": "setup:house-approve-stake",
+      "marketBalance": "0",
+      "vaultBalance": "15000000",
+      "escrowed": "0",
+      "creditsLiability": "0",
+      "freeStake": "15000000",
+      "reservedStake": "0",
+      "stakeLiability": "15000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "0"
+    },
+    {
+      "label": "setup:house-deposit-stake",
+      "marketBalance": "0",
+      "vaultBalance": "20000000",
+      "escrowed": "0",
+      "creditsLiability": "0",
+      "freeStake": "20000000",
+      "reservedStake": "0",
+      "stakeLiability": "20000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "0"
+    },
+    {
+      "label": "setup:house-register-operator",
+      "marketBalance": "0",
+      "vaultBalance": "20000000",
+      "escrowed": "0",
+      "creditsLiability": "0",
+      "freeStake": "20000000",
+      "reservedStake": "0",
+      "stakeLiability": "20000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "0"
+    },
+    {
+      "label": "setup",
+      "marketBalance": "0",
+      "vaultBalance": "20000000",
+      "escrowed": "0",
+      "creditsLiability": "0",
+      "freeStake": "20000000",
+      "reservedStake": "0",
+      "stakeLiability": "20000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "0"
+    },
+    {
+      "label": "normal:approve-job",
+      "marketBalance": "0",
+      "vaultBalance": "20000000",
+      "escrowed": "0",
+      "creditsLiability": "0",
+      "freeStake": "20000000",
+      "reservedStake": "0",
+      "stakeLiability": "20000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "0"
+    },
+    {
+      "label": "normal:post-job",
+      "marketBalance": "1000000",
+      "vaultBalance": "20000000",
+      "escrowed": "1000000",
+      "creditsLiability": "0",
+      "freeStake": "20000000",
+      "reservedStake": "0",
+      "stakeLiability": "20000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "0"
+    },
+    {
+      "label": "normal:award-job",
+      "marketBalance": "1000000",
+      "vaultBalance": "20000000",
+      "escrowed": "1000000",
+      "creditsLiability": "0",
+      "freeStake": "15000000",
+      "reservedStake": "5000000",
+      "stakeLiability": "20000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "1"
+    },
+    {
+      "label": "normal:submit-delivery",
+      "marketBalance": "1000000",
+      "vaultBalance": "20000000",
+      "escrowed": "1000000",
+      "creditsLiability": "0",
+      "freeStake": "15000000",
+      "reservedStake": "5000000",
+      "stakeLiability": "20000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "1"
+    },
+    {
+      "label": "normal:approve",
+      "marketBalance": "1000000",
+      "vaultBalance": "20000000",
+      "escrowed": "0",
+      "creditsLiability": "1000000",
+      "freeStake": "20000000",
+      "reservedStake": "0",
+      "stakeLiability": "20000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "0"
+    },
+    {
+      "label": "normal:operator-withdraw",
+      "marketBalance": "50000",
+      "vaultBalance": "20000000",
+      "escrowed": "0",
+      "creditsLiability": "50000",
+      "freeStake": "20000000",
+      "reservedStake": "0",
+      "stakeLiability": "20000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "0"
+    },
+    {
+      "label": "normal:treasury-withdraw",
+      "marketBalance": "0",
+      "vaultBalance": "20000000",
+      "escrowed": "0",
+      "creditsLiability": "0",
+      "freeStake": "20000000",
+      "reservedStake": "0",
+      "stakeLiability": "20000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "0"
+    },
+    {
+      "label": "revision:approve-job",
+      "marketBalance": "0",
+      "vaultBalance": "20000000",
+      "escrowed": "0",
+      "creditsLiability": "0",
+      "freeStake": "20000000",
+      "reservedStake": "0",
+      "stakeLiability": "20000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "0"
+    },
+    {
+      "label": "revision:post-job",
+      "marketBalance": "1000000",
+      "vaultBalance": "20000000",
+      "escrowed": "1000000",
+      "creditsLiability": "0",
+      "freeStake": "20000000",
+      "reservedStake": "0",
+      "stakeLiability": "20000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "0"
+    },
+    {
+      "label": "revision:award-job",
+      "marketBalance": "1000000",
+      "vaultBalance": "20000000",
+      "escrowed": "1000000",
+      "creditsLiability": "0",
+      "freeStake": "15000000",
+      "reservedStake": "5000000",
+      "stakeLiability": "20000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "1"
+    },
+    {
+      "label": "revision:submit-bad",
+      "marketBalance": "1000000",
+      "vaultBalance": "20000000",
+      "escrowed": "1000000",
+      "creditsLiability": "0",
+      "freeStake": "15000000",
+      "reservedStake": "5000000",
+      "stakeLiability": "20000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "1"
+    },
+    {
+      "label": "revision:request-revision",
+      "marketBalance": "1000000",
+      "vaultBalance": "20000000",
+      "escrowed": "1000000",
+      "creditsLiability": "0",
+      "freeStake": "15000000",
+      "reservedStake": "5000000",
+      "stakeLiability": "20000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "1"
+    },
+    {
+      "label": "revision:submit-correction",
+      "marketBalance": "1000000",
+      "vaultBalance": "20000000",
+      "escrowed": "1000000",
+      "creditsLiability": "0",
+      "freeStake": "15000000",
+      "reservedStake": "5000000",
+      "stakeLiability": "20000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "1"
+    },
+    {
+      "label": "revision:approve",
+      "marketBalance": "1000000",
+      "vaultBalance": "20000000",
+      "escrowed": "0",
+      "creditsLiability": "1000000",
+      "freeStake": "20000000",
+      "reservedStake": "0",
+      "stakeLiability": "20000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "0"
+    },
+    {
+      "label": "revision:operator-withdraw",
+      "marketBalance": "50000",
+      "vaultBalance": "20000000",
+      "escrowed": "0",
+      "creditsLiability": "50000",
+      "freeStake": "20000000",
+      "reservedStake": "0",
+      "stakeLiability": "20000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "0"
+    },
+    {
+      "label": "revision:treasury-withdraw",
+      "marketBalance": "0",
+      "vaultBalance": "20000000",
+      "escrowed": "0",
+      "creditsLiability": "0",
+      "freeStake": "20000000",
+      "reservedStake": "0",
+      "stakeLiability": "20000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "0"
+    },
+    {
+      "label": "timeout:approve-job",
+      "marketBalance": "0",
+      "vaultBalance": "20000000",
+      "escrowed": "0",
+      "creditsLiability": "0",
+      "freeStake": "20000000",
+      "reservedStake": "0",
+      "stakeLiability": "20000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "0"
+    },
+    {
+      "label": "timeout:post-job",
+      "marketBalance": "1000000",
+      "vaultBalance": "20000000",
+      "escrowed": "1000000",
+      "creditsLiability": "0",
+      "freeStake": "20000000",
+      "reservedStake": "0",
+      "stakeLiability": "20000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "0"
+    },
+    {
+      "label": "timeout:award-job",
+      "marketBalance": "1000000",
+      "vaultBalance": "20000000",
+      "escrowed": "1000000",
+      "creditsLiability": "0",
+      "freeStake": "15000000",
+      "reservedStake": "5000000",
+      "stakeLiability": "20000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "1"
+    },
+    {
+      "label": "timeout:claim-timeout",
+      "marketBalance": "1000000",
+      "vaultBalance": "20000000",
+      "escrowed": "0",
+      "creditsLiability": "1000000",
+      "freeStake": "15000000",
+      "reservedStake": "5000000",
+      "stakeLiability": "20000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "0"
+    },
+    {
+      "label": "timeout:resolve-fault-review-full-slash",
+      "marketBalance": "6000000",
+      "vaultBalance": "15000000",
+      "escrowed": "0",
+      "creditsLiability": "6000000",
+      "freeStake": "15000000",
+      "reservedStake": "0",
+      "stakeLiability": "15000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "0"
+    },
+    {
+      "label": "timeout:double-slash-revert:before",
+      "marketBalance": "6000000",
+      "vaultBalance": "15000000",
+      "escrowed": "0",
+      "creditsLiability": "6000000",
+      "freeStake": "15000000",
+      "reservedStake": "0",
+      "stakeLiability": "15000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "0"
+    },
+    {
+      "label": "timeout:double-slash-revert:after",
+      "marketBalance": "6000000",
+      "vaultBalance": "15000000",
+      "escrowed": "0",
+      "creditsLiability": "6000000",
+      "freeStake": "15000000",
+      "reservedStake": "0",
+      "stakeLiability": "15000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "0"
+    },
+    {
+      "label": "timeout:client-withdraw",
+      "marketBalance": "0",
+      "vaultBalance": "15000000",
+      "escrowed": "0",
+      "creditsLiability": "0",
+      "freeStake": "15000000",
+      "reservedStake": "0",
+      "stakeLiability": "15000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "0"
+    },
+    {
+      "label": "fault:approve-job",
+      "marketBalance": "0",
+      "vaultBalance": "15000000",
+      "escrowed": "0",
+      "creditsLiability": "0",
+      "freeStake": "15000000",
+      "reservedStake": "0",
+      "stakeLiability": "15000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "0"
+    },
+    {
+      "label": "fault:post-job",
+      "marketBalance": "1000000",
+      "vaultBalance": "15000000",
+      "escrowed": "1000000",
+      "creditsLiability": "0",
+      "freeStake": "15000000",
+      "reservedStake": "0",
+      "stakeLiability": "15000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "0"
+    },
+    {
+      "label": "fault:award-job",
+      "marketBalance": "1000000",
+      "vaultBalance": "15000000",
+      "escrowed": "1000000",
+      "creditsLiability": "0",
+      "freeStake": "10000000",
+      "reservedStake": "5000000",
+      "stakeLiability": "15000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "1"
+    },
+    {
+      "label": "fault:operator-open-dispute",
+      "marketBalance": "1000000",
+      "vaultBalance": "15000000",
+      "escrowed": "1000000",
+      "creditsLiability": "0",
+      "freeStake": "10000000",
+      "reservedStake": "5000000",
+      "stakeLiability": "15000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "1"
+    },
+    {
+      "label": "fault:resolve-operator-fault",
+      "marketBalance": "6000000",
+      "vaultBalance": "10000000",
+      "escrowed": "0",
+      "creditsLiability": "6000000",
+      "freeStake": "10000000",
+      "reservedStake": "0",
+      "stakeLiability": "10000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "0"
+    },
+    {
+      "label": "fault:client-withdraw",
+      "marketBalance": "500000",
+      "vaultBalance": "10000000",
+      "escrowed": "0",
+      "creditsLiability": "500000",
+      "freeStake": "10000000",
+      "reservedStake": "0",
+      "stakeLiability": "10000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "0"
+    },
+    {
+      "label": "fault:treasury-withdraw",
+      "marketBalance": "475000",
+      "vaultBalance": "10000000",
+      "escrowed": "0",
+      "creditsLiability": "475000",
+      "freeStake": "10000000",
+      "reservedStake": "0",
+      "stakeLiability": "10000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "0"
+    },
+    {
+      "label": "fault:operator-withdraw",
+      "marketBalance": "0",
+      "vaultBalance": "10000000",
+      "escrowed": "0",
+      "creditsLiability": "0",
+      "freeStake": "10000000",
+      "reservedStake": "0",
+      "stakeLiability": "10000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "0"
+    },
+    {
+      "label": "mutual:approve-job",
+      "marketBalance": "0",
+      "vaultBalance": "10000000",
+      "escrowed": "0",
+      "creditsLiability": "0",
+      "freeStake": "10000000",
+      "reservedStake": "0",
+      "stakeLiability": "10000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "0"
+    },
+    {
+      "label": "mutual:post-job",
+      "marketBalance": "1000000",
+      "vaultBalance": "10000000",
+      "escrowed": "1000000",
+      "creditsLiability": "0",
+      "freeStake": "10000000",
+      "reservedStake": "0",
+      "stakeLiability": "10000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "0"
+    },
+    {
+      "label": "mutual:award-job",
+      "marketBalance": "1000000",
+      "vaultBalance": "10000000",
+      "escrowed": "1000000",
+      "creditsLiability": "0",
+      "freeStake": "5000000",
+      "reservedStake": "5000000",
+      "stakeLiability": "10000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "1"
+    },
+    {
+      "label": "mutual:propose-mutual",
+      "marketBalance": "1000000",
+      "vaultBalance": "10000000",
+      "escrowed": "1000000",
+      "creditsLiability": "0",
+      "freeStake": "5000000",
+      "reservedStake": "5000000",
+      "stakeLiability": "10000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "1"
+    },
+    {
+      "label": "mutual:accept-mutual",
+      "marketBalance": "1000000",
+      "vaultBalance": "10000000",
+      "escrowed": "0",
+      "creditsLiability": "1000000",
+      "freeStake": "10000000",
+      "reservedStake": "0",
+      "stakeLiability": "10000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "0"
+    },
+    {
+      "label": "mutual:client-withdraw",
+      "marketBalance": "0",
+      "vaultBalance": "10000000",
+      "escrowed": "0",
+      "creditsLiability": "0",
+      "freeStake": "10000000",
+      "reservedStake": "0",
+      "stakeLiability": "10000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "0"
+    },
+    {
+      "label": "house:approve-job",
+      "marketBalance": "0",
+      "vaultBalance": "10000000",
+      "escrowed": "0",
+      "creditsLiability": "0",
+      "freeStake": "10000000",
+      "reservedStake": "0",
+      "stakeLiability": "10000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "0"
+    },
+    {
+      "label": "house:post-job",
+      "marketBalance": "1000000",
+      "vaultBalance": "10000000",
+      "escrowed": "1000000",
+      "creditsLiability": "0",
+      "freeStake": "10000000",
+      "reservedStake": "0",
+      "stakeLiability": "10000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "0"
+    },
+    {
+      "label": "house:award-house",
+      "marketBalance": "1000000",
+      "vaultBalance": "10000000",
+      "escrowed": "1000000",
+      "creditsLiability": "0",
+      "freeStake": "5000000",
+      "reservedStake": "5000000",
+      "stakeLiability": "10000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "1"
+    },
+    {
+      "label": "house:open-dispute",
+      "marketBalance": "1000000",
+      "vaultBalance": "10000000",
+      "escrowed": "1000000",
+      "creditsLiability": "0",
+      "freeStake": "5000000",
+      "reservedStake": "5000000",
+      "stakeLiability": "10000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "1"
+    },
+    {
+      "label": "house:house-resolver-rejected-by-policy:before",
+      "marketBalance": "1000000",
+      "vaultBalance": "10000000",
+      "escrowed": "1000000",
+      "creditsLiability": "0",
+      "freeStake": "5000000",
+      "reservedStake": "5000000",
+      "stakeLiability": "10000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "1"
+    },
+    {
+      "label": "house:house-resolver-rejected-by-policy:after",
+      "marketBalance": "1000000",
+      "vaultBalance": "10000000",
+      "escrowed": "1000000",
+      "creditsLiability": "0",
+      "freeStake": "5000000",
+      "reservedStake": "5000000",
+      "stakeLiability": "10000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "1"
+    },
+    {
+      "label": "house:claim-dispute-timeout",
+      "marketBalance": "1000000",
+      "vaultBalance": "10000000",
+      "escrowed": "0",
+      "creditsLiability": "1000000",
+      "freeStake": "10000000",
+      "reservedStake": "0",
+      "stakeLiability": "10000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "0"
+    },
+    {
+      "label": "house:client-withdraw",
+      "marketBalance": "0",
+      "vaultBalance": "10000000",
+      "escrowed": "0",
+      "creditsLiability": "0",
+      "freeStake": "10000000",
+      "reservedStake": "0",
+      "stakeLiability": "10000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "0"
+    },
+    {
+      "label": "final",
+      "marketBalance": "0",
+      "vaultBalance": "10000000",
+      "escrowed": "0",
+      "creditsLiability": "0",
+      "freeStake": "10000000",
+      "reservedStake": "0",
+      "stakeLiability": "10000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "0"
+    }
+  ],
+  "gasByRole": {
+    "deployer": "6765670",
+    "owner": "58747",
+    "testOperator": "982896",
+    "house": "158512",
+    "testClient2": "4455538",
+    "treasury": "156964",
+    "resolver": "671971",
+    "testClient": "912500"
+  },
+  "checks": [
+    {
+      "type": "local-erc1271-simulation",
+      "addresses": [
+        "0x843dD6a6153D73d17dAA5D7fB0e8E3e250A76505"
+      ],
+      "note": "House signature is local-only ERC-1271 simulation; testnet requires Yusuf-provided EOA signature"
+    },
+    {
+      "type": "testOperator-signature",
+      "mode": "ECDSA-keystore-bound-31337",
+      "role": "testOperator",
+      "verifyingContract": "per-deployed-local-market",
+      "note": "signature bytes are kept out of evidence"
+    },
+    {
+      "type": "immutable-runtime",
+      "contract": "OperatorCollateralVaultV2",
+      "address": "0xD5B271b7Bf4696d662B2bcB1a94b408887c6C423",
+      "bytes": 4854,
+      "templateHash": "0xc11a1314025fca9eb4fb196c6cae0d6dfc53bc847a675f56cbed5204f015ef5f",
+      "normalizedHash": "0xc11a1314025fca9eb4fb196c6cae0d6dfc53bc847a675f56cbed5204f015ef5f",
+      "deployedHash": "0xed40ff9e0d46e4257dd2f37b95372f59e1c01e780535fc1837aa0993f4d1f705",
+      "immutableValues": {
+        "marketplace": "0xFA156B7A5205B123c8a22A807ba98405e36130f1",
+        "token": "0x95bD8D42f30351685e96C62EDdc0d0613bf9a87A",
+        "treasury": "0xD520BEe785A4B6BEA15C94f20F640AAAd00088Ab"
+      }
+    },
+    {
+      "type": "immutable-runtime",
+      "contract": "AgentMarketplaceV2",
+      "address": "0xFA156B7A5205B123c8a22A807ba98405e36130f1",
+      "bytes": 23908,
+      "templateHash": "0x7d24e8ddcdcb8b42aa93c453c363ad0b25f259e38362d5a11df3d5a87ed45166",
+      "normalizedHash": "0x7d24e8ddcdcb8b42aa93c453c363ad0b25f259e38362d5a11df3d5a87ed45166",
+      "deployedHash": "0x42f42d819cec95d33eb52deffbd615f2d4d8b4a92fb6a7584eff7c883644fdd8",
+      "immutableValues": {
+        "collateralVault": "0xD5B271b7Bf4696d662B2bcB1a94b408887c6C423",
+        "usdc": "0x95bD8D42f30351685e96C62EDdc0d0613bf9a87A",
+        "_name": "AlphaBoard Agent Marketplace V2",
+        "_version": "1",
+        "_cachedThis": "0xFA156B7A5205B123c8a22A807ba98405e36130f1",
+        "_cachedDomainSeparator": "0xd686540c306663076a2022b819210116e76990ff32d4015c8b7a4f182d28e327",
+        "_hashedName": "0xb3733c3a83a7725883224cb7b235f11ba85e12bc875aab321c73e88b29ba9e7b",
+        "_hashedVersion": "0xc89efdaa54c0f20c7adf612882df0950f5a951637e0307cdcb4c672f298b8bc6",
+        "_cachedChainId": "31337"
+      }
+    },
+    {
+      "type": "pair-readback",
+      "token": "0x95bD8D42f30351685e96C62EDdc0d0613bf9a87A",
+      "market": "0xFA156B7A5205B123c8a22A807ba98405e36130f1",
+      "vault": "0xD5B271b7Bf4696d662B2bcB1a94b408887c6C423",
+      "treasury": "0xD520BEe785A4B6BEA15C94f20F640AAAd00088Ab"
+    }
+  ],
+  "final": {
+    "status": "passed",
+    "scenarioCount": 6,
+    "receiptCount": 57,
+    "expectedRevertCount": 2,
+    "final": {
+      "label": "final",
+      "marketBalance": "0",
+      "vaultBalance": "10000000",
+      "escrowed": "0",
+      "creditsLiability": "0",
+      "freeStake": "10000000",
+      "reservedStake": "0",
+      "stakeLiability": "10000000",
+      "marketSurplus": "0",
+      "vaultSurplus": "0",
+      "activeJobs": "0"
+    },
+    "failedScenarios": []
+  }
+}

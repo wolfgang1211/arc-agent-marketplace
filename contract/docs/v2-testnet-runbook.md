@@ -2,14 +2,14 @@
 
 ## Status and authorization boundary
 
-Preparation only. No Arc deployment, funding distribution, approval, transaction or faucet automation has been performed in this preparation run. The only real-chain activity was public JSON-RPC reading.
+Yusuf approved Arc Testnet deployment, post-attestation funding/configuration and the five small live scenarios. The pair is deployed, immutable-aware runtime and constructor checks passed, both contracts are explorer-verified, and ownership was accepted. Four scenarios passed; the delivery-timeout scenario is waiting for its real one-hour minimum deadline. No mainnet, push, frontend/hosting/env change, V1 bot change or faucet automation is authorized or performed.
 
 Accepted evidence commit on `feat/marketplace-v2`:
 `9475834937f2ce5bffccf3f18b5868b97d0dd755`
 
 Message: `v2 contracts: tur3 evidence fixes, role matrix, size gate`.
 
-Testnet-preparation scripts, this runbook, public manifests and `.gitignore` hardening were added after that commit and remain uncommitted. Do not push or deploy without separate approval. Do not change either Solidity contract, the V1 bot, Railway, Vercel, existing environment files or `main`.
+Preparation commit: `de42ad8b37c3bda7efa7224aad5c9872d4250493`. Current chain evidence is `docs/v2-testnet-deployment.json`; it records actual receipts, balances and independent readback, not local simulation results. No push is authorized. Do not change either Solidity contract, the V1 bot, Railway, Vercel, existing environment files or `main`.
 
 ## 1. Network and token: official claims versus RPC observations
 
@@ -114,27 +114,27 @@ Order, subject to separate approvals:
 4. Verify both immutable directions and patched runtimes before funding either contract.
 5. After explicit distribution approval, fund the other six new wallets; configure roles and complete owner acceptance.
 6. Run separately approved live scenarios.
-7. After all intended deployer actions are finished, return deployer remainder to owner, keeping the explicitly estimated transaction fee/dust reserve. Do not auto-sweep existing house/manualClient funds.
+7. Keep the remaining deployer balance as reserve, per Yusuf's current approval. Do not return it to owner or auto-sweep existing house/manualClient funds.
 
 If distribution must happen before deployment, stop and ask for a revised funding/deployment plan. Do not silently change the nonce-zero rule or generate another wallet.
 
 ## 5. Deployment checklist: future approved phase only
 
-The scripts delivered in this preparation run do not expose an enabled Arc deployment/transfer path.
+The approved live entry point is the DPAPI launcher `scripts/run-v2-testnet-live.py`, which dispatches `approved-v2-executor.js`. It is Arc Testnet-only and persists signed transaction hashes before broadcast; an uncertain broadcast is not automatically repeated.
 
 - Pin compiler 0.8.28, Cancun, viaIR, runs 50; run `npm run size:v2` from `contract`.
 - Require both runtimes <=24,000 bytes. Current marketplace is 23,908 bytes (92-byte headroom); vault 4,854 bytes. Add no new marketplace features.
 - Record artifact JSON and runtime-template hashes, compiler input, dependency lock and constructor manifest.
 - Before any transaction: chain ID must be 5042002, deployer pending/latest nonce must both be 0, deployer code must be empty, token decimals/symbol must be 6/USDC, and funds must meet the refreshed budget.
 - Use the `deploy-v2-pair` sequence: vault CREATE nonce 0, marketplace CREATE nonce 1. Any intervening outgoing transaction aborts the run.
-- Predicted addresses, **not deployed by this preparation**: vault `0xD5B271b7Bf4696d662B2bcB1a94b408887c6C423`, marketplace `0xFA156B7A5205B123c8a22A807ba98405e36130f1`.
+- Deterministic deployed addresses: vault `0xD5B271b7Bf4696d662B2bcB1a94b408887c6C423`, marketplace `0xFA156B7A5205B123c8a22A807ba98405e36130f1`.
 - Read back marketplace->vault, vault->marketplace, token and treasury addresses before any escrow/stake deposit.
 - Verify creation input/constructor manifest and exact deployed runtime. These contracts have immutables: patch the artifact template at every compiler immutable reference using the expected Arc chain ID, addresses, constructor values and EIP-712 constants. Require patched byte-for-byte equality/hash equality with `eth_getCode`, and normalized runtime equality. Do **not** compare an unpatched template hash directly with deployed code.
 - Local attestation is implemented/exercised by `scripts/e2e-v2-testnet-local.js`. Arc attestation must use chain ID 5042002 and the real USDC precompile, not local chain/token values. Any unmapped immutable is a stop condition.
 - Configure/read back fee 500 bps and minReward 1,000,000 ERC-20 base units; register permanent house, allowlist existing testClient, and set each client resolver to the separate resolver wallet.
 - Configure using temporary deployer ownership, then call Ownable2Step `transferOwnership(owner)`. Fund owner only after pair creation and approved distribution; owner calls `acceptOwnership()`. Read back owner/pending owner and prove deployer no longer has admin authority.
 - Treasury and resolver use separate wallets operationally. The contract does not forbid equality; disclose the conflict because fee accrues only on operator payout, not a client refund/slash.
-- Collect deployer remainder only after the remaining approved setup actions are completed. Recompute fees immediately before signing; record recipient, amount and receipt. No collection is authorized in the current phase.
+- Keep deployer remainder as reserve. No collection/sweep is authorized in the current phase.
 
 ## 6. Live scenario recipe, 1-USDC rewards
 
@@ -145,7 +145,7 @@ Use only after explicit chain-transaction approval. Record every receipt and ind
 3. **Delivery timeout and slash:** do not deliver; after the actual delivery deadline claim timeout; confirm immediate client refund and a fresh seven-day fault window from the claim receipt; resolver slashes the fixed 5-USDC reserve within that window. Confirm zero job reserve and no second active-job decrement. Second slash/release must be rejected.
 4. **Dispute + operatorFault:** operator opens dispute before deadline; resolver resolves with 0.5-USDC gross operator payout, positive client refund and `operatorFault=true`. Client gets 0.5 reward refund + 5 reserve slash; fee is 5% of gross only, never reserve.
 5. **Mutual:** propose/accept a full client refund with matching job and request versions; reserve returns to operator; no fee on zero payout and no slash.
-6. **House test job:** Yusuf controls the existing house and testClient signatures. Client must be allowlisted and post `testJob=true`; house registers/deposits and signs its application. Resolver settlement/fault decisions on a house job are prohibited. Exercise the documented permissionless timeout fallback and read back full conservation.
+6. **House test job, deferred:** the testClient is now Hermes-controlled; the existing house key is not accessible. Do not copy it from Railway. Defer execution to V2 bot integration. The future allowlisted test client must post `testJob=true` and house must supply its own application signature; local ERC-1271 injection is not a live substitute.
 
 For real-chain deadlines, save resumable state and stop until the required block time. Never replace live waiting with `evm_increaseTime`, forge storage or inject account code.
 
@@ -182,6 +182,18 @@ Evidence: `docs/v2-testnet-local-evidence.json`, `docs/v2-testnet-readonly-prefl
 ## 8. Stop rules
 
 Stop before the next transaction on: wrong chain, nonce/code mismatch, pair/constructor/runtime mismatch, any unmapped immutable, insufficient budget, unexpected revert, unconfirmed/failed receipt, negative or unexpected surplus, escrow/credit/stake mismatch, terminal active-job mismatch, replay, or role conflict. Save evidence; do not auto-retry, replace wallets, weaken checks or add funds without approval.
+
+## 10. Live deployment handoff
+
+- Marketplace: `0xFA156B7A5205B123c8a22A807ba98405e36130f1`
+- Vault: `0xD5B271b7Bf4696d662B2bcB1a94b408887c6C423`
+- Both explorer endpoints read back verified, Solidity `v0.8.28+commit.7893614a`, optimizer enabled/runs50, Cancun.
+- Owner acceptance read back: `0xf5e14962e46F80fAA40570bD86BccE83AA6626fF`.
+- Distribution: 21.43 USDC across six new role wallets. Deployer reserve remains with deployer, not swept.
+- Actual guarded launcher: `python scripts/run-v2-testnet-live.py --execute-arc-testnet-v2 --resume` (dispatches `approved-v2-executor.js`). Do not run the rejected prototype `run-v2-testnet-live.js`; it is not the live entry point or a release artifact.
+- Live job5 timeout is pending until `2026-10-19T22:26:58Z`. One-shot cron `404f0fe8f2d6` is scheduled at `2026-10-19T22:27:58Z` (20 October 01:27:58 UTC+03). Script: `%LOCALAPPDATA%\\hermes\\scripts\\alphaboard_v2_timeout_once.py`, no-agent, one run, local output only. It pins executor hashes, checks branch/index/state, completes only timeout claim/slash/withdraw, independently verifies receipts and conservation, and commits only the deployment JSON. No automatic retry after a failure.
+- House test job is deferred to V2 bot integration; no Railway key was read/copied. Yusuf's existing `0x460EBe282Fb0e42B4d682a7f9EF408302417F780` remains a future manual normal-client test, not the automated testClient role.
+- Canonical live results and all transaction hashes are in `docs/v2-testnet-deployment.json`. Local rehearsal and its injected house ERC-1271 code are not live evidence.
 
 ## 9. Mainnet and separate backlog
 
