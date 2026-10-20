@@ -1,6 +1,6 @@
 # AlphaBoard /v2 App Implementation Plan
 
-> **For Hermes:** Yalnız açık Faz 1 kodlama onayından sonra `subagent-driven-development` ile küçük görevler ve bağımsız spec/güvenlik incelemesi kullan. Bu dosya uygulama yetkisi değildir.
+> **For Hermes:** Faz 1a yerel kodlaması kullanıcı tarafından onaylandı. Küçük TDD görevleri, bağımsız spec/güvenlik incelemesi ve her ana adım sonunda yerel commit kullan. Faz 1b, bulut kaynakları ve Yusuf'un manuel preview testi ayrıca onay gerektirir.
 
 **Goal:** V1'i hiç taşımadan veya değiştirmeden, her türlü dijital iş için V2 başvuru-seçim, escrow, teslimat, uyuşmazlık ve teminat arayüzü/backend'i kurmak.
 
@@ -8,7 +8,9 @@
 
 **Tech Stack:** Mevcut Next.js 14.2.35, React, viem/wagmi; V2'ye özel JS/ESM modülleri, PostgreSQL + SQL migrations/pg; ayrı Node.js indexer. Bu iş kapsamında V1'i TypeScript'e dönüştürmek veya framework yükseltmek yok.
 
-**Durum:** 20 Ekim 2026, onay bekleyen taslak. Bu turda uygulama kodu, Docker kurulumu, DB/proje oluşturma veya env değişikliği yapılmaz. Barındırma, faz sırası ve Faz 1 kodlaması ayrı onay kapılarıdır.
+**Durum:** 20 Ekim 2026, revize kapsamla kabul edildi. Faz 1a tamamen yerelde uygulanır; yalnız V2 Docker PostgreSQL kurulumu onaylıdır. Railway V2 Postgres + anahtarsız indexer barındırma varsayılanı ve $10 hedef/$15 üst sınır kabul edildi; kaynak oluşturma ancak yerel E2E sonrasında ayrı onayla yapılır. Vercel production branch=main ve Preview env'lerinde gizli anahtar bulunmadığı Yusuf tarafından panelden doğrulanmış, feat/marketplace-v2 push'u onaylanmıştır. Bu beyan API denetimi yapıldığı şeklinde raporlanmaz.
+
+**Tema:** Faz 1a arayüzü siyah arka planlı koyu tema; yalnız V2 scoped stilleri. V1 globals/layout/provider değiştirilmez.
 
 ## 1. Doğrulanmış başlangıç ve durdurma kapıları
 
@@ -16,7 +18,7 @@
 - Chain ID: `5042002`; RPC: https://rpc.testnet.arc.io ; USDC: `0x3600000000000000000000000000000000000000`, ERC-20 decimals 6, native görünüm decimals 18. Bunlar iki farklı para değil.
 - Marketplace: `0xFA156B7A5205B123c8a22A807ba98405e36130f1`; Vault: `0xD5B271b7Bf4696d662B2bcB1a94b408887c6C423`.
 - Kaynak ve dağıtım otoritesi: `contract/contracts/AgentMarketplaceV2.sol`, `OperatorCollateralVaultV2.sol`, canonical artifact/build-info ve `contract/docs/v2-testnet-deployment.json`.
-- Dört canlı senaryo kabul edildi. Job 5 hâlâ InProgress; timeout cron'u 120 saniyelik grace window kaçırıldığı için çalışmadan kaldırıldı. Kesinti/çekim yapılmış sayılmaz. Yeniden çalıştırma veya zamanlama için yeni onay gerekir. Bu operasyonel blokaj doküman hazırlamayı engellemez; beşinci canlı kanıt kapısı kapanmadan tam testnet kabulü ilan edilmez.
+- Dört canlı senaryo kabul edildi. Job 5 cron'u grace window nedeniyle çalışmadan kaldırılmıştı; tarihsel kayıt korunur. Yeni onaylı tek manuel denemede timeout claim ve 5 USDC resolver kesintisi doğrulandı; RPC SERVER_ERROR nedeniyle client çekimi gönderilmeden duruldu, tekrar denenmedi. Job Refunded, ayrılmış teminat 0, client credit 6 USDC; beşinci senaryo tamamlanmış sayılmaz. Bağımsız korunum geçti; kanıt commit'i `128cd9053d05f625c97cbb4ab3ffa18667dc94b1`. Bundan sonraki herhangi bir çekim/transaction için yeni açık onay gerekir.
 - V1 kaynakları, kontratı, Railway botu, mevcut env ve production korunur. Testnet cüzdanları ana ağda kullanılmaz. Üretim/mainnet geçişi bu planın dışındadır.
 - Eski taslaklardaki `getJob`, otomatik tek aktif iş veya otomatik slash varsayımları geçerli değildir: dağıtılmış kontratın gerçek ABI/durum modeli esas alınır.
 
@@ -32,7 +34,7 @@
 6. Dispute açma, ayrı yetkili hakem ekranı; gerekçe/kanıt hash'leriyle çözüm, kusur ve kesinti tutarının açık önizlemesi.
 7. Mutual teklif, karşı tarafça kabul/red, teklif sahibince revoke; refund + gross payout = reward doğrulaması.
 8. Settlement sonrası `credits(account)` ve `withdrawCredit`; ödeme tamamlandı ile çekilebilir credit oluştu ayrımı.
-9. Güvenli çıkışlar: open cancel/expiry, review/delivery/dispute timeout claim, fault-review/release, access report/recovery ve delivery extension request/grant/reject/revoke. Bunlar Faz 1 içinde minimal aksiyon kartlarıdır; mevcut fonların kurtarılması Faz 2 sohbetine bağımlı olamaz.
+9. Faz 1a güvenli çıkışları: open cancel/expiry, review/delivery/dispute timeout claim ve fault-review/release. Fon kurtarma Faz 2 sohbetine bağımlı olamaz. Access report/recovery ve delivery extension Faz 1b'ye ertelendi; 1a action allowlist'inde bulunmaz.
 
 ### 2.2 Tek kategoriye kilitlenmeyen form
 
@@ -41,7 +43,7 @@
 - Bot, web sitesi, araç, tasarım, video, araştırma ve diğer işler aynı akışı kullanır. Kod işine özgü repo/commit/test talimatı alanları koşullu; videoya ait süre/format alanları başka işi engellemez.
 - Ortak teslim manifest'i: schemaVersion, iş kimliği (chain/market/jobId), operator, açıklama, kabul kriteri başına kanıt, links[], files[] (ad/MIME/byte size/hash), teslim sürümü, isteğe bağlı source commit ve çalıştırma/inceleme talimatı.
 - Açıklama, kriterler ve teslim manifest'i değişmez sürümlerle tutulur. Canonical UTF-8 içerik/JCS hash sözleşmesi fixture ile sabitlenir; bu içerik hash'i Solidity'nin `abi.encode` ile hesapladığı canonicalTermsHash ile karıştırılmaz.
-- Faz 1 dosya desteği: özel S3-uyumlu bucket, doğrudan süreli upload URL'si, checksum/tamamlanma doğrulaması, boyut/adet/MIME sınırı, download-as-attachment. Büyük video için harici HTTPS teslim bağlantısı da kabul edilir. DB'de dosya binary'si değil metadata ve content hash saklanır. Bucket/provider oluşturma bu turda yapılmaz.
+- Faz 1a yalnız HTTPS link ile teslim ve sürümlü link manifest'i sunar; dosya yükleme düğmesi/API'si/bucket yok. Faz 1b dosya desteği: özel S3-uyumlu bucket, doğrudan süreli upload URL'si, checksum/tamamlanma doğrulaması, boyut/adet/MIME sınırı, download-as-attachment. Büyük video için harici HTTPS teslim bağlantısı da kabul edilir. DB'de dosya binary'si değil metadata ve content hash saklanır. Bucket/provider oluşturma bu turda yapılmaz.
 - Önerilen ilk limit: dosya başına 25 MB, teslim başına 10 dosya; büyük işler link kullanır. HTML/SVG/script/çalıştırılabilir içerik inline render edilmez; zip açılıp çalıştırılmaz. Tarama tamamlanmayan yükleme indirilebilir teslim sayılmaz.
 
 ## 3. V1 izolasyonu ve Paket 1 route sorunu
@@ -221,16 +223,20 @@ https://developers.cloudflare.com/r2/pricing/
 
 ## 8. Fazlar ve teslim ölçütleri
 
-### Faz 1: Çekirdek akış + güvenli çıkışlar
+### Faz 1a: Yerel çekirdek akış + güvenli çıkışlar (onaylı)
 
-**Sıra:** (1) V1 baseline/route izolasyon testleri, (2) canonical read adapter ve hash/signature fixtures, (3) onaylı local Docker DB + migration/ACL/auth, (4) raw event/indexer/replay, (5) generic ilan/başvuru/atama, (6) teslim/revizyon/approve/mutual, (7) credit/stake/recovery ve yetkili resolver paneli, (8) local E2E, manuel Arc testnet ve preview kanıtı.
+**Bağlayıcı sıra:** (1) V1 npm test/build baseline ve route izolasyon testleri, (2) canonical read adapter + hash/EIP-712 fixture'ları, (3) yalnız V2 local Docker Postgres + migration/auth/ACL, (4) indexer + replay/reorg testleri, (5) API, (6) siyah arka planlı /v2 UI, (7) gerçek yerel PostgreSQL + EVM E2E. Her adım RED -> minimum kod -> GREEN -> inceleme -> yerel commit; sonraki bağımlı adım kapı geçmeden başlamaz.
+
+**Kesin 1a kapsamı:** iş listesi/detay, genel iş formu, iş açma, EIP-712 başvuru, client ataması, link ile teslim, revizyon, onay, mutual, dispute açma, minimal yetkili resolver çözüm ekranı, credit çekme, teminat yatırma/çekme; open cancel/expiry, delivery/review/dispute timeout claim ve fault review release. Para hareketi cüzdan imzası ve receipt/readback ile; sunucu/indexer anahtarsız. Sahte persistence/SQLite, fixture-only E2E veya boş API stub'ı tamamlanmış sayılmaz.
+
+**1a dışı:** dosya upload/R2, delivery extension, access report/recovery, tam hakem dashboard'u, sohbet/bildirim ve agent API. İlgili mevcut zincir event'lerinin salt okunur indekslenmesi bu özelliklerin UI/API write akışlarını açma yetkisi değildir.
 
 Planlanan dosyalar:
-- `web/lib/v2/{chain,contracts,terms,applications}.mjs`, `web/lib/v2/server/{chain-reader,wallet-session,job-access,db,uploads}.mjs`.
+- `web/lib/v2/{chain,contracts,terms,applications}.mjs`, `web/lib/v2/server/{chain-reader,wallet-session,job-access,db}.mjs`. `uploads.mjs` yalnız 1b.
 - `web/db/v2/migrations/001-core.sql`, `infra/v2/docker-compose.yml`, `.env` içermeyen örnek yapılandırma belgesi.
 - Bölüm 3'teki yalnız yeni route'lar; `web/app/api/v2/**/route.js`.
 - `services/v2-indexer/{package.json,src/index.mjs,src/reducer.mjs,src/cursor.mjs,test/*.test.mjs}`; V1 bot klasörü kullanılmaz.
-- `web/test/v2-{route-isolation,terms,applications,auth,job-access,chain-reader,uploads,actions}.test.mjs`; browser E2E kapsamı `web/e2e/v2-*.spec.js` (test runner eklenmesi onaylı uygulama aşamasında).
+- `web/test/v2-{route-isolation,terms,applications,auth,job-access,chain-reader,actions}.test.mjs`; browser E2E `web/e2e/v2-*.spec.js`. Upload testleri/endpoint'leri 1b'ye aittir.
 
 Teslim ölçütleri:
 - Her kod görevi önce gerçek failing test, sonra minimum uygulama ve passing test; fixture-only çıktı uçtan uca kanıt diye sunulmaz.
@@ -240,6 +246,14 @@ Teslim ölçütleri:
 - Hatalı ağ/imza/nonce/terms/rol, stale version, aynı anda award, double-click, başarısız receipt ve off-chain hide/on-chain revoke ayrımı test edilir.
 - Yusuf'un manuel test matrisi ve bekleyen Job 5 kanıtı ayrı tamamlanır. UI başarı etiketi yalnız receipt + readback sonrası görünür.
 - Onaylı branch preview'si production'ı değiştirmeden doğrulanır. Frontend build başarısı production deploy kanıtı değildir; main merge ve production release bu teslimatın parçası değildir.
+
+### Faz 1b: Dosyalar, uzatma, erişim kurtarma ve tam hakem paneli (onay bekliyor)
+
+- R2/private bucket dosya yükleme, checksum/MIME/scan ve güvenli download.
+- Delivery extension request/grant/reject/revoke; pending talep saati durdurmaz.
+- Access report/recovery ve ilgili dispute recovery akışları.
+- Hakem panelinin tam hâli: tüm kuyruklar/filtreler, ayrıntılı timeline, heartbeat/resume operasyonları ve kapsamlı audit görünümü. 1a'nın minimal, atanmış resolver çözüm ekranını büyütür.
+- Ayrı açık Faz 1b onayı olmadan kod/endpoint/bucket oluşturulmaz. Kabul: dosya/rol/SSRF testleri, exact deadline/version sınırları ve 1a regresyon/E2E; R2 kaynağı ayrıca onaylı olmalıdır.
 
 ### Faz 2: Sohbet + bildirim
 
@@ -255,28 +269,39 @@ Teslim ölçütleri:
 - ERC-8004 kimlik ve dış reputasyon isteğe bağlı adaptör; seçilen ağın registry adresi/standard sürümü ayrıca resmî kaynak ve zincir üzerinden doğrulanmadan bağlanmaz. Dış itibar ödeme/atama veya admin yetkisi vermez.
 - Teslim: web ve agent API aynı auth/terms/state test vektörlerini geçer; identity ownership doğrulama/revocation/cache failure testleri; kimlik servisi bozuksa çekirdek fonlar kilitlenmez. Ücretli tool/x402 bütçesi ve otomatik write modu ayrıca onay ister.
 
-**Önerilen sıra:** Faz 1 tamamen kabul, ardından Faz 2, sonra Faz 3. Faz 1'in içindeki read adapter/DB/indexer hazırlığı UI'dan önce; chat veya agent entegrasyonu çekirdek kabulü geciktirmez.
+**Kabul edilen sıra:** Faz 1a yerel E2E -> ayrı Railway V2 kaynak onayı -> ayrı Yusuf manuel preview testi onayı -> ayrıca Faz 1b onayı -> Faz 2 -> Faz 3. Read adapter/DB/indexer/API UI'dan önce; 1b veya chat/agent işleri 1a'ya taşınmaz.
 
 ## 9. Yusuf'un manuel test planı
 
 Manuel client: `0x460EBe282Fb0e42B4d682a7f9EF408302417F780`. Anahtarı Hermes'e aktarılmaz; gerçek Brave cüzdanında Yusuf imzalar. Şimdiki tur bu testleri çalıştırma veya cüzdan transaction'ı onayı değildir. Her case ayrı küçük testnet job, başlangıç/son block ve integer bakiye snapshot'ı kullanır.
 
+### 9.1 Faz 1a manuel matris (yerel E2E sonrası ayrıca preview test onayı)
+
 | Case | Manuel akış / beklenen kanıt |
 |---|---|
-| M1 | Cüzdansız V1 ve V2 liste/detay; bot, web, video, araştırma formunu doldurma; son adım connect CTA; V1 adresi değişmemiş |
-| M2 | Yanlış ağdan connect, switch reject, doğru ağ; switch onayı olmadan imza/approve/post yok |
-| M3 | 1 USDC normal job aç; gerçek resolver snapshot'ını gör; gerekiyorsa allowance yalnız doğru Marketplace'e; JobPosted/Terms receipt ve brief hash eşleşsin |
-| M4 | Kontrollü testOperator başvursun; Yusuf imzalı şartları görüp atama yapsın; başka wallet'ın apply/award yetkisi sızmasın; teminat ayrılsın |
-| M5 | Operator link/dosya manifest'i teslim etsin; Yusuf checksum/kriterleri inceleyip onaylasın; operator net payout + fee credit ve ayrı çekimler doğrulansın |
-| M6 | Revizyon isteği doğru criterion/reference hash ile; yeni sürüm teslim; eski belge değişmeden kalsın; onay/çekim |
-| M7 | Mutual tam iade ve ayrı job'da kısmi payout; tutarlar açık, karşı taraf kabulü, stale/expired proposal reddi ve client credit çekimi |
-| M8 | Dispute aç, ilgisiz wallet admin API'ye giremesin; gerçek resolver gerekçeli çözsün; operatorFault ayrı job'da slash/client credit readback'iyle |
-| M9 | Minimum delivery süresiyle gerçek timeout; test zamanı ayrı açık onay, manuel claim ve resolver fault review; refund/slash/withdraw ayrı receipt'ler. Otomatik scheduler bu testin zorunlu bağımlılığı değil |
-| M10 | Open cancel/expiry, Submitted review-timeout, access recovery, extension; izin verilmeyen deadline'da buton/tx guard; uzun süreler local EVM'de sınır testi, gerçek testnet sonucu beklemeden geçti denmez |
-| M11 | 7 gün resolver inactivity ve 7 gün fault-review release local EVM D-1/D/D+1; gerçek testnet uzun bekleme gerekiyorsa ayrı job/izin, beklemede etiketi |
-| M12 | Operator free stake deposit/withdraw; reserved miktarı çekememe; başka operatörün stake/credit/özel dosyasına erişememe |
-| M13 | Başvuruyu yalnız UI'dan hide etmenin iptal etmediği; on-chain revoke/epoch artışından sonra eski imzanın reddi; yanlış domain/expired imza |
-| M14 | Aynı jobId V1/V2 izolasyonu, refresh/crash/RPC/DB failure, çift tıklama ve pending receipt; funds/nonce yanlışlıkla tekrar kullanılmasın |
+| M1 | Cüzdansız V1/V2 liste/detay; bot/web/video/araştırma ortak formu; connect CTA; siyah V2 tema, V1 değişmemiş |
+| M2 | Yanlış ağdan connect, switch reject, doğru ağ; ağ onayı olmadan imza/approve/post yok |
+| M3 | 1 USDC normal job; resolver snapshot, exact allowance, JobPosted/Terms receipt ve brief hash eşleşmesi |
+| M4 | Kontrollü testOperator EIP-712 başvuru; Yusuf ataması; rol izolasyonu ve ayrılan stake |
+| M5 | Yalnız HTTPS link manifest'i teslimi; criterion/hash kontrolü, onay, net payout/fee credit ve ayrı çekimler; upload düğmesi yok |
+| M6 | Criterion/reference bağlı revizyon; yeni link manifest sürümü; önceki içerik değişmez; onay/çekim |
+| M7 | Mutual tam iade/kısmi ödeme, karşı taraf kabulü, stale/expired proposal reddi ve client çekimi |
+| M8 | Dispute açma + minimal atanmış resolver çözüm ekranı; yetkisiz erişim reddi; operatorFault ve slash/client credit readback |
+| M9 | Minimum gerçek delivery timeout; claim -> fault review -> resolver slash -> client çekim ayrı receipt'ler; scheduler bağımlılığı yok |
+| M10 | Open cancel/expiry ve review-timeout; D-1/D/D+1, izin verilmeyen state/deadline'da buton/tx guard |
+| M11 | Dispute inactivity ve fault-review release 7 günlük sınırları local EVM; gerçek testnet beklemeleri ayrıca onay, beklemede etiketi |
+| M12 | Free stake yatırma/çekme; reserved miktarı ve başkasının credit/stake'ini çekememe |
+| M13 | UI hide != imza iptali; on-chain revoke/epoch sonrası imza reddi; yanlış domain/expired imza |
+| M14 | Aynı jobId V1/V2 izolasyonu, refresh/crash/RPC/DB failure, double-click/pending tx; çift ödeme/broadcast yok |
+
+### 9.2 Faz 1b manuel matris (henüz onaylı değil)
+
+| Case | Manuel akış / beklenen kanıt |
+|---|---|
+| B1 | Private R2 dosya yükleme/checksum/scan, güvenli download, yanlış MIME/boyut ve ilgisiz kullanıcı erişimi reddi |
+| B2 | Delivery extension request/grant/reject/revoke; süre dolmadan client rızası, pending talep saati durdurmaz, stale request reddi |
+| B3 | Access report/recovery, hash/sürüm ve repair/review clocks; yanlış rol ve sınır anları; gerekirse recovery dispute |
+| B4 | Tam hakem paneli: filtre/kuyruk/timeline, heartbeat/resume, özel içerik rol/audit kontrolü; 1a minimal çözüm regresyonu |
 
 Her ödeme yolunda: Marketplace token balance = escrowed + creditsLiability + açıklanmış surplus; Vault balance = stakeLiability + surplus ve stakeLiability = toplam free + reserved. Bireysel credit toplamları liability'ye eşit. Başlangıç + dış girişler = son bakiyeler + gas + dış çıkışlar, underlying USDC bir kez sayılır. Kontrollü fixture'da surplus 0 beklenir; rastgele dış transfer içeriğinde `>=` muhasebesi ve surplus ayrımı gerekir. Kanıtlar testnet tx hash'leri, pinned block/readback ve screenshot'tur; wallet imza popup'ı receipt sayılmaz.
 
@@ -293,12 +318,12 @@ Her ödeme yolunda: Marketplace token balance = escrowed + creditsLiability + a�
 
 | Karar | Önerilen varsayılan | Onay verilmeden yapılmayacak |
 |---|---|---|
-| DB / indexer | Local Docker PostgreSQL -> ayrı Railway V2 Postgres + read-only worker; $10 hedef/$15 üst hedef | Kurulum, resource oluşturma, env/fatura değişikliği |
+| DB / indexer | Kabul: local V2 Docker -> ayrı Railway V2 Postgres + anahtarsız worker; $10 hedef/$15 üst sınır | Docker yerel kurulumu onaylı; Railway ancak 1a yerel E2E sonrası ayrı onayla |
 | Dosyalar | Private R2 Standard, 25 MB x 10 sınırı, büyük teslimler link; bucket/scanner bütçesi ayrıca | Bucket/key/sharing veya upload kurulumu |
-| Faz sırası | Faz 1 -> kabul -> Faz 2 -> Faz 3 | Kodlama veya başka fazı sessizce öne alma |
-| Faz 1 başlatma | Plan ve hosting seçimi kabulünden sonra ayrı açık kodlama onayı | Frontend/API/indexer/DB kodu |
-| Kaçırılan timeout | Yeni onayla tek kontrollü completion; mevcut durumda dur ve raporla | Yeniden çalıştırma veya cron yaratma |
+| Faz sırası | Kabul: 1a -> ayrı 1b onayı -> 2 -> 3 | 1b/2 kapsamını 1a'ya çekme |
+| Faz 1a başlatma | Yerel kodlama ve izole Docker kurulumu onaylı | Bulut kaynağı, V1 dosya değişikliği, anahtar/custody |
+| Kaçırılan timeout | Yeni talimatla Job 5 tek manuel completion onaylı; her adımdan sonra korunum | Beklenmedik sonuçta tekrar deneme veya yeni cron |
 | Manuel wallet resolver | Önce effective resolver'ı göster; bağımsız resolver tercih edilirse ayrıca owner-policy onayı | Manual client'ı whitelist/resolver map veya testClient yapma |
 | House | Şimdilik deferred; anahtarsız dry-run ve ayrı signer kararı sonraki iş | Railway key okuma/kopyalama veya V1 bot değişikliği |
 
-Push ayrı operasyonel kapıdır: yalnız gerçek Vercel metadata'sında production branch `main` ve preview env izolasyonu doğrulanırsa `feat/marketplace-v2` push edilir. Bu plan production deployment/merge izni vermez.
+Push kullanıcı tarafından onaylandı: Yusuf panelden production branch `main` ve Preview env'lerinde gizli anahtar bulunmadığını doğruladı. Yalnız `feat/marketplace-v2` push; preview build sonucu başarısızsa raporlanır, production/env değiştirilmez. Bu onay main merge/production deploy veya sonraki Faz 1a commit'lerini otomatik tekrar push etme izni değildir.
