@@ -2,7 +2,7 @@
 
 Readback: 2026-10-19T21:40:09.764Z; block 68075445.
 
-This is a snapshot. The timeout is genuinely pending; scheduled completion updates the canonical deployment JSON.
+This is a historical deployment snapshot. **Operational update, 2026-10-20:** the timeout one-shot missed the scheduler's 120-second grace window and was removed without running at 13:13:40 Turkey time. No timeout claim, collateral slash or client withdrawal was sent. The task is stopped; no retry/reschedule was attempted. The canonical deployment JSON contains the new independent readback at 2026-10-20T10:35:47.757Z, block 68167354, and the scheduler failure evidence. This is not a passed timeout scenario.
 
 ## Contracts
 
@@ -52,8 +52,8 @@ Native USDC and ERC-20 USDC are views of the same asset, not additive balances. 
 
 ## Timer and safety boundary
 
-Cron `404f0fe8f2d6`: `2026-10-19T22:27:58+00:00`, one shot, no-agent, local output only.
-Script: `alphaboard_v2_timeout_once.py`. Executor hashes are pinned; only the timeout claim, full collateral slash and client credit withdrawal may be new transactions. No automatic retry on failure. Future execution must independently verify receipts/conservation and commit only the deployment JSON.
+Cron `404f0fe8f2d6` was scheduled for `2026-10-19T22:27:58+00:00`, one shot, no-agent, local output only. **It was removed without execution after missing its 120-second grace window. No active replacement exists.**
+Script: `alphaboard_v2_timeout_once.py`. The original executor hashes remain pinned and untouched. A fresh explicit user approval is required before any new run or replacement schedule. No automatic retry was attempted. Any later approved completion must independently verify receipts, collateral slash, client withdrawal and conservation; it cannot infer success from the timer record.
 
 ## Gas and whole-run conservation
 

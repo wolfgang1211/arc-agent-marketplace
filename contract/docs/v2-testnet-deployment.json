@@ -1271,8 +1271,8 @@
       "passed": true
     },
     "passed": true,
-    "checkedAt": "2026-10-19T21:40:09.764Z",
-    "blockNumber": 68075445,
+    "checkedAt": "2026-10-20T10:35:47.757Z",
+    "blockNumber": 68167354,
     "receiptCount": 52,
     "totalGas": "12890605",
     "gasCostUSDC": "0.322265125",
@@ -1370,6 +1370,34 @@
     "noAgent": true,
     "deliver": "local",
     "stateAtCreation": "scheduled",
-    "scriptSha256": "9592050c59db0f6a831249dd4cf2453ba897ab044a5e6659427767fea4e88294"
+    "scriptSha256": "9592050c59db0f6a831249dd4cf2453ba897ab044a5e6659427767fea4e88294",
+    "status": "removed_without_running",
+    "removedAt": "2026-10-20T13:13:40.320168+03:00",
+    "graceWindowSeconds": 120,
+    "reason": "Scheduled run time outside scheduler grace window; scheduler removed the one-shot before executing its script. Exact cause of scheduler unavailability is not established.",
+    "evidence": "Hermes local cron output: 404f0fe8f2d6/2026-10-20_13-13-40.md",
+    "retryAttempted": false,
+    "rescheduled": false,
+    "operatorDecision": "Stopped per user instruction. A new explicit approval is required before any timeout completion transaction or replacement schedule.",
+    "completion": {
+      "status": "not_executed",
+      "jobId": "5",
+      "claimDeliveryTimeoutTxHash": null,
+      "resolveFaultReviewTxHash": null,
+      "withdrawCreditTxHash": null,
+      "readbackAt": "2026-10-20T10:35:47.757Z",
+      "readbackBlock": 68167354,
+      "jobStatus": "InProgress",
+      "stateVersion": "2",
+      "reservedStakeRaw": "5000000",
+      "marketBalanceRaw": "1000000",
+      "escrowedRaw": "1000000",
+      "creditsLiabilityRaw": "0",
+      "vaultBalanceRaw": "10000000",
+      "freeStakeRaw": "5000000",
+      "activeJobs": "1",
+      "conservationPassed": true,
+      "note": "The financial balances remain conserved, but neither the timeout refund, collateral slash nor client withdrawal has executed. This is not a passed timeout scenario."
+    }
   }
 }
