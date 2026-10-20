@@ -55,7 +55,22 @@ Native USDC and ERC-20 USDC are views of the same asset, not additive balances. 
 Cron `404f0fe8f2d6` was scheduled for `2026-10-19T22:27:58+00:00`, one shot, no-agent, local output only. **It was removed without execution after missing its 120-second grace window. No active replacement exists.**
 Script: `alphaboard_v2_timeout_once.py`. The original executor hashes remain pinned and untouched. A fresh explicit user approval is required before any new run or replacement schedule. No automatic retry was attempted. Any later approved completion must independently verify receipts, collateral slash, client withdrawal and conservation; it cannot infer success from the timer record.
 
-## Gas and whole-run conservation
+## Approved manual Job 5 attempt: stopped, incomplete
+
+A new explicit user approval authorized one manual attempt after the missed cron. Claim and full 5 USDC collateral slash succeeded; an RPC SERVER_ERROR stopped the executor before any client withdrawal broadcast. No retry was attempted. Job 5 is Refunded, reserved stake is zero, but **6 USDC remains client credit, not a completed withdrawal**. A fresh explicit approval is required for further transactions.
+
+- Claim: `0x1e518303ebfc7449ae5145a2fcd02735fbef5254618515bc2c674b39b96bb837`, successful receipt block 68173105.
+- Slash: `0x0cac31aed0b7021c93b6e32bc9e29f5c05fd2ecf06d8a86a50b971840b078fe4`, successful receipt block 68173137; 5 USDC.
+- Withdrawal: not broadcast; no hash.
+- After claim, block 68173112: Market 1 = escrow 0 + credit 1; Vault 10 = free 5 + reserved 5; active jobs 0.
+- Parent accounting readback, block 68173561: Market 6 = escrow 0 + credit 6; Vault 5 = free 5 + reserved 0; active jobs 0. Solvency and whole-run conservation passed.
+- Parent receipt/client-credit readback, block 68173633: sender, calldata, chain and successful status verified; client credit exactly 6 USDC.
+- The launcher stopped before updating aggregate gas totals. Totals were repaired from the 54 confirmed receipts, and the independent whole-run verifier passed. This evidence-only repair sent no transaction and does not mean Job 5 passed.
+- Current totals: 54 confirmed receipts; 13,198,620 gas; 0.3299655 USDC gas cost. Underlying asset conservation: 74.472705359702930932 = 74.142739859702930932 + 0.3299655.
+
+The sections above and below retain the original deployment snapshot. The canonical JSON's `manualCompletion` and `independentReadback` contain the newer stopped-attempt state; its `scheduledCompletion` remains the historical cron record.
+
+## Gas and whole-run conservation (original snapshot)
 
 Successful transactions: 52; total gas 12890605; actual gas cost 0.322265125 USDC.
 Initial underlying USDC 74.472705359702930932 = final wallets plus contracts 74.150440234702930932 + gas 0.322265125. No duplicated native/ERC-20 assets.

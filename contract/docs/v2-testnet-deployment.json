@@ -844,6 +844,38 @@
       "gasUsed": "299343",
       "gasPrice": "25000000000",
       "gasCostRaw": "7483575000000000"
+    },
+    "scenario-timeout-claim": {
+      "label": "scenario-timeout-claim",
+      "role": "testClient2",
+      "hash": "0x1e518303ebfc7449ae5145a2fcd02735fbef5254618515bc2c674b39b96bb837",
+      "from": "0x64b223Aa99F0a1e3CD151fb982E2ffF9255035c8",
+      "to": "0xFA156B7A5205B123c8a22A807ba98405e36130f1",
+      "nonce": 21,
+      "dataHash": "0xaaee76d75192240b66b373e95b39c9de686b234b6c0c45db5b4bcbc1fb7735b0",
+      "value": "0",
+      "status": "confirmed",
+      "gasLimit": "239072",
+      "blockNumber": 68173105,
+      "gasUsed": "181155",
+      "gasPrice": "25000000000",
+      "gasCostRaw": "4528875000000000"
+    },
+    "scenario-timeout-slash": {
+      "label": "scenario-timeout-slash",
+      "role": "resolver",
+      "hash": "0x0cac31aed0b7021c93b6e32bc9e29f5c05fd2ecf06d8a86a50b971840b078fe4",
+      "from": "0x8c1E3668528c7F1f2e56becddDb4f368De12D8d3",
+      "to": "0xFA156B7A5205B123c8a22A807ba98405e36130f1",
+      "nonce": 1,
+      "dataHash": "0xb519de077e954da034d4b9dfa29f418d79d0b8718482a2610326db8adf4547bd",
+      "value": "0",
+      "status": "confirmed",
+      "gasLimit": "179982",
+      "blockNumber": 68173137,
+      "gasUsed": "126860",
+      "gasPrice": "25000000000",
+      "gasCostRaw": "3171500000000000"
     }
   },
   "scenarios": {
@@ -959,28 +991,34 @@
       ]
     },
     "timeout": {
-      "status": "pending",
+      "status": "stopped",
       "jobId": "5",
       "applyBy": "1792448928",
-      "dueAt": "2026-10-19T22:26:58.000Z",
-      "nextCommand": "python scripts/run-v2-testnet-live.py --execute-arc-testnet-v2 --resume",
+      "deliveryDeadlineReached": true,
+      "jobStatus": "Refunded",
+      "completionStatus": "claim_and_slash_confirmed_withdrawal_not_sent",
+      "clientCreditRaw": "6000000",
+      "retryAllowed": false,
+      "note": "Stopped after RPC SERVER_ERROR before client withdrawal. Claim and full 5 USDC slash are confirmed; 6 USDC remains withdrawable credit. No retry was attempted. New explicit user approval is required for any further transaction.",
       "accounting": {
-        "label": "scenario-timeout-pending",
-        "blockNumber": 68073919,
-        "marketBalance": "1000000",
-        "escrowed": "1000000",
-        "creditsLiability": "0",
-        "vaultBalance": "10000000",
+        "label": "manual-timeout-stopped-readback",
+        "blockNumber": 68173561,
+        "marketBalance": "6000000",
+        "escrowed": "0",
+        "creditsLiability": "6000000",
+        "vaultBalance": "5000000",
         "freeStake": "5000000",
-        "reservedStake": "5000000",
-        "stakeLiability": "10000000",
-        "activeJobs": "1",
+        "reservedStake": "0",
+        "stakeLiability": "5000000",
+        "activeJobs": "0",
         "passed": true
       },
       "txHashes": [
         "0xf8b87220e5f8109f8b5862ad2e817bc106fb5da9dcb42db4cc01be6262decb6f",
         "0xc36f194f11be845cbd31119386bcb0528eee1fe60fdf4b68d1b798d5945b3dd6",
-        "0xebaf8cb1ff2d2c70d3f736e0e644e6b4be0f19dad331472bc294a26e37ef9dbd"
+        "0xebaf8cb1ff2d2c70d3f736e0e644e6b4be0f19dad331472bc294a26e37ef9dbd",
+        "0x1e518303ebfc7449ae5145a2fcd02735fbef5254618515bc2c674b39b96bb837",
+        "0x0cac31aed0b7021c93b6e32bc9e29f5c05fd2ecf06d8a86a50b971840b078fe4"
       ]
     }
   },
@@ -1127,6 +1165,97 @@
       "stakeLiability": "10000000",
       "activeJobs": "1",
       "passed": true
+    },
+    {
+      "label": "pair-attested",
+      "blockNumber": 68172859,
+      "marketBalance": "1000000",
+      "escrowed": "1000000",
+      "creditsLiability": "0",
+      "vaultBalance": "10000000",
+      "freeStake": "5000000",
+      "reservedStake": "5000000",
+      "stakeLiability": "10000000",
+      "activeJobs": "1",
+      "passed": true
+    },
+    {
+      "label": "configured",
+      "blockNumber": 68172880,
+      "marketBalance": "1000000",
+      "escrowed": "1000000",
+      "creditsLiability": "0",
+      "vaultBalance": "10000000",
+      "freeStake": "5000000",
+      "reservedStake": "5000000",
+      "stakeLiability": "10000000",
+      "activeJobs": "1",
+      "passed": true
+    },
+    {
+      "label": "normal-resume-readback",
+      "blockNumber": 68172901,
+      "marketBalance": "1000000",
+      "escrowed": "1000000",
+      "creditsLiability": "0",
+      "vaultBalance": "10000000",
+      "freeStake": "5000000",
+      "reservedStake": "5000000",
+      "stakeLiability": "10000000",
+      "activeJobs": "1",
+      "passed": true
+    },
+    {
+      "label": "revision-resume-readback",
+      "blockNumber": 68173022,
+      "marketBalance": "1000000",
+      "escrowed": "1000000",
+      "creditsLiability": "0",
+      "vaultBalance": "10000000",
+      "freeStake": "5000000",
+      "reservedStake": "5000000",
+      "stakeLiability": "10000000",
+      "activeJobs": "1",
+      "passed": true
+    },
+    {
+      "label": "dispute-resume-readback",
+      "blockNumber": 68173041,
+      "marketBalance": "1000000",
+      "escrowed": "1000000",
+      "creditsLiability": "0",
+      "vaultBalance": "10000000",
+      "freeStake": "5000000",
+      "reservedStake": "5000000",
+      "stakeLiability": "10000000",
+      "activeJobs": "1",
+      "passed": true
+    },
+    {
+      "label": "mutual-resume-readback",
+      "blockNumber": 68173059,
+      "marketBalance": "1000000",
+      "escrowed": "1000000",
+      "creditsLiability": "0",
+      "vaultBalance": "10000000",
+      "freeStake": "5000000",
+      "reservedStake": "5000000",
+      "stakeLiability": "10000000",
+      "activeJobs": "1",
+      "passed": true
+    },
+    {
+      "label": "scenario-timeout-claim-post",
+      "blockNumber": 68173112,
+      "marketBalance": "1000000",
+      "escrowed": "0",
+      "creditsLiability": "1000000",
+      "vaultBalance": "10000000",
+      "freeStake": "5000000",
+      "reservedStake": "5000000",
+      "stakeLiability": "10000000",
+      "activeJobs": "0",
+      "passed": true
     }
   ],
   "house": {
@@ -1227,10 +1356,10 @@
       }
     }
   },
-  "totalGas": "12890605",
-  "totalGasCostRaw": "322265125000000000",
-  "status": "pending",
-  "updatedAt": "2026-10-19T21:27:15.793Z",
+  "totalGas": "13198620",
+  "totalGasCostRaw": "329965500000000000",
+  "status": "stopped",
+  "updatedAt": "2026-10-20T11:28:39.419Z",
   "owner": {
     "address": "0xf5e14962e46F80fAA40570bD86BccE83AA6626fF",
     "verified": true
@@ -1266,16 +1395,16 @@
   "independentReadback": {
     "wholeRunConservation": {
       "initialNativeRaw": "74472705359702930932",
-      "finalNativeRaw": "74150440234702930932",
-      "gasCostRaw": "322265125000000000",
+      "finalNativeRaw": "74142739859702930932",
+      "gasCostRaw": "329965500000000000",
       "passed": true
     },
     "passed": true,
-    "checkedAt": "2026-10-20T10:35:47.757Z",
-    "blockNumber": 68167354,
-    "receiptCount": 52,
-    "totalGas": "12890605",
-    "gasCostUSDC": "0.322265125",
+    "checkedAt": "2026-10-20T11:28:13.808Z",
+    "blockNumber": 68173561,
+    "receiptCount": 54,
+    "totalGas": "13198620",
+    "gasCostUSDC": "0.3299655",
     "owner": "0xf5e14962e46F80fAA40570bD86BccE83AA6626fF",
     "attestation": {
       "vault": {
@@ -1336,20 +1465,51 @@
       },
       {
         "id": "5",
-        "status": "1",
-        "stateVersion": "2",
-        "reserved": "5000000"
+        "status": "7",
+        "stateVersion": "4",
+        "reserved": "0"
       }
     ],
     "accounting": {
-      "marketBalance": "1000000",
-      "escrowed": "1000000",
-      "creditsLiability": "0",
-      "vaultBalance": "10000000",
+      "marketBalance": "6000000",
+      "escrowed": "0",
+      "creditsLiability": "6000000",
+      "vaultBalance": "5000000",
       "freeStake": "5000000",
-      "reservedStake": "5000000",
-      "activeJobs": "1"
+      "reservedStake": "0",
+      "activeJobs": "0"
     }
+  },
+  "manualCompletion": {
+    "status": "stopped_after_slash_withdrawal_not_sent",
+    "jobId": "5",
+    "mode": "newly_approved_single_manual_run",
+    "errorCode": "SERVER_ERROR",
+    "errorAt": "2026-10-20T11:24:37.941Z",
+    "failureBoundary": "After confirmed slash and before any withdrawal broadcast; exact failing RPC subcall was not preserved.",
+    "claimTxHash": "0x1e518303ebfc7449ae5145a2fcd02735fbef5254618515bc2c674b39b96bb837",
+    "slashTxHash": "0x0cac31aed0b7021c93b6e32bc9e29f5c05fd2ecf06d8a86a50b971840b078fe4",
+    "slashAmountRaw": "5000000",
+    "withdrawTxHash": null,
+    "withdrawalSent": false,
+    "clientCreditRaw": "6000000",
+    "retryAttempted": false,
+    "newApprovalRequired": true,
+    "parentReceiptReadbackBlock": 68173633,
+    "parentReceiptReadbackAt": "2026-10-20T11:28:39.419Z",
+    "receiptSenderCalldataAndChainVerified": true,
+    "accountingReadbackBlock": 68173561,
+    "marketBalanceRaw": "6000000",
+    "escrowedRaw": "0",
+    "creditsLiabilityRaw": "6000000",
+    "vaultBalanceRaw": "5000000",
+    "freeStakeRaw": "5000000",
+    "reservedStakeRaw": "0",
+    "activeJobs": "0",
+    "wholeRunConservationPassed": true,
+    "aggregateRepair": "Recomputed gas totals from all 54 confirmed receipt records after the launcher stopped before its final aggregate update; no chain transaction was sent for this evidence repair.",
+    "historicalCronRecord": "scheduledCompletion and its nested completion describe the earlier removed-without-running one-shot, not this newly approved manual attempt.",
+    "scenarioPassed": false
   },
   "recoveredErrors": [
     {
@@ -1361,6 +1521,16 @@
       "safeTypeError": "market.listedHouse is not a function",
       "at": "2026-10-19T21:20:11.770Z",
       "resolvedByReadback": "2026-10-19T21:40:09.764Z"
+    },
+    {
+      "code": "LIVE_EXECUTION_FAILED",
+      "errorClass": "Error",
+      "rpcCode": "SERVER_ERROR",
+      "safeShortMessage": null,
+      "location": null,
+      "safeTypeError": null,
+      "at": "2026-10-20T11:24:37.941Z",
+      "resolvedByReadback": "2026-10-20T11:28:13.808Z"
     }
   ],
   "scheduledCompletion": {
