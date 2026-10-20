@@ -4,6 +4,15 @@ const APP_TYPES={Application:[['jobId','uint256'],['operator','address'],['terms
 const {decoder,build}=require('./approved-v2-executor');
 const H=x=>E.keccak256(E.toUtf8Bytes(x));
 function need(x,c){if(!x){const e=new Error(c);e.safeCode=c;throw e;}}
+async function executeTimeoutStep({prefix,call,audit,claimArgs=[],slashArgs=[],withdrawArgs=[],withdrawLabel=`${prefix}-withdraw-testClient2`}){
+ await call(prefix+'-claim',...claimArgs);
+ await audit(prefix+'-claim-post');
+ const resolvedSlash=typeof slashArgs==='function'?await slashArgs():slashArgs;
+ await call(prefix+'-slash',...resolvedSlash);
+ await audit(prefix+'-slash-post');
+ await call(withdrawLabel,...withdrawArgs);
+ await audit(prefix+'-withdraw-post');
+}
 async function execute(c){const {p,w,roles,market:m,vault,token,job,domain,state,save,call,send,audit}=c,ma=await m.getAddress(),mutual=decoder(build('AgentMarketplaceV2').meta,ma,p,'mutual');
 async function withdraw(prefix){for(const r of ['testOperator','testClient2','treasury'])if(!state.transactions[prefix+'-'+r]&&await m.credits(roles[r])>0n)await call(prefix+'-'+r,r,m,'withdrawCredit');}
 for(const name of ['normal','revision','dispute','mutual','timeout']){const row=state.scenarios[name]||{status:'running'};state.scenarios[name]=row;if(row.status==='passed'){await audit(name+'-resume-readback');continue;}const prefix='scenario-'+name;
@@ -14,7 +23,7 @@ if(!state.transactions[prefix+'-award']){const j=await job(id),value={jobId:id,o
 if(name==='normal'||name==='revision'){let j=await job(id);await call(prefix+'-delivery','testOperator',m,'submitDelivery',[id,H(name+':delivery'),j.stateVersion]);if(name==='revision'){j=await job(id);await call(prefix+'-request-revision','testClient2',m,'requestRevision',[id,H('criterion'),H('reference'),j.stateVersion]);j=await job(id);await call(prefix+'-submit-revision','testOperator',m,'submitRevision',[id,H('corrected'),j.stateVersion]);}j=await job(id);await call(prefix+'-approve','testClient2',m,'approve',[id,j.stateVersion]);
 }else if(name==='dispute'){let j=await job(id);await call(prefix+'-open','testOperator',m,'openDispute',[id,j.stateVersion]);j=await job(id);await call(prefix+'-resolve','resolver',m,'resolveDispute',[id,500000n,true,H('fault'),H('proof'),j.stateVersion]);
 }else if(name==='mutual'){let j=await job(id);if(!row.expiry){row.expiry=String(BigInt((await p.getBlock('latest')).timestamp)+3600n);save();}await call(prefix+'-propose','testClient2',m,'proposeMutual',[id,1000000n,0n,BigInt(row.expiry),j.stateVersion]);j=await job(id);const req=await mutual(id);await call(prefix+'-accept','testOperator',m,'acceptMutual',[id,j.stateVersion,req.version]);
-}else{let j=await job(id);const now=BigInt((await p.getBlock('latest')).timestamp);if(now<j.deliveryDeadline){row.status='pending';row.dueAt=new Date(Number(j.deliveryDeadline+2n)*1000).toISOString();row.nextCommand='python scripts/run-v2-testnet-live.py --execute-arc-testnet-v2 --resume';row.accounting=await audit(prefix+'-pending');save();continue;}await call(prefix+'-claim','testClient2',m,'claimDeliveryTimeout',[id,j.stateVersion]);j=await job(id);await call(prefix+'-slash','resolver',m,'resolveFaultReview',[id,j.stakeReserved,H('timeout-fault'),H('proof'),j.stateVersion]);}
-const final=await job(id);need(final.status>=6n&&final.stakeReserved===0n&&await m.activeJobs(roles.testOperator)===0n,'TERMINAL_JOB_MISMATCH');await withdraw(prefix+'-withdraw');row.status='passed';delete row.dueAt;row.accounting=await audit(prefix+'-complete');row.txHashes=Object.entries(state.transactions).filter(([k])=>k.startsWith(prefix+'-')).map(([,v])=>v.hash);save();
+}else{let j=await job(id);const now=BigInt((await p.getBlock('latest')).timestamp);if(now<j.deliveryDeadline){row.status='pending';row.dueAt=new Date(Number(j.deliveryDeadline+2n)*1000).toISOString();row.nextCommand='python scripts/run-v2-testnet-live.py --execute-arc-testnet-v2 --resume';row.accounting=await audit(prefix+'-pending');save();continue;}await executeTimeoutStep({prefix,call,audit,claimArgs:['testClient2',m,'claimDeliveryTimeout',[id,j.stateVersion]],slashArgs:async()=>{const afterClaim=await job(id);return ['resolver',m,'resolveFaultReview',[id,afterClaim.stakeReserved,H('timeout-fault'),H('proof'),afterClaim.stateVersion]]},withdrawArgs:['testClient2',m,'withdrawCredit',[]]});}
+const final=await job(id);need(final.status>=6n&&final.stakeReserved===0n&&await m.activeJobs(roles.testOperator)===0n,'TERMINAL_JOB_MISMATCH');if(name!=='timeout')await withdraw(prefix+'-withdraw');row.status='passed';delete row.dueAt;row.accounting=await audit(prefix+'-complete');row.txHashes=Object.entries(state.transactions).filter(([k])=>k.startsWith(prefix+'-')).map(([,v])=>v.hash);save();
 }}
-module.exports={execute};
+module.exports={execute,executeTimeoutStep};
