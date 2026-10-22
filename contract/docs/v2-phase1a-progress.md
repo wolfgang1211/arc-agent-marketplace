@@ -23,7 +23,8 @@ Bu kayıt kabul edilmiş çalışma sırasını izler. Bir testin geçmesi sonra
 | 2. Read adapter + hash/imza fixtures | 184 toplam web; 9 yeni yerel Hardhat; harness ile 13/13 | GREEN; spec PASS; kalite onaylı | `206a6016cd5abc668483286d5f996743abef176e` |
 | 3a. PGlite/pg ortak DB + migration | 9 PGlite geçti; 6 `[real-pg]` atlandı; toplam web 193 geçti / 6 atlandı; build exit 0 | Spec PASS / kalite APPROVED; gerçek Postgres doğrulanmadı | Bu kayıtla aynı DB checkpoint |
 | 3b. Wallet auth / ACL | 10 hedefli (7 auth + 3 ACL); toplam web 203 geçti / 6 real-pg atlandı; build exit 0 | Spec PASS; kalite APPROVED; kuyrukta expiry regresyonu dahil | Bu kayıtla aynı auth checkpoint |
-| 4. Indexer + replay/reorg | Henüz yok | DB kapısına bağımlı | Yok |
+| 4a. Fork-aware indexer kayıt katmanı + migration 002 | 34 hedefli gerçek PGlite geçti; toplam web 228 geçti / 6 real-pg atlandı; build exit 0 | Spec PASS / kalite APPROVED; parent hedefli 34/34 yeniden doğruladı | Bu kayıtla aynı indexer-store checkpoint |
+| 4b. Anahtarsız RPC indexer + projection replay/reorg | Henüz yok | Kayıt katmanı kabul edildi; sıradaki yerel görev | Yok |
 | 5. API | Henüz yok | Önceki kapılara bağımlı | Yok |
 | 6. Siyah arka planlı /v2 UI | Henüz yok | Önceki kapılara bağımlı | Yok |
 | 7. Gerçek yerel E2E | Henüz yok | Tamamlanmadı; bulut kaynağı açma kapısı kapalı | Yok |
@@ -46,6 +47,13 @@ Bu kayıt kabul edilmiş çalışma sırasını izler. Bir testin geçmesi sonra
 - Onaylı per-user WSL2 kurulum denemesi CreateProcess aşamasında `WinError 1260` ile Windows grup ilkesi tarafından engellendi; exit 1. Installer çalıştırılamadı, Docker kurulmuş sayılmaz.
 - İlke gevşetilmedi/aşılmadı, mevcut volume veya V1 env değiştirilmedi. Öneri: imzalı Docker installer için yetkili Windows uygulama iznini sağlamak. Otomatik reboot veya güvenlik ilkesi değişikliği yok.
 - Docker yerine SQLite veya sahte persistence kullanılmayacak; gerçek PostgreSQL/E2E kanıtı üretilemeden başarılı raporlanmayacak.
+
+## Indexer kayıt katmanı kabulü (4a)
+
+- `001-core.sql` değişmedi. Ortak PGlite/pg `002-indexer.sql`, fork-aware blok/log tabloları ve tam uint256 stateVersion alanlarını ekler; eski belirsiz log tabloları korunur, emitter/canonical kimliği uydurulmaz. Bekleyen migration'lar tek atomic transaction ve ayrı checksum kayıtlarıyla uygulanır.
+- Header/event/cursor/canonical flag atomikliği, doğrulanmış ortak ata ve 32 blok reorg sınırı, orphan retention/reactivation, crash rollback, restart/replay, boş-log aralıkları, stale cursor ve off-chain kayıt korunumu gerçek PGlite ile doğrulandı.
+- Deep snapshot/TOCTOU, cap-before-access, küçük/büyük harf hash kimliği, secret-safe proxy hataları ve kök/iç içe non-finite JSON reddi gerçek RED/GREEN regresyonlarıyla kapandı. Parent son dört hedefli dosyayı kendisi çalıştırdı: 34/34, exit 0; tam web 228 geçti / 6 real-pg atlandı; build exit 0.
+- Bu kabul yalnız persistence/migration katmanıdır. Canlı RPC polling, ABI decode ve event-derived projection/replay henüz yok; API/UI/E2E tamamlanmadı. Çok bağlantılı PostgreSQL ve lease doğrulaması iddia edilmez.
 
 ## Onay sınırları
 

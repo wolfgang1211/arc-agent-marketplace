@@ -6,7 +6,10 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import { PGlite } from '@electric-sql/pglite';
 
 const MIGRATION_ID = '001-core';
-const MIGRATION_URL = new URL('../../../db/v2/migrations/001-core.sql', import.meta.url);
+const MIGRATIONS = Object.freeze([
+  Object.freeze({ id: '001-core', url: new URL('../../../db/v2/migrations/001-core.sql', import.meta.url) }),
+  Object.freeze({ id: '002-indexer', url: new URL('../../../db/v2/migrations/002-indexer.sql', import.meta.url) }),
+]);
 const UINT256_MAX = '115792089237316195423570985008687907853269984665640564039457584007913129639935';
 export const DEFAULT_PGLITE_DATA_DIR = path.join(os.homedir(), 'AppData', 'Local', 'hermes', 'state', 'alphaboard-v2', 'pglite');
 
@@ -123,21 +126,31 @@ export function createPgDb({ pool } = {}) {
   });
 }
 
-export async function migrate(db) {
-  const sql = await readFile(MIGRATION_URL, 'utf8');
-  const checksum = createHash('sha256').update(sql).digest('hex');
+export async function migrate(db, { migrationExec } = {}) {
+  const migrations = [];
+  for (const migration of MIGRATIONS) {
+    const sql = await readFile(migration.url, 'utf8');
+    migrations.push({ ...migration, sql, checksum: createHash('sha256').update(sql).digest('hex') });
+  }
   return db.transaction(async (tx) => {
     await tx.query('CREATE TABLE IF NOT EXISTS v2_schema_migrations (migration_id TEXT PRIMARY KEY, checksum TEXT NOT NULL, applied_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP)');
-    const existing = await tx.query('SELECT checksum FROM v2_schema_migrations WHERE migration_id = $1', [MIGRATION_ID]);
-    if (existing.rows.length > 0) {
-      if (existing.rows[0].checksum !== checksum) throw new Error(`migration checksum drift: ${MIGRATION_ID}`);
-      return { migrationId: MIGRATION_ID, checksum, applied: false };
+    const results = [];
+    for (const migration of migrations) {
+      const existing = await tx.query('SELECT checksum FROM v2_schema_migrations WHERE migration_id = $1', [migration.id]);
+      if (existing.rows.length > 0) {
+        if (existing.rows[0].checksum !== migration.checksum) throw new Error(`migration checksum drift: ${migration.id}`);
+        results.push({ migrationId: migration.id, checksum: migration.checksum, applied: false });
+        continue;
+      }
+      if (migrationExec) await migrationExec(migration.id, migration.sql, tx);
+      else await tx[TRANSACTION_EXEC](migration.sql);
+      await tx.query('INSERT INTO v2_schema_migrations (migration_id, checksum) VALUES ($1, $2)', [migration.id, migration.checksum]);
+      results.push({ migrationId: migration.id, checksum: migration.checksum, applied: true });
     }
-    await tx[TRANSACTION_EXEC](sql);
-    await tx.query('INSERT INTO v2_schema_migrations (migration_id, checksum) VALUES ($1, $2)', [MIGRATION_ID, checksum]);
-    return { migrationId: MIGRATION_ID, checksum, applied: true };
+    const latest = results.at(-1);
+    return { ...latest, applied: results.some((result) => result.applied), results };
   });
 }
 
-export const v2Schema = Object.freeze({ migrationId: MIGRATION_ID, uint256Max: UINT256_MAX });
-export { MIGRATION_URL };
+export const v2Schema = Object.freeze({ migrationId: '002-indexer', uint256Max: UINT256_MAX });
+export { MIGRATIONS };
