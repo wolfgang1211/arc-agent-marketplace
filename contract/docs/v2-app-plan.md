@@ -8,7 +8,7 @@
 
 **Tech Stack:** Mevcut Next.js 14.2.35, React, viem/wagmi; V2'ye özel JS/ESM modülleri, PostgreSQL + SQL migrations/pg; ayrı Node.js indexer. Bu iş kapsamında V1'i TypeScript'e dönüştürmek veya framework yükseltmek yok.
 
-**Durum:** 20 Ekim 2026, revize kapsamla kabul edildi. Faz 1a tamamen yerelde uygulanır; yalnız V2 Docker PostgreSQL kurulumu onaylıdır. Railway V2 Postgres + anahtarsız indexer barındırma varsayılanı ve $10 hedef/$15 üst sınır kabul edildi; kaynak oluşturma ancak yerel E2E sonrasında ayrı onayla yapılır. Vercel production branch=main ve Preview env'lerinde gizli anahtar bulunmadığı Yusuf tarafından panelden doğrulanmış, feat/marketplace-v2 push'u onaylanmıştır. Bu beyan API denetimi yapıldığı şeklinde raporlanmaz.
+**Durum:** Revize kapsam kabul edildi. Son kullanıcı kararı: Docker veya başka yükleyici çalıştırılmayacak; Windows güvenlik ilkesi değiştirilmeyecek/aşılmayacak. Faz 1a yerelde `@electric-sql/pglite` ile ilerler; aynı bağlantı arayüzü ve aynı SQL migration dosyaları daha sonra `pg` ile kullanılır. Çok bağlantı, advisory lock/indexer kilidi ve gerçek eşzamanlılık kabulü `[real-pg]` testleriyle ayrılır: şimdilik "gerçek Postgres bekliyor", geçmiş sayılmaz. Railway V2 Postgres + anahtarsız indexer, $10 hedef/$15 üst sınır ve yerel E2E sonrası ayrı onay kapısı korunur. Yusuf production branch=main ve Preview env secret izolasyonunu panelden doğruladı; Faz 1a yerel commit'lerinin feat/marketplace-v2 push'u da artık açıkça onaylıdır.
 
 **Tema:** Faz 1a arayüzü siyah arka planlı koyu tema; yalnız V2 scoped stilleri. V1 globals/layout/provider değiştirilmez.
 
@@ -92,7 +92,7 @@ Type birebir: `Application(uint256 jobId,address operator,bytes32 termsHash,uint
 - DB'den gizleme imzayı iptal etmez. Kesin iptal `revokeApplication(jobId)`; tüm imzaları iptal `invalidateAllApplications()`. Global epoch değişimi için event yok; her doğrulamada getter okunur.
 - `maxActiveJobs=0` kontratta sınırsızdır; UI tek aktif iş garantisi uyduramaz. İlk kontrollü operatör testlerinde 1 ayarı önerilir, fakat bunun transaction'ı ayrıca kullanıcı tarafından onaylanır.
 
-### 4.3 PostgreSQL şeması (tasarım, bu turda migration yok)
+### 4.3 Ortak PostgreSQL/PGlite şeması (Faz 1a migration kapsamı)
 
 V2 tabloları `v2_` prefix'i kullanır. Sayısal USDC, nonce, block ve stateVersion için integer/numeric; JavaScript floating point para hesabı yok. Zaman UTC, adresler doğrulanmış binary/normalize edilmiş lookup anahtarı; kullanıcıdan gelen orijinal kimlikler audit'te korunur.
 
@@ -176,7 +176,7 @@ Vault: `StakeDeposited`, `StakeWithdrawn`, `StakeReserved`, `StakeReleased`, `Fa
 
 ### 6.1 Yerel başlangıç
 
-Öneri: yalnız V2 için Docker Compose PostgreSQL 16, ayrı named volume, yalnız `127.0.0.1` port binding, gerçek V1 `.env` dosyalarından bağımsız disposable test credential. İlk kullanımda Docker Desktop/port/disk ön kontrolü yapılır ve kurulum onayı yeniden alınır. Mevcut volume silinmez; `down -v` veya production bağlantısı yok. Local indexer geliştirmede PM2 ile ayrı isimli process olabilir, fakat bu turda başlatılmaz.
+Onaylı yerel yol: Node.js içinde PGlite; kurulum programı, Docker, WSL değişikliği veya güvenlik ilkesi müdahalesi yok. Veri dosyaları repo dışında tutulur. `query`/`transaction`/`close` bağlantı arayüzü hem PGlite hem `pg` için aynıdır; SQL migration dosyaları iki sürücüde de değişmez. PGlite tek kullanıcı/bağlantı olduğundan yerel indexer ve API tek DB sahibiyle çalışır; aynı veri dizinine bağımsız çoklu process/pool açılmaz. Gerçek Postgres kilit/çoklu oturum/eşzamanlı yazma/bağlantı havuzu testleri `[real-pg]` etiketiyle atlanır ve "gerçek Postgres bekliyor" olarak raporlanır. Railway kaynağı ve real-pg çalıştırma onayı ayrı kapıdır.
 
 ### 6.2 Canlı seçenekleri
 
@@ -225,7 +225,7 @@ https://developers.cloudflare.com/r2/pricing/
 
 ### Faz 1a: Yerel çekirdek akış + güvenli çıkışlar (onaylı)
 
-**Bağlayıcı sıra:** (1) V1 npm test/build baseline ve route izolasyon testleri, (2) canonical read adapter + hash/EIP-712 fixture'ları, (3) yalnız V2 local Docker Postgres + migration/auth/ACL, (4) indexer + replay/reorg testleri, (5) API, (6) siyah arka planlı /v2 UI, (7) gerçek yerel PostgreSQL + EVM E2E. Her adım RED -> minimum kod -> GREEN -> inceleme -> yerel commit; sonraki bağımlı adım kapı geçmeden başlamaz.
+**Bağlayıcı sıra:** (1) V1 npm test/build baseline ve route izolasyon testleri, (2) canonical read adapter + hash/EIP-712 fixture'ları, (3) V2 PGlite/pg ortak DB katmanı + migration/auth/ACL, (4) indexer + replay/reorg testleri, (5) API, (6) siyah arka planlı /v2 UI, (7) gerçek yerel PGlite persistence + EVM + tarayıcı E2E. Her adım RED -> minimum kod -> GREEN -> inceleme -> yerel commit; sonraki bağımlı adım kapı geçmeden başlamaz. Bu yerel kabul, `[real-pg]` çok bağlantı/kilit testlerinin geçtiği anlamına gelmez; onlar Railway V2 onayından sonra ayrıca çalıştırılır.
 
 **Kesin 1a kapsamı:** iş listesi/detay, genel iş formu, iş açma, EIP-712 başvuru, client ataması, link ile teslim, revizyon, onay, mutual, dispute açma, minimal yetkili resolver çözüm ekranı, credit çekme, teminat yatırma/çekme; open cancel/expiry, delivery/review/dispute timeout claim ve fault review release. Para hareketi cüzdan imzası ve receipt/readback ile; sunucu/indexer anahtarsız. Sahte persistence/SQLite, fixture-only E2E veya boş API stub'ı tamamlanmış sayılmaz.
 
@@ -233,14 +233,14 @@ https://developers.cloudflare.com/r2/pricing/
 
 Planlanan dosyalar:
 - `web/lib/v2/{chain,contracts,terms,applications}.mjs`, `web/lib/v2/server/{chain-reader,wallet-session,job-access,db}.mjs`. `uploads.mjs` yalnız 1b.
-- `web/db/v2/migrations/001-core.sql`, `infra/v2/docker-compose.yml`, `.env` içermeyen örnek yapılandırma belgesi.
+- `web/db/v2/migrations/001-core.sql`, PGlite/pg ortak adapter ve `.env` içermeyen örnek yapılandırma/uyumluluk belgesi; Docker Compose yok.
 - Bölüm 3'teki yalnız yeni route'lar; `web/app/api/v2/**/route.js`.
 - `services/v2-indexer/{package.json,src/index.mjs,src/reducer.mjs,src/cursor.mjs,test/*.test.mjs}`; V1 bot klasörü kullanılmaz.
 - `web/test/v2-{route-isolation,terms,applications,auth,job-access,chain-reader,actions}.test.mjs`; browser E2E `web/e2e/v2-*.spec.js`. Upload testleri/endpoint'leri 1b'ye aittir.
 
 Teslim ölçütleri:
 - Her kod görevi önce gerçek failing test, sonra minimum uygulama ve passing test; fixture-only çıktı uçtan uca kanıt diye sunulmaz.
-- Tüm zorunlu akışlar gerçek local PostgreSQL + yerel EVM üzerinde; başarı receipt/hash/bakiye ve API rol matrisiyle doğrulanır. Redis/Kafka/GraphQL gibi ek sistemler gerekmeden başlangıç.
+- Tüm zorunlu yerel akışlar gerçek PGlite SQL/persistence + yerel EVM üzerinde; başarı receipt/hash/bakiye ve API rol matrisiyle doğrulanır. PGlite'ta doğrulanamayan gerçek Postgres davranışları `[real-pg]` atlanan testler olarak ayrı sayılır; tam Postgres eşdeğerliği iddia edilmez. Redis/Kafka/GraphQL gibi ek sistemler gerekmeden başlangıç.
 - V1 `npm test` ve `npm run build` baseline korunur; ayrıca indexer testleri, DB integration, V2 browser E2E ve mobil/masaüstü walletless form doğrulanır.
 - Reorg, duplicate log, boş blok, RPC 429, yarım batch crash ve restart testi deterministik; replay aynı projection'ı üretir. Backup restore imzalı başvuruları ve dosya ACL'sini korur.
 - Hatalı ağ/imza/nonce/terms/rol, stale version, aynı anda award, double-click, başarısız receipt ve off-chain hide/on-chain revoke ayrımı test edilir.
@@ -318,12 +318,12 @@ Her ödeme yolunda: Marketplace token balance = escrowed + creditsLiability + a�
 
 | Karar | Önerilen varsayılan | Onay verilmeden yapılmayacak |
 |---|---|---|
-| DB / indexer | Kabul: local V2 Docker -> ayrı Railway V2 Postgres + anahtarsız worker; $10 hedef/$15 üst sınır | Docker yerel kurulumu onaylı; Railway ancak 1a yerel E2E sonrası ayrı onayla |
+| DB / indexer | Kabul: local V2 PGlite, ortak pg arayüzü -> ayrı Railway V2 Postgres + anahtarsız worker; $10 hedef/$15 üst sınır | Docker/yükleyici yasak; Railway ve real-pg testleri ancak 1a yerel E2E sonrası ayrı onayla |
 | Dosyalar | Private R2 Standard, 25 MB x 10 sınırı, büyük teslimler link; bucket/scanner bütçesi ayrıca | Bucket/key/sharing veya upload kurulumu |
 | Faz sırası | Kabul: 1a -> ayrı 1b onayı -> 2 -> 3 | 1b/2 kapsamını 1a'ya çekme |
-| Faz 1a başlatma | Yerel kodlama ve izole Docker kurulumu onaylı | Bulut kaynağı, V1 dosya değişikliği, anahtar/custody |
+| Faz 1a başlatma | Yerel kodlama, PGlite migration/auth ve devam sırası onaylı | Docker/yükleyici, bulut kaynağı, V1 dosya değişikliği, anahtar/custody |
 | Kaçırılan timeout | Yeni talimatla Job 5 tek manuel completion onaylı; her adımdan sonra korunum | Beklenmedik sonuçta tekrar deneme veya yeni cron |
 | Manuel wallet resolver | Önce effective resolver'ı göster; bağımsız resolver tercih edilirse ayrıca owner-policy onayı | Manual client'ı whitelist/resolver map veya testClient yapma |
 | House | Şimdilik deferred; anahtarsız dry-run ve ayrı signer kararı sonraki iş | Railway key okuma/kopyalama veya V1 bot değişikliği |
 
-Push kullanıcı tarafından onaylandı: Yusuf panelden production branch `main` ve Preview env'lerinde gizli anahtar bulunmadığını doğruladı. Yalnız `feat/marketplace-v2` push; preview build sonucu başarısızsa raporlanır, production/env değiştirilmez. Bu onay main merge/production deploy veya sonraki Faz 1a commit'lerini otomatik tekrar push etme izni değildir.
+Push kullanıcı tarafından onaylandı: Yusuf panelden production branch `main` ve Preview env'lerinde gizli anahtar bulunmadığını doğruladı. Son talimat Faz 1a yerel commit'lerinin `feat/marketplace-v2` dalına push'unu da kapsar; preview build sonucu başarısızsa raporlanır, production/env değiştirilmez. `main` merge/production deploy onaylı değildir.

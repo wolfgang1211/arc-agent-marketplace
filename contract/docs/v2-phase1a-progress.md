@@ -20,14 +20,23 @@ Bu kayıt kabul edilmiş çalışma sırasını izler. Bir testin geçmesi sonra
 | Adım | Doğrulanmış test sayısı | Durum | Yerel commit |
 |---|---:|---|---|
 | 1. V1 baseline / V2 route izolasyon policy | 169 baseline; 5 yeni; 174 toplam | GREEN; spec PASS; kalite APPROVED | `a53209d22765da9f9224b364ce0d1c6e017608f2` |
-| 2. Read adapter + hash/imza fixtures | 184 toplam web; 9 yeni yerel Hardhat; harness ile 13/13 | GREEN; spec PASS; kalite onaylı | Bu kayıtla aynı yerel checkpoint |
-| 3. Docker Postgres + migration/auth | Henüz yok | Docker kurulumu Windows ilkesi tarafından engellendi | Yok |
+| 2. Read adapter + hash/imza fixtures | 184 toplam web; 9 yeni yerel Hardhat; harness ile 13/13 | GREEN; spec PASS; kalite onaylı | `206a6016cd5abc668483286d5f996743abef176e` |
+| 3a. PGlite/pg ortak DB + migration | 9 PGlite geçti; 6 `[real-pg]` atlandı; toplam web 193 geçti / 6 atlandı; build exit 0 | Spec PASS / kalite APPROVED; gerçek Postgres doğrulanmadı | Bu kayıtla aynı DB checkpoint |
+| 3b. Wallet auth / ACL | Henüz yok | DB checkpoint sonrası sıradaki yerel görev | Yok |
 | 4. Indexer + replay/reorg | Henüz yok | DB kapısına bağımlı | Yok |
 | 5. API | Henüz yok | Önceki kapılara bağımlı | Yok |
 | 6. Siyah arka planlı /v2 UI | Henüz yok | Önceki kapılara bağımlı | Yok |
 | 7. Gerçek yerel E2E | Henüz yok | Tamamlanmadı; bulut kaynağı açma kapısı kapalı | Yok |
 
-## Docker engeli
+## Yerel DB kararı: PGlite (güncel)
+
+- Son kullanıcı talimatıyla Docker kurulumu iptal edildi; hiçbir yükleyici çalıştırılmaz ve Windows güvenlik ilkesi değiştirilmez/aşılmaz.
+- Faz 1a `@electric-sql/pglite` ile sürer. PGlite/pg tek bağlantı arayüzü ve aynı SQL migration dosyalarını kullanır; veri dizini repo dışındadır.
+- Çok bağlantı, eşzamanlı yazma, advisory lock/indexer lease ve ilgili Postgres davranışları `[real-pg]` testleri olarak ayrılır; "gerçek Postgres bekliyor" gerekçesiyle atlanır, geçmiş sayılmaz. Test sayısı gerçek çalıştırma sonrası yazılır.
+- Yeni onay Job 5 için tek withdraw-only denemeyi ve Faz 1a commit push'unu kapsar. Parent salt-okuma preflight: block 68542459, client credit 6,000,000 raw; latest=pending nonce `0x16`, bekleyen işlem görülmedi. Bu okuma henüz çekim gönderildiği anlamına gelmez; broadcast öncesi tekrar kontrol edilir.
+- Migration/DB implementasyonu ve tek-kullanımlık çekim runner hazırlığı sürüyor; auth/ACL bundan sonra, indexer/API/UI/E2E kapıları korunur.
+
+## Docker engeli (tarihsel, yeniden denenmeyecek)
 
 - Mevcut WSL durumu: Ubuntu, varsayılan WSL 2.
 - Resmî Docker Desktop Windows AMD64 4.95.0 installer indirildi: `C:/Users/wolfgang/Downloads/DockerDesktop-4.95.0-Installer.exe`.
