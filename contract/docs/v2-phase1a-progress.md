@@ -34,7 +34,8 @@ Bu kayıt kabul edilmiş çalışma sırasını izler. Bir testin geçmesi sonra
 - Faz 1a `@electric-sql/pglite` ile sürer. PGlite/pg tek bağlantı arayüzü ve aynı SQL migration dosyalarını kullanır; veri dizini repo dışındadır.
 - Çok bağlantı, eşzamanlı yazma, advisory lock/indexer lease ve ilgili Postgres davranışları `[real-pg]` testleri olarak ayrılır; "gerçek Postgres bekliyor" gerekçesiyle atlanır, geçmiş sayılmaz. Test sayısı gerçek çalıştırma sonrası yazılır.
 - Yeni onay Job 5 için tek withdraw-only denemeyi ve Faz 1a commit push'unu kapsar. Parent salt-okuma preflight: block 68542459, client credit 6,000,000 raw; latest=pending nonce `0x16`, bekleyen işlem görülmedi. Bu okuma henüz çekim gönderildiği anlamına gelmez; broadcast öncesi tekrar kontrol edilir.
-- Migration/DB implementasyonu ve tek-kullanımlık çekim runner hazırlığı sürüyor; auth/ACL bundan sonra, indexer/API/UI/E2E kapıları korunur.
+- Job 5 son durum: yeni onaylı withdraw-only runner spec/güvenlik GO, 14/14 yerel test ve gerçek keyless preflight sonrası **bir kez** broadcast edildi. Tx `0x9426285500c04fb4b77ff9d3907e0977d1ec7d973f1e4035df44db177342c15c`, receipt block68548436. Gross 6 USDC; gas0.00146055, net bakiye artışı5.99853945 USDC; credit0. Parent 55receipt/full-run conservation ve runtime'ları block68548660'ta tekrar doğruladı. Market0=esc0+credit0; Vault5=free5+res0; aktif0. Önceki stop kaydı JSON geçmişinde korunur; bir daha çekim gönderilmez.
+- DB/migration checkpoint `11a43a92cd50d2f7ffa087cad958c4a6c1927c1c` push sonrası GitHub'dan doğrulandı; auth/session/ACL implementasyonu devam ediyor. Indexer/API/UI/E2E henüz tamamlanmadı.
 
 ## Docker engeli (tarihsel, yeniden denenmeyecek)
 

@@ -876,6 +876,22 @@
       "gasUsed": "126860",
       "gasPrice": "25000000000",
       "gasCostRaw": "3171500000000000"
+    },
+    "scenario-timeout-withdraw-testClient2": {
+      "label": "scenario-timeout-withdraw-testClient2",
+      "role": "testClient2",
+      "hash": "0x9426285500c04fb4b77ff9d3907e0977d1ec7d973f1e4035df44db177342c15c",
+      "from": "0x64b223Aa99F0a1e3CD151fb982E2ffF9255035c8",
+      "to": "0xFA156B7A5205B123c8a22A807ba98405e36130f1",
+      "nonce": 22,
+      "dataHash": "0x1734205a640855aff5561dfca317565ba7162a8b4a63e880627aa2130a51c274",
+      "value": "0",
+      "status": "confirmed",
+      "gasLimit": "87948",
+      "blockNumber": 68548436,
+      "gasUsed": "58422",
+      "gasPrice": "25000000000",
+      "gasCostRaw": "1460550000000000"
     }
   },
   "scenarios": {
@@ -991,21 +1007,23 @@
       ]
     },
     "timeout": {
-      "status": "stopped",
+      "status": "passed",
       "jobId": "5",
       "applyBy": "1792448928",
       "deliveryDeadlineReached": true,
       "jobStatus": "Refunded",
-      "completionStatus": "claim_and_slash_confirmed_withdrawal_not_sent",
-      "clientCreditRaw": "6000000",
+      "completionStatus": "claim_slash_and_newly_approved_single_withdrawal_confirmed",
+      "clientCreditRaw": "0",
       "retryAllowed": false,
-      "note": "Stopped after RPC SERVER_ERROR before client withdrawal. Claim and full 5 USDC slash are confirmed; 6 USDC remains withdrawable credit. No retry was attempted. New explicit user approval is required for any further transaction.",
+      "note": "Claim and 5 USDC slash were confirmed earlier. A newly approved single withdraw-only attempt confirmed 6 USDC gross transfer; credit is zero. Historical RPC stop is preserved. No second broadcast was attempted.",
       "accounting": {
-        "label": "manual-timeout-stopped-readback",
-        "blockNumber": 68173561,
-        "marketBalance": "6000000",
+        "label": "job5-single-approved-withdrawal-parent-verified",
+        "blockNumber": 68548436,
+        "native": "12632042925000000000",
+        "erc20": "12632042",
+        "marketBalance": "0",
         "escrowed": "0",
-        "creditsLiability": "6000000",
+        "creditsLiability": "0",
         "vaultBalance": "5000000",
         "freeStake": "5000000",
         "reservedStake": "0",
@@ -1018,7 +1036,16 @@
         "0xc36f194f11be845cbd31119386bcb0528eee1fe60fdf4b68d1b798d5945b3dd6",
         "0xebaf8cb1ff2d2c70d3f736e0e644e6b4be0f19dad331472bc294a26e37ef9dbd",
         "0x1e518303ebfc7449ae5145a2fcd02735fbef5254618515bc2c674b39b96bb837",
-        "0x0cac31aed0b7021c93b6e32bc9e29f5c05fd2ecf06d8a86a50b971840b078fe4"
+        "0x0cac31aed0b7021c93b6e32bc9e29f5c05fd2ecf06d8a86a50b971840b078fe4",
+        "0x9426285500c04fb4b77ff9d3907e0977d1ec7d973f1e4035df44db177342c15c"
+      ],
+      "historicalStops": [
+        {
+          "status": "stopped",
+          "completionStatus": "claim_and_slash_confirmed_withdrawal_not_sent",
+          "clientCreditRaw": "6000000",
+          "note": "Stopped after RPC SERVER_ERROR before client withdrawal. Claim and full 5 USDC slash are confirmed; 6 USDC remains withdrawable credit. No retry was attempted. New explicit user approval is required for any further transaction."
+        }
       ]
     }
   },
@@ -1256,6 +1283,21 @@
       "stakeLiability": "10000000",
       "activeJobs": "0",
       "passed": true
+    },
+    {
+      "label": "job5-single-approved-withdrawal-parent-verified",
+      "blockNumber": 68548436,
+      "native": "12632042925000000000",
+      "erc20": "12632042",
+      "marketBalance": "0",
+      "escrowed": "0",
+      "creditsLiability": "0",
+      "vaultBalance": "5000000",
+      "freeStake": "5000000",
+      "reservedStake": "0",
+      "stakeLiability": "5000000",
+      "activeJobs": "0",
+      "passed": true
     }
   ],
   "house": {
@@ -1356,10 +1398,10 @@
       }
     }
   },
-  "totalGas": "13198620",
-  "totalGasCostRaw": "329965500000000000",
-  "status": "stopped",
-  "updatedAt": "2026-10-20T11:28:39.419Z",
+  "totalGas": "13257042",
+  "totalGasCostRaw": "331426050000000000",
+  "status": "complete",
+  "updatedAt": "2026-10-22T16:32:41.399574+00:00",
   "owner": {
     "address": "0xf5e14962e46F80fAA40570bD86BccE83AA6626fF",
     "verified": true
@@ -1395,16 +1437,16 @@
   "independentReadback": {
     "wholeRunConservation": {
       "initialNativeRaw": "74472705359702930932",
-      "finalNativeRaw": "74142739859702930932",
-      "gasCostRaw": "329965500000000000",
+      "finalNativeRaw": "74141279309702930932",
+      "gasCostRaw": "331426050000000000",
       "passed": true
     },
     "passed": true,
-    "checkedAt": "2026-10-20T11:28:13.808Z",
-    "blockNumber": 68173561,
-    "receiptCount": 54,
-    "totalGas": "13198620",
-    "gasCostUSDC": "0.3299655",
+    "checkedAt": "2026-10-22T16:33:32.919Z",
+    "blockNumber": 68548660,
+    "receiptCount": 55,
+    "totalGas": "13257042",
+    "gasCostUSDC": "0.33142605",
     "owner": "0xf5e14962e46F80fAA40570bD86BccE83AA6626fF",
     "attestation": {
       "vault": {
@@ -1471,9 +1513,9 @@
       }
     ],
     "accounting": {
-      "marketBalance": "6000000",
+      "marketBalance": "0",
       "escrowed": "0",
-      "creditsLiability": "6000000",
+      "creditsLiability": "0",
       "vaultBalance": "5000000",
       "freeStake": "5000000",
       "reservedStake": "0",
@@ -1481,20 +1523,17 @@
     }
   },
   "manualCompletion": {
-    "status": "stopped_after_slash_withdrawal_not_sent",
+    "status": "completed_after_new_single_withdrawal_approval",
     "jobId": "5",
     "mode": "newly_approved_single_manual_run",
-    "errorCode": "SERVER_ERROR",
-    "errorAt": "2026-10-20T11:24:37.941Z",
-    "failureBoundary": "After confirmed slash and before any withdrawal broadcast; exact failing RPC subcall was not preserved.",
     "claimTxHash": "0x1e518303ebfc7449ae5145a2fcd02735fbef5254618515bc2c674b39b96bb837",
     "slashTxHash": "0x0cac31aed0b7021c93b6e32bc9e29f5c05fd2ecf06d8a86a50b971840b078fe4",
     "slashAmountRaw": "5000000",
-    "withdrawTxHash": null,
-    "withdrawalSent": false,
-    "clientCreditRaw": "6000000",
+    "withdrawTxHash": "0x9426285500c04fb4b77ff9d3907e0977d1ec7d973f1e4035df44db177342c15c",
+    "withdrawalSent": true,
+    "clientCreditRaw": "0",
     "retryAttempted": false,
-    "newApprovalRequired": true,
+    "newApprovalRequired": false,
     "parentReceiptReadbackBlock": 68173633,
     "parentReceiptReadbackAt": "2026-10-20T11:28:39.419Z",
     "receiptSenderCalldataAndChainVerified": true,
@@ -1509,7 +1548,113 @@
     "wholeRunConservationPassed": true,
     "aggregateRepair": "Recomputed gas totals from all 54 confirmed receipt records after the launcher stopped before its final aggregate update; no chain transaction was sent for this evidence repair.",
     "historicalCronRecord": "scheduledCompletion and its nested completion describe the earlier removed-without-running one-shot, not this newly approved manual attempt.",
-    "scenarioPassed": false
+    "scenarioPassed": true,
+    "withdrawalBroadcastCount": 1,
+    "withdrawalReceiptBlock": 68548436,
+    "withdrawalProof": {
+      "attestation": {
+        "market": {
+          "address": "0xFA156B7A5205B123c8a22A807ba98405e36130f1",
+          "passed": true,
+          "runtimeBytes": 23908,
+          "runtimeHash": "0xb0c95b7be8af29f83ccda60bbf4f7503fb93e505c8cf425fd3e5a3bb6b4acd2b",
+          "normalizedHash": "0x7d24e8ddcdcb8b42aa93c453c363ad0b25f259e38362d5a11df3d5a87ed45166",
+          "immutableValues": {
+            "_cachedDomainSeparator": "0xc29b5f833698fa743c529e6d204aa85a8304086ca4b4a91909fef745989847cd",
+            "_cachedChainId": "5042002",
+            "_cachedThis": "0xFA156B7A5205B123c8a22A807ba98405e36130f1",
+            "_hashedName": "0xb3733c3a83a7725883224cb7b235f11ba85e12bc875aab321c73e88b29ba9e7b",
+            "_hashedVersion": "0xc89efdaa54c0f20c7adf612882df0950f5a951637e0307cdcb4c672f298b8bc6",
+            "_name": "AlphaBoard Agent Marketplace V2",
+            "_version": "1",
+            "usdc": "0x3600000000000000000000000000000000000000",
+            "collateralVault": "0xD5B271b7Bf4696d662B2bcB1a94b408887c6C423"
+          }
+        },
+        "vault": {
+          "address": "0xD5B271b7Bf4696d662B2bcB1a94b408887c6C423",
+          "passed": true,
+          "runtimeBytes": 4854,
+          "runtimeHash": "0x5dab8cc89ee21413cc07cccb618f5beebef5bf1c7979743dca9614c846457c7e",
+          "normalizedHash": "0xc11a1314025fca9eb4fb196c6cae0d6dfc53bc847a675f56cbed5204f015ef5f",
+          "immutableValues": {
+            "token": "0x3600000000000000000000000000000000000000",
+            "marketplace": "0xFA156B7A5205B123c8a22A807ba98405e36130f1",
+            "treasury": "0xd520bee785a4b6bea15c94f20f640aaad00088ab"
+          }
+        },
+        "pair": {
+          "marketplace": "0xFA156B7A5205B123c8a22A807ba98405e36130f1",
+          "vault": "0xD5B271b7Bf4696d662B2bcB1a94b408887c6C423"
+        }
+      },
+      "pre": {
+        "chainId": "5042002",
+        "latestNonce": 22,
+        "pendingNonce": 22,
+        "blockNumber": 68548417,
+        "credit": "6000000",
+        "from": "0x64b223Aa99F0a1e3CD151fb982E2ffF9255035c8",
+        "job": {
+          "status": 7,
+          "reserved": "0"
+        },
+        "balances": {
+          "native": "6633503475000000000",
+          "erc20": "6633503",
+          "marketBalance": "6000000",
+          "escrowed": "0",
+          "creditsLiability": "6000000",
+          "vaultBalance": "5000000",
+          "freeStake": "5000000",
+          "reservedStake": "0",
+          "stakeLiability": "5000000",
+          "activeJobs": "0"
+        }
+      },
+      "post": {
+        "chainId": "5042002",
+        "latestNonce": 23,
+        "pendingNonce": 23,
+        "blockNumber": 68548436,
+        "credit": "0",
+        "from": "0x64b223Aa99F0a1e3CD151fb982E2ffF9255035c8",
+        "job": {
+          "status": 7,
+          "reserved": "0"
+        },
+        "balances": {
+          "native": "12632042925000000000",
+          "erc20": "12632042",
+          "marketBalance": "0",
+          "escrowed": "0",
+          "creditsLiability": "0",
+          "vaultBalance": "5000000",
+          "freeStake": "5000000",
+          "reservedStake": "0",
+          "stakeLiability": "5000000",
+          "activeJobs": "0"
+        }
+      },
+      "accounting": {
+        "native": "12632042925000000000",
+        "erc20": "12632042",
+        "marketBalance": "0",
+        "escrowed": "0",
+        "creditsLiability": "0",
+        "vaultBalance": "5000000",
+        "freeStake": "5000000",
+        "reservedStake": "0",
+        "stakeLiability": "5000000",
+        "activeJobs": "0"
+      },
+      "transferRaw": "6000000",
+      "gasCostRaw": "1460550000000000",
+      "conservation": true
+    },
+    "parentWithdrawalReceiptAndAccountingVerified": true,
+    "wholeRunConservationStatus": "verified_55_receipts_at_block_68548660",
+    "previousFailureRecordedInHistory": true
   },
   "recoveredErrors": [
     {
@@ -1569,5 +1714,49 @@
       "conservationPassed": true,
       "note": "The financial balances remain conserved, but neither the timeout refund, collateral slash nor client withdrawal has executed. This is not a passed timeout scenario."
     }
+  },
+  "manualCompletionHistory": [
+    {
+      "status": "stopped_after_slash_withdrawal_not_sent",
+      "jobId": "5",
+      "mode": "newly_approved_single_manual_run",
+      "errorCode": "SERVER_ERROR",
+      "errorAt": "2026-10-20T11:24:37.941Z",
+      "failureBoundary": "After confirmed slash and before any withdrawal broadcast; exact failing RPC subcall was not preserved.",
+      "claimTxHash": "0x1e518303ebfc7449ae5145a2fcd02735fbef5254618515bc2c674b39b96bb837",
+      "slashTxHash": "0x0cac31aed0b7021c93b6e32bc9e29f5c05fd2ecf06d8a86a50b971840b078fe4",
+      "slashAmountRaw": "5000000",
+      "withdrawTxHash": null,
+      "withdrawalSent": false,
+      "clientCreditRaw": "6000000",
+      "retryAttempted": false,
+      "newApprovalRequired": true,
+      "parentReceiptReadbackBlock": 68173633,
+      "parentReceiptReadbackAt": "2026-10-20T11:28:39.419Z",
+      "receiptSenderCalldataAndChainVerified": true,
+      "accountingReadbackBlock": 68173561,
+      "marketBalanceRaw": "6000000",
+      "escrowedRaw": "0",
+      "creditsLiabilityRaw": "6000000",
+      "vaultBalanceRaw": "5000000",
+      "freeStakeRaw": "5000000",
+      "reservedStakeRaw": "0",
+      "activeJobs": "0",
+      "wholeRunConservationPassed": true,
+      "aggregateRepair": "Recomputed gas totals from all 54 confirmed receipt records after the launcher stopped before its final aggregate update; no chain transaction was sent for this evidence repair.",
+      "historicalCronRecord": "scheduledCompletion and its nested completion describe the earlier removed-without-running one-shot, not this newly approved manual attempt.",
+      "scenarioPassed": false
+    }
+  ],
+  "withdrawalCompletion": {
+    "txHash": "0x9426285500c04fb4b77ff9d3907e0977d1ec7d973f1e4035df44db177342c15c",
+    "receiptBlock": 68548436,
+    "grossUSDC": "6",
+    "gasCostUSDC": "0.00146055",
+    "clientNativeBeforeRaw": "6633503475000000000",
+    "clientNativeAfterRaw": "12632042925000000000",
+    "netIncreaseRaw": "5998539450000000000",
+    "creditRaw": "0",
+    "parentVerified": true
   }
 }

@@ -1,5 +1,21 @@
 # AlphaBoard V2 Arc Testnet deployment report
 
+## Latest operational result: Job 5 completed after new single-withdrawal approval
+
+On 2026-10-22 the newly approved withdraw-only attempt was broadcast exactly once and confirmed. Parent independently verified its receipt, sender, nonce 22, chain 5042002, destination/calldata, balances and conservation. Earlier cron and RPC-stop records below are historical, not the current scenario status.
+
+- Withdrawal: `0x9426285500c04fb4b77ff9d3907e0977d1ec7d973f1e4035df44db177342c15c`; successful receipt block **68548436**.
+- Gross credit transferred: **6 USDC**; client credit afterward **0**.
+- Gas: **0.00146055 USDC**; net native wallet increase **5.99853945 USDC**. Native and ERC-20 are the same underlying asset, so gas must not be ignored or double-counted.
+- Client native balance equation: **6.633503475 + 6 - 0.00146055 = 12.632042925 USDC**.
+- Final Marketplace: **0 = escrow 0 + credits 0 USDC**.
+- Final Vault: **5 = free 5 + reserved 0 USDC**; active jobs **0**.
+- Independent full readback: block **68548660**, **55 confirmed receipts**, **13,257,042 gas**, total gas cost **0.33142605 USDC**. All receipts, immutable runtimes and whole-run conservation passed.
+- Whole-run underlying balance: **74.472705359702930932 = 74.141279309702930932 + 0.33142605 USDC**.
+- Job 5 timeout scenario is now **passed**. No second withdrawal broadcast occurred. The consumed one-attempt marker remains outside the repository.
+
+## Historical deployment snapshot
+
 Readback: 2026-10-19T21:40:09.764Z; block 68075445.
 
 This is a historical deployment snapshot. **Operational update, 2026-10-20:** the timeout one-shot missed the scheduler's 120-second grace window and was removed without running at 13:13:40 Turkey time. No timeout claim, collateral slash or client withdrawal was sent. The task is stopped; no retry/reschedule was attempted. The canonical deployment JSON contains the new independent readback at 2026-10-20T10:35:47.757Z, block 68167354, and the scheduler failure evidence. This is not a passed timeout scenario.
