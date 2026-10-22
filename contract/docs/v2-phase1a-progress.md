@@ -24,7 +24,8 @@ Bu kayıt kabul edilmiş çalışma sırasını izler. Bir testin geçmesi sonra
 | 3a. PGlite/pg ortak DB + migration | 9 PGlite geçti; 6 `[real-pg]` atlandı; toplam web 193 geçti / 6 atlandı; build exit 0 | Spec PASS / kalite APPROVED; gerçek Postgres doğrulanmadı | Bu kayıtla aynı DB checkpoint |
 | 3b. Wallet auth / ACL | 10 hedefli (7 auth + 3 ACL); toplam web 203 geçti / 6 real-pg atlandı; build exit 0 | Spec PASS; kalite APPROVED; kuyrukta expiry regresyonu dahil | Bu kayıtla aynı auth checkpoint |
 | 4a. Fork-aware indexer kayıt katmanı + migration 002 | 34 hedefli gerçek PGlite geçti; toplam web 228 geçti / 6 real-pg atlandı; build exit 0 | Spec PASS / kalite APPROVED; parent hedefli 34/34 yeniden doğruladı | Bu kayıtla aynı indexer-store checkpoint |
-| 4b. Anahtarsız RPC indexer + projection replay/reorg | Henüz yok | Kayıt katmanı kabul edildi; sıradaki yerel görev | Yok |
+| 4b1. Canonical event decoder + packed-field fixtures | 52 hedefli geçti; toplam web 280 geçti / 6 real-pg atlandı; build exit 0 | Spec PASS / kalite APPROVED; ethers/viem ABI interoperability, EVM receipt kanıtı değil | Bu kayıtla aynı decoder checkpoint |
+| 4b2. Anahtarsız RPC indexer + projection replay/reorg | Henüz yok | Kayıt ve decoder katmanları kabul edildi; sıradaki yerel görev | Yok |
 | 5. API | Henüz yok | Önceki kapılara bağımlı | Yok |
 | 6. Siyah arka planlı /v2 UI | Henüz yok | Önceki kapılara bağımlı | Yok |
 | 7. Gerçek yerel E2E | Henüz yok | Tamamlanmadı; bulut kaynağı açma kapısı kapalı | Yok |
@@ -54,6 +55,14 @@ Bu kayıt kabul edilmiş çalışma sırasını izler. Bir testin geçmesi sonra
 - Header/event/cursor/canonical flag atomikliği, doğrulanmış ortak ata ve 32 blok reorg sınırı, orphan retention/reactivation, crash rollback, restart/replay, boş-log aralıkları, stale cursor ve off-chain kayıt korunumu gerçek PGlite ile doğrulandı.
 - Deep snapshot/TOCTOU, cap-before-access, küçük/büyük harf hash kimliği, secret-safe proxy hataları ve kök/iç içe non-finite JSON reddi gerçek RED/GREEN regresyonlarıyla kapandı. Parent son dört hedefli dosyayı kendisi çalıştırdı: 34/34, exit 0; tam web 228 geçti / 6 real-pg atlandı; build exit 0.
 - Bu kabul yalnız persistence/migration katmanıdır. Canlı RPC polling, ABI decode ve event-derived projection/replay henüz yok; API/UI/E2E tamamlanmadı. Çok bağlantılı PostgreSQL ve lease doğrulaması iddia edilmez.
+
+## Canonical event decoder kabulü (4b1)
+
+- Deployed final2 ABI/build-info ile 34 Marketplace + 8 Vault = 42 event doğrulandı. Build-info SHA-256 `28709ec142c70bd2f7f7c142a481db5d596da8f433a4830fe30173067d8c39ca`; pair/runtime pin'leri mevcut read manifest ve deployment kanıtıyla eşleşir.
+- Mevcut Solidity kaynak dosyası `OperatorFaultDeclared` bildirir, ancak dağıtılmış canonical artifact ABI'sinde yoktur. Decoder yalnız canonical artifact'i izler; yeni ABI/event uydurulmadı ve kontratlar değiştirilmedi. Yeni compile/deploy yapılmış sayılmaz.
+- Ethers event encoding / viem strict decoding, tam decode/re-encode eşdeğerliği, packed collateralPolicy/clockPack/counters bit ofsetleri, uint256 precision ve 42 event fixture doğrulandı. Bu ABI interoperability kanıtıdır, gerçek Solidity/EVM receipt çalıştırması değildir.
+- Sabit `5042002n` context/emitter bağları, descriptor-safe snapshot, topic cap-before-access, canonical array keys, hash/metadata/hexdata sınırları ve unknown/ERC-20 log reddi RED/GREEN ile doğrulandı. Spec PASS / kalite APPROVED; parent tam web 280 geçti / 6 real-pg atlandı; build exit 0.
+- RPC polling, safe/finalized head, projection ve tam restart/reorg pipeline sıradaki 4b2 adımıdır; henüz tamamlanmış sayılmaz.
 
 ## Onay sınırları
 
