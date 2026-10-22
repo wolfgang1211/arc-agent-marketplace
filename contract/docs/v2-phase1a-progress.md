@@ -22,7 +22,7 @@ Bu kayıt kabul edilmiş çalışma sırasını izler. Bir testin geçmesi sonra
 | 1. V1 baseline / V2 route izolasyon policy | 169 baseline; 5 yeni; 174 toplam | GREEN; spec PASS; kalite APPROVED | `a53209d22765da9f9224b364ce0d1c6e017608f2` |
 | 2. Read adapter + hash/imza fixtures | 184 toplam web; 9 yeni yerel Hardhat; harness ile 13/13 | GREEN; spec PASS; kalite onaylı | `206a6016cd5abc668483286d5f996743abef176e` |
 | 3a. PGlite/pg ortak DB + migration | 9 PGlite geçti; 6 `[real-pg]` atlandı; toplam web 193 geçti / 6 atlandı; build exit 0 | Spec PASS / kalite APPROVED; gerçek Postgres doğrulanmadı | Bu kayıtla aynı DB checkpoint |
-| 3b. Wallet auth / ACL | Henüz yok | DB checkpoint sonrası sıradaki yerel görev | Yok |
+| 3b. Wallet auth / ACL | 10 hedefli (7 auth + 3 ACL); toplam web 203 geçti / 6 real-pg atlandı; build exit 0 | Spec PASS; kalite APPROVED; kuyrukta expiry regresyonu dahil | Bu kayıtla aynı auth checkpoint |
 | 4. Indexer + replay/reorg | Henüz yok | DB kapısına bağımlı | Yok |
 | 5. API | Henüz yok | Önceki kapılara bağımlı | Yok |
 | 6. Siyah arka planlı /v2 UI | Henüz yok | Önceki kapılara bağımlı | Yok |
@@ -35,7 +35,7 @@ Bu kayıt kabul edilmiş çalışma sırasını izler. Bir testin geçmesi sonra
 - Çok bağlantı, eşzamanlı yazma, advisory lock/indexer lease ve ilgili Postgres davranışları `[real-pg]` testleri olarak ayrılır; "gerçek Postgres bekliyor" gerekçesiyle atlanır, geçmiş sayılmaz. Test sayısı gerçek çalıştırma sonrası yazılır.
 - Yeni onay Job 5 için tek withdraw-only denemeyi ve Faz 1a commit push'unu kapsar. Parent salt-okuma preflight: block 68542459, client credit 6,000,000 raw; latest=pending nonce `0x16`, bekleyen işlem görülmedi. Bu okuma henüz çekim gönderildiği anlamına gelmez; broadcast öncesi tekrar kontrol edilir.
 - Job 5 son durum: yeni onaylı withdraw-only runner spec/güvenlik GO, 14/14 yerel test ve gerçek keyless preflight sonrası **bir kez** broadcast edildi. Tx `0x9426285500c04fb4b77ff9d3907e0977d1ec7d973f1e4035df44db177342c15c`, receipt block68548436. Gross 6 USDC; gas0.00146055, net bakiye artışı5.99853945 USDC; credit0. Parent 55receipt/full-run conservation ve runtime'ları block68548660'ta tekrar doğruladı. Market0=esc0+credit0; Vault5=free5+res0; aktif0. Önceki stop kaydı JSON geçmişinde korunur; bir daha çekim gönderilmez.
-- DB/migration checkpoint `11a43a92cd50d2f7ffa087cad958c4a6c1927c1c` push sonrası GitHub'dan doğrulandı; auth/session/ACL implementasyonu devam ediyor. Indexer/API/UI/E2E henüz tamamlanmadı.
+- DB/migration checkpoint `11a43a92cd50d2f7ffa087cad958c4a6c1927c1c` push sonrası GitHub'dan doğrulandı. Auth/session/ACL artık spec PASS + kalite APPROVED: sabit Arc/pair/origin bağları, kanonik giriş mesajı, tek-kullanımlık nonce, hashlenmiş session, CSRF/cookie/logout ve client/operator/snapshot resolver ACL'leri doğrulandı. DB transaction kuyruğunda süresi dolan challenge gerçek RED/GREEN ile kapatıldı; consumed_at NULL ve session sayısı 0 kalır. Bu auth katmanında gerçek EOA imzaları test edildi; gerçek ERC-1271 auth kanıtı ve çok bağlantılı PostgreSQL testi iddia edilmez. Indexer/API/UI/E2E henüz tamamlanmadı.
 
 ## Docker engeli (tarihsel, yeniden denenmeyecek)
 
