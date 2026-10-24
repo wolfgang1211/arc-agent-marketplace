@@ -25,7 +25,7 @@ Bu kayıt kabul edilmiş çalışma sırasını izler. Bir testin geçmesi sonra
 | 3b. Wallet auth / ACL | 10 hedefli (7 auth + 3 ACL); toplam web 203 geçti / 6 real-pg atlandı; build exit 0 | Spec PASS; kalite APPROVED; kuyrukta expiry regresyonu dahil | Bu kayıtla aynı auth checkpoint |
 | 4a. Fork-aware indexer kayıt katmanı + migration 002 | 34 hedefli gerçek PGlite geçti; toplam web 228 geçti / 6 real-pg atlandı; build exit 0 | Spec PASS / kalite APPROVED; parent hedefli 34/34 yeniden doğruladı | Bu kayıtla aynı indexer-store checkpoint |
 | 4b1. Canonical event decoder + packed-field fixtures | 52 hedefli geçti; toplam web 280 geçti / 6 real-pg atlandı; build exit 0 | Spec PASS / kalite APPROVED; ethers/viem ABI interoperability, EVM receipt kanıtı değil | Bu kayıtla aynı decoder checkpoint |
-| 4b2. Anahtarsız RPC indexer + projection replay/reorg | Henüz yok | Kayıt ve decoder katmanları kabul edildi; sıradaki yerel görev | Yok |
+| 4b2. Anahtarsız RPC indexer + projection replay/reorg | 402 geçti, 0 hata, 6 real-pg atlandı; seri tam web suite; build exit 0 | Yerel kabul; spec PASS / kalite APPROVED; yalnız reader salt-okuma canlı attestation ayrıca doğrulandı | Bu kayıtla aynı Step4B2 checkpoint |
 | 5. API | Henüz yok | Önceki kapılara bağımlı | Yok |
 | 6. Siyah arka planlı /v2 UI | Henüz yok | Önceki kapılara bağımlı | Yok |
 | 7. Gerçek yerel E2E | Henüz yok | Tamamlanmadı; bulut kaynağı açma kapısı kapalı | Yok |
@@ -63,6 +63,17 @@ Bu kayıt kabul edilmiş çalışma sırasını izler. Bir testin geçmesi sonra
 - Ethers event encoding / viem strict decoding, tam decode/re-encode eşdeğerliği, packed collateralPolicy/clockPack/counters bit ofsetleri, uint256 precision ve 42 event fixture doğrulandı. Bu ABI interoperability kanıtıdır, gerçek Solidity/EVM receipt çalıştırması değildir.
 - Sabit `5042002n` context/emitter bağları, descriptor-safe snapshot, topic cap-before-access, canonical array keys, hash/metadata/hexdata sınırları ve unknown/ERC-20 log reddi RED/GREEN ile doğrulandı. Spec PASS / kalite APPROVED; parent tam web 280 geçti / 6 real-pg atlandı; build exit 0.
 - RPC polling, safe/finalized head, projection ve tam restart/reorg pipeline sıradaki 4b2 adımıdır; henüz tamamlanmış sayılmaz.
+
+## Anahtarsız indexer / projection kabulü (4b2)
+
+- Kullanıcı yerel kabulü ve yalnız Step4B2 kapsamlı commit/push işlemini onayladı. 402 geçti, 0 hata, 6 real-pg atlandı; `node --test --test-concurrency=1 test/*.test.mjs` ve `npm run build` exit 0. Kanıtlar: `C:/Users/wolfgang/AppData/Local/hermes/cache/scratch/v2-step4b2-final-h6e9k9rf/results.json`, `tests.log`, `build.log`.
+- 42 canonical event hazırlama matrisi; tam 53 alanlı Job; gerçek reader account/capacity/credit ve job başına application nonce kanıtı; zorunlu global/client policy. Eksik taraf, bakiye veya policy sıfır/default uydurularak yazılmaz; protocol account version yoksa NULL korunur.
+- Anahtarsız, salt-okuma RPC allowlist; zorunlu default runtime/source/immutable attestation; verified deployment anchor; bounded batch/retry/timeout; finality ve stale/gap health. Hata metinleri/provider getter'ları health'e sızdırılmaz.
+- Header transaction hash dizisi açık, en fazla 10.000 elemanlı, dense own-data ve frozen snapshot olmalıdır. Eksik/bozuk transaction metadata veya 256-byte bloom reddedilir. Sıfır transaction için tam sıfır bloom gerekir; oversized diziler eleman descriptor'ları okunmadan reddedilir.
+- Receipt/query log eşitliği tüm block/tx/index/topic/data ve açık `removed === false` bağlarını kapsar; Ethereum bloom bağımsız fixture ile 11-bit maske üzerinden doğrulandı. Exact depth-32 reorg kabulü, depth-33 mutation olmadan ret, orphan retention, atomic projection/cursor replay ve off-chain kayıt korunumu yerelde test edildi.
+- Canlı reader salt-okuma attestation: chain 5042002, blok 68582872, 25 okuma, runtime/immutable pin eşleşmesi, gönderilen transaction 0. Bu canlı indexer E2E veya gerçek PostgreSQL kanıtı değildir.
+- Tam spec ve kalite incelemeleri onaylandı. Son `removed` guard ek savunmadır: önceki decoder aynı kötü değerleri zaten reddettiğinden yeni RED/bypass kanıtı olarak sunulmaz.
+- Bundan sonraki sıra: API → siyah `/v2` UI → yerel E2E. Masaüstü/mobil beş ana ekranın görüntüsü UI adımında alınır. Railway V2 Postgres/indexer ve real-pg yerel E2E sonrası ayrı onay; Yusuf'un gerçek cüzdanıyla manuel preview testi de ayrı onay gerektirir.
 
 ## Onay sınırları
 

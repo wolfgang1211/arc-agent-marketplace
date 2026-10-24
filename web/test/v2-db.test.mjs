@@ -18,7 +18,7 @@ async function dispose({ db, dir }) { await db.close(); await rm(dir, { recursiv
     const first = await migrate(ctx.db); const second = await migrate(ctx.db);
     assert.equal(first.applied, true); assert.equal(second.applied, false);
     assert.match(first.checksum, /^[0-9a-f]{64}$/);
-    assert.equal((await ctx.db.query('SELECT count(*)::int AS n FROM v2_schema_migrations')).rows[0].n, 2);
+    assert.equal((await ctx.db.query('SELECT count(*)::int AS n FROM v2_schema_migrations')).rows[0].n, 3);
   } finally { await dispose(ctx); }
 });
 

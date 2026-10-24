@@ -9,6 +9,7 @@ const MIGRATION_ID = '001-core';
 const MIGRATIONS = Object.freeze([
   Object.freeze({ id: '001-core', url: new URL('../../../db/v2/migrations/001-core.sql', import.meta.url) }),
   Object.freeze({ id: '002-indexer', url: new URL('../../../db/v2/migrations/002-indexer.sql', import.meta.url) }),
+  Object.freeze({ id: '003-indexer-projection', url: new URL('../../../db/v2/migrations/003-indexer-projection.sql', import.meta.url) }),
 ]);
 const UINT256_MAX = '115792089237316195423570985008687907853269984665640564039457584007913129639935';
 export const DEFAULT_PGLITE_DATA_DIR = path.join(os.homedir(), 'AppData', 'Local', 'hermes', 'state', 'alphaboard-v2', 'pglite');

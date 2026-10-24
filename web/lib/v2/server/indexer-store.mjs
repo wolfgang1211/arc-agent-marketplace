@@ -52,13 +52,14 @@ function boundedArrayLength(value, label, maximum, required = true) {
     throw new TypeError('invalid indexer input');
   }
 }
-function snapshotJson(value, label, state = { bytes: 0, nodes: 0, depth: 0 }) {
+function snapshotJson(value, label, state = { bytes: 0, nodes: 0, depth: 0 }, field = null) {
   const add = (bytes) => { state.bytes += bytes; if (state.bytes > MAX_SERIALIZED_BYTES) snapshotFail(`${label} exceeds the bounded payload size`); };
-  const visit = (current, depth) => {
+  const visit = (current, depth, fieldName = field) => {
     if (++state.nodes > 100_000 || depth > 32) snapshotFail(`${label} is too deeply nested or large`);
     if (current === null) { add(4); return null; }
     switch (typeof current) {
       case 'string': {
+        if (fieldName === 'data' && depth === 2 && current.length > (MAX_DATA_BYTES * 2) + 2) snapshotFail(`${label}.data exceeds the bounded payload size`);
         let bytes = 2;
         for (let i = 0; i < current.length; i += 1) {
           const code = current.charCodeAt(i);
@@ -101,7 +102,7 @@ function snapshotJson(value, label, state = { bytes: 0, nodes: 0, depth: 0 }) {
         const code = key.charCodeAt(i);
         keyBytes += code === 34 || code === 92 ? 2 : code < 32 ? 6 : Buffer.byteLength(key[i], 'utf8');
       }
-      add(keyBytes); add(1); result[key] = visit(descriptor.value, depth + 1);
+      add(keyBytes); add(1); result[key] = visit(descriptor.value, depth + 1, key);
     }
     add(1); return result;
   };
@@ -138,7 +139,7 @@ function normalizeEvent(input, marketplace, vault, chainId) {
   const routed = streamFor(emitter, marketplace, vault);
   const topics = event.topics;
   if (!Array.isArray(topics) || topics.length > MAX_TOPICS || topics.some((topic) => typeof topic !== 'string' || !HASH.test(topic))) fail('topics must be a bounded array of 32-byte hashes');
-  const data = text(event.data, 'data');
+  const data = text(event.data, 'data', (MAX_DATA_BYTES * 2) + 2);
   if (!/^0x(?:[0-9a-fA-F]{2})*$/.test(data) || Buffer.byteLength(data.slice(2), 'hex') > MAX_DATA_BYTES) fail('data must be bounded even-length hex');
   return {
     stream: routed.stream,
@@ -149,7 +150,7 @@ function normalizeEvent(input, marketplace, vault, chainId) {
     transactionIndex: Number.isInteger(event.transactionIndex) && event.transactionIndex >= 0 && event.transactionIndex <= MAX_LOG_INDEX ? event.transactionIndex : fail('transactionIndex must be a bounded non-negative integer'),
     logIndex: Number.isInteger(event.logIndex) && event.logIndex >= 0 && event.logIndex <= MAX_LOG_INDEX ? event.logIndex : fail('logIndex must be a bounded non-negative integer'),
     topics,
-    data: text(event.data, 'data'),
+    data,
     decoded: event.decoded ?? {},
     eventName: text(event.eventName, 'eventName', MAX_EVENT_NAME),
   };
@@ -223,7 +224,7 @@ export function createV2IndexerStore({ db, chainId, marketplace, vault, maxHeade
     }
     await tx.query('INSERT INTO v2_indexer_events_fork (chain_id,stream,emitter,block_number,block_hash,transaction_hash,transaction_index,log_index,topics,data,decoded,event_name,canonical) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,TRUE)', [chainId, event.stream, event.emitter, event.blockNumber, event.blockHash, event.transactionHash, event.transactionIndex, event.logIndex, JSON.stringify(event.topics), event.data, json(event.decoded, 'decoded'), event.eventName]);
   }
-  async function applyBatch({ headers = [], events = [], logs, expectedCursor, previousCursor, nextCursor, reorgAncestor, initialVerifiedAnchor } = {}) {
+  async function applyBatch({ headers = [], events = [], logs, expectedCursor, previousCursor, nextCursor, reorgAncestor, initialVerifiedAnchor, projector } = {}) {
     boundedArrayLength(headers, 'headers', maxHeaders);
     headers = snapshotJson(headers, 'headers');
     const rawEvents = logs ?? events;
@@ -271,6 +272,10 @@ export function createV2IndexerStore({ db, chainId, marketplace, vault, maxHeade
       }
       for (const header of normalizedHeaders) await insertBlock(tx, header);
       for (const event of normalizedEvents) await insertEvent(tx, event);
+      if (projector !== undefined) {
+        if (typeof projector !== 'function') fail('projector must be a function');
+        await projector(tx, { events: normalizedEvents, rebuild: !!anchor });
+      }
       let finalCursor = requestedNext;
       if (normalizedHeaders.length) {
         const last = normalizedHeaders.at(-1); const headerCursor = { blockNumber: last.blockNumber, blockHash: last.blockHash };
