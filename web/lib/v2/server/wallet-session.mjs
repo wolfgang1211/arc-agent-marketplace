@@ -1,3 +1,4 @@
+import { ARC_TESTNET_PROFILE, assertV2Profile } from '../chain-profile.mjs';
 import { createHash, createHmac, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import { getAddress, verifyMessage } from 'viem';
 
@@ -24,13 +25,14 @@ function canonicalMessage({ domain, requestOrigin, wallet, chainId, marketplace,
 function checkFixedOrigin(configured, requested) { if (typeof requested !== 'string' || requested !== configured) fail('ORIGIN_MISMATCH'); }
 function checkChain(expected, provided) { if (typeof provided !== 'bigint' || provided !== expected) fail('CHAIN_MISMATCH'); }
 
-export function createWalletSessionService({ db, origin: configuredOrigin, chainId = DEFAULT_CHAIN_ID, marketplace, now = () => Date.now(), verifyWalletSignature } = {}) {
+export function createWalletSessionService({ db, origin: configuredOrigin, profile = ARC_TESTNET_PROFILE, chainId = profile.canonicalChainId, marketplace = profile.marketplace, now = () => Date.now(), verifyWalletSignature } = {}) {
+  assertV2Profile(profile);
   if (!db || typeof db.query !== 'function' || typeof db.transaction !== 'function') throw new TypeError('db is required');
   const requestOrigin = origin(configuredOrigin, 'INVALID_ORIGIN');
-  const parsed = new URL(requestOrigin); const domain = parsed.hostname;
+  const parsed = new URL(requestOrigin); const domain = profile.authDomain;
   if (parsed.protocol === 'http:' && !/^(localhost|127(?:\.\d{1,3}){3}|\[::1\])$/.test(parsed.hostname)) fail('INVALID_ORIGIN');
-  if (typeof chainId !== 'bigint' || chainId !== DEFAULT_CHAIN_ID) fail('CHAIN_MISMATCH');
-  const fixedChain = chainId; const fixedMarket = address(marketplace, 'INVALID_MARKETPLACE'); if (fixedMarket !== getAddress(FIXED_MARKETPLACE)) fail('INVALID_MARKETPLACE');
+  if (typeof chainId !== 'bigint' || chainId !== profile.canonicalChainId) fail('CHAIN_MISMATCH');
+  const fixedChain = chainId; const fixedMarket = address(marketplace, 'INVALID_MARKETPLACE'); if (fixedMarket.toLowerCase() !== profile.marketplace.toLowerCase()) fail('INVALID_MARKETPLACE');
   if (typeof verifyWalletSignature !== 'function') throw new TypeError('verifyWalletSignature is required');
   const clock = () => { const value = now(); if (!Number.isFinite(value)) throw new Error('clock'); return value; };
 
@@ -46,7 +48,9 @@ export function createWalletSessionService({ db, origin: configuredOrigin, chain
     const challengeId = string(input.challengeId, 'INVALID_CHALLENGE', 128); const wallet = address(input.wallet); checkFixedOrigin(requestOrigin, input.requestOrigin); checkChain(fixedChain, input.chainId); const signature = string(input.signature, 'INVALID_SIGNATURE', 2048);
     const found = await db.query('SELECT id,wallet,chain_id,domain,origin,message,nonce,expires_at,consumed_at FROM v2_auth_challenges WHERE id=$1', [challengeId]); const row = found.rows[0]; if (!row) fail('INVALID_CHALLENGE');
     if (row.wallet !== wallet || String(row.chain_id) !== fixedChain.toString() || row.origin !== requestOrigin || row.domain !== domain || !row.message.includes(`\nMarketplace: ${fixedMarket}\n`)) fail('CHALLENGE_BINDING');
-    const expiresMs = Date.parse(row.expires_at); if (!Number.isFinite(expiresMs) || clock() >= expiresMs) fail('CHALLENGE_EXPIRED');
+    // PGlite/pg return TIMESTAMPTZ as Date objects. Date.parse(Date) coerces
+    // through toString(), dropping milliseconds and breaking the signed message.
+    const expiresMs = row.expires_at instanceof Date ? row.expires_at.getTime() : Date.parse(row.expires_at); if (!Number.isFinite(expiresMs) || clock() >= expiresMs) fail('CHALLENGE_EXPIRED');
     const expectedMessage = canonicalMessage({ domain: row.domain, requestOrigin: row.origin, wallet: row.wallet, chainId: String(row.chain_id), marketplace: fixedMarket, nonce: row.nonce, issuedAt: iso(expiresMs - CHALLENGE_TTL_MS), expiresAt: iso(expiresMs), requestId: row.id });
     if (row.message !== expectedMessage) fail('CHALLENGE_BINDING');
     let valid = false; try { valid = await verifyWalletSignature({ wallet, message: row.message, signature, challenge: row }); } catch { valid = false; }

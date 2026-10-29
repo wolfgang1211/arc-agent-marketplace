@@ -1,5 +1,7 @@
 # V2 Faz 1a yerel ilerleme
 
+> **GÜNCEL KABUL KAPISI:** Eski `artifacts-v2-final2` ABI kaynağı, runtime ile eşleşen `artifacts-v2-runs50` kaynakları ve portable bytecode/ABI kanıtıyla düzeltildi. Kapasite=0 ve strict uint bulguları RED→GREEN regresyonlarla kapatıldı; parent private API **15/15** doğruladı. Güncel tam seri web suite **476 geçti, 0 hata, 6 real-pg ayrı**. Bağımsız SPEC PASS ve QUALITY APPROVED; parent 45-file kaynak fingerprint'ini ve değişmeyen catchall route hash'ini eşleştirdi. Güncel build **exit 0**; Step5 API yerel kabul kapıları tamamlandı. Step6 siyah `/v2` UI kodu ve yerel HTTP/form fixture entegrasyonu doğrulandı; SPEC PASS ve delta QUALITY APPROVED. UI'nin görsel/tarayıcı kabulü henüz tamamlanmadı. Checkpoint geçmişi korunur; güncel production build 127.0.0.1:3102'de yeniden başlatıldı ve beş route HTTP 200 doğrulandı. Reader gerçek durumda unavailable/stale; aksiyonlar fail-closed. Desktop preview read bridge yanıt vermedi, masaüstü aracı görünür Hermes penceresi bulamadı; screenshots/browser E2E blocker'ı açık.
+
 Bu kayıt kabul edilmiş çalışma sırasını izler. Bir testin geçmesi sonraki fazın veya canlı deployment'ın tamamlandığı anlamına gelmez. V1 kaynakları, layout/provider, ABI/adres ve bot değiştirilmeyecek.
 
 ## Doğrulanmış baseline
@@ -25,10 +27,10 @@ Bu kayıt kabul edilmiş çalışma sırasını izler. Bir testin geçmesi sonra
 | 3b. Wallet auth / ACL | 10 hedefli (7 auth + 3 ACL); toplam web 203 geçti / 6 real-pg atlandı; build exit 0 | Spec PASS; kalite APPROVED; kuyrukta expiry regresyonu dahil | Bu kayıtla aynı auth checkpoint |
 | 4a. Fork-aware indexer kayıt katmanı + migration 002 | 34 hedefli gerçek PGlite geçti; toplam web 228 geçti / 6 real-pg atlandı; build exit 0 | Spec PASS / kalite APPROVED; parent hedefli 34/34 yeniden doğruladı | Bu kayıtla aynı indexer-store checkpoint |
 | 4b1. Canonical event decoder + packed-field fixtures | 52 hedefli geçti; toplam web 280 geçti / 6 real-pg atlandı; build exit 0 | Spec PASS / kalite APPROVED; ethers/viem ABI interoperability, EVM receipt kanıtı değil | Bu kayıtla aynı decoder checkpoint |
-| 4b2. Anahtarsız RPC indexer + projection replay/reorg | 402 geçti, 0 hata, 6 real-pg atlandı; seri tam web suite; build exit 0 | Yerel kabul; spec PASS / kalite APPROVED; yalnız reader salt-okuma canlı attestation ayrıca doğrulandı | Bu kayıtla aynı Step4B2 checkpoint |
-| 5. API | Henüz yok | Önceki kapılara bağımlı | Yok |
-| 6. Siyah arka planlı /v2 UI | Henüz yok | Önceki kapılara bağımlı | Yok |
-| 7. Gerçek yerel E2E | Henüz yok | Tamamlanmadı; bulut kaynağı açma kapısı kapalı | Yok |
+| 4b2. Anahtarsız RPC indexer + projection replay/reorg | 402 geçti, 0 hata, 6 real-pg atlandı; seri tam web suite; build exit 0 | Yerel kabul; spec PASS / kalite APPROVED; yalnız reader salt-okuma canlı attestation ayrıca doğrulandı | `7f7926934fd208c80a60a4f1cef559b7a883b83f` |
+| 5. API + runtime-bound ABI provenance düzeltmesi | Parent güncel tam seri suite: 450 geçti, 0 hata, 6 real-pg ayrı; private API 15/15; build exit 0 | Yerel kabul; SPEC PASS; QUALITY APPROVED; unsigned preflight, transaction yok | Henüz commit/push yok |
+| 6. Siyah arka planlı /v2 UI | Parent 29/29 hedefli; güncel tam seri web suite 476 geçti, 0 hata, 6 real-pg ayrı; build exit 0; beş ana route HTTP 200 | Son iki kalite bulgusu da kapatıldı: parent private/UI/HTTP-form suite 33/33 geçti; SPEC PASS ve delta QUALITY APPROVED, parent beş-dosya fingerprint eşleşmesini doğruladı. Güncel tam suite/build tamamlandı ve güncel build ile V2 sunucusu yeniden başlatıldı. Masaüstü/mobil screenshot ve gerçek tarayıcı E2E kapıları açık; görünür Hermes penceresi bulunamadığı için görsel kanıt henüz yok. Önizleme son tamamlanan build ile 127.0.0.1:3102 üzerinde çalışıyor; UI yerel kabulü henüz yok | Yok |
+| 7. Yerel E2E | Parent gerçek loopback HTTP + React form + PGlite suite 6/6 geçti; ephemeral EOA, cookie/CSRF, draft replay, award ABI, registration ve revision 1→2 DB readback | Offline fixture entegrasyon kanıtı; canlı RPC/EVM, Yusuf cüzdanı veya gerçek tarayıcı E2E kanıtı değildir. Tarayıcı/responsive screenshot kapıları açık; bulut kapısı kapalı | Yok |
 
 ## Yerel DB kararı: PGlite (güncel)
 
@@ -56,10 +58,10 @@ Bu kayıt kabul edilmiş çalışma sırasını izler. Bir testin geçmesi sonra
 - Deep snapshot/TOCTOU, cap-before-access, küçük/büyük harf hash kimliği, secret-safe proxy hataları ve kök/iç içe non-finite JSON reddi gerçek RED/GREEN regresyonlarıyla kapandı. Parent son dört hedefli dosyayı kendisi çalıştırdı: 34/34, exit 0; tam web 228 geçti / 6 real-pg atlandı; build exit 0.
 - Bu kabul yalnız persistence/migration katmanıdır. Canlı RPC polling, ABI decode ve event-derived projection/replay henüz yok; API/UI/E2E tamamlanmadı. Çok bağlantılı PostgreSQL ve lease doğrulaması iddia edilmez.
 
-## Canonical event decoder kabulü (4b1)
+## Event decoder ilk kabulü (4b1, tarihsel; ABI provenance iddiası geri çekildi)
 
-- Deployed final2 ABI/build-info ile 34 Marketplace + 8 Vault = 42 event doğrulandı. Build-info SHA-256 `28709ec142c70bd2f7f7c142a481db5d596da8f433a4830fe30173067d8c39ca`; pair/runtime pin'leri mevcut read manifest ve deployment kanıtıyla eşleşir.
-- Mevcut Solidity kaynak dosyası `OperatorFaultDeclared` bildirir, ancak dağıtılmış canonical artifact ABI'sinde yoktur. Decoder yalnız canonical artifact'i izler; yeni ABI/event uydurulmadı ve kontratlar değiştirilmedi. Yeni compile/deploy yapılmış sayılmaz.
+- İlk fixture suite'i final2 ABI/build-info ile 34 Marketplace + 8 Vault = 42 event doğruladı. Build-info SHA-256 `28709ec142c70bd2f7f7c142a481db5d596da8f433a4830fe30173067d8c39ca`. Bunun dağıtılmış runtime ile eşleştiği yönündeki önceki iddia **yanlıştı ve geri çekildi**. Güncel Step5 kanıtı gerçek runs50 pair'ini ve 44-event envanterini doğrular.
+- Eski artifact'te `OperatorFaultDeclared` olmaması bir kaynak-drift kanıtı değildi; yanlış ABI/build seçilmişti. Güncel runtime-matched ABI hem `OperatorFaultDeclared` hem `OwnershipTransferStarted` içerir; web event manifesti buna göre düzeltildi. Kontrat değiştirilmedi; compile/deploy yapılmadı.
 - Ethers event encoding / viem strict decoding, tam decode/re-encode eşdeğerliği, packed collateralPolicy/clockPack/counters bit ofsetleri, uint256 precision ve 42 event fixture doğrulandı. Bu ABI interoperability kanıtıdır, gerçek Solidity/EVM receipt çalıştırması değildir.
 - Sabit `5042002n` context/emitter bağları, descriptor-safe snapshot, topic cap-before-access, canonical array keys, hash/metadata/hexdata sınırları ve unknown/ERC-20 log reddi RED/GREEN ile doğrulandı. Spec PASS / kalite APPROVED; parent tam web 280 geçti / 6 real-pg atlandı; build exit 0.
 - RPC polling, safe/finalized head, projection ve tam restart/reorg pipeline sıradaki 4b2 adımıdır; henüz tamamlanmış sayılmaz.
@@ -74,6 +76,22 @@ Bu kayıt kabul edilmiş çalışma sırasını izler. Bir testin geçmesi sonra
 - Canlı reader salt-okuma attestation: chain 5042002, blok 68582872, 25 okuma, runtime/immutable pin eşleşmesi, gönderilen transaction 0. Bu canlı indexer E2E veya gerçek PostgreSQL kanıtı değildir.
 - Tam spec ve kalite incelemeleri onaylandı. Son `removed` guard ek savunmadır: önceki decoder aynı kötü değerleri zaten reddettiğinden yeni RED/bypass kanıtı olarak sunulmaz.
 - Bundan sonraki sıra: API → siyah `/v2` UI → yerel E2E. Masaüstü/mobil beş ana ekranın görüntüsü UI adımında alınır. Railway V2 Postgres/indexer ve real-pg yerel E2E sonrası ayrı onay; Yusuf'un gerçek cüzdanıyla manuel preview testi de ayrı onay gerektirir.
+
+## API yerel runtime kanıtı (Step5, kabul henüz yok)
+
+- Parent tüm yeni API dosyalarını seri çalıştırdı: 31/31, exit 0. Bu sayı sonraki millisecond regresyon testinden öncedir; tam web suite sonucu değildir.
+- Gerçek Next.js HTTP login denemesi `CHALLENGE_BINDING` hatası verdi. Kök neden: PGlite/pg Date döndürürken `Date.parse(Date)` millisecond kısmını kaybediyordu; eski test clock'ları tam saniye olduğundan bunu örtüyordu. Yeni `.123Z` regresyonu önce 1 FAIL, `Date.getTime()` düzeltmesinden sonra HTTP auth + temel auth birlikte 16/16 PASS.
+- Sonrasında gerçek `http://127.0.0.1:3102` üzerinde ephemeral test EOA ile challenge → verify (HTTP 200) → cookie/session → CSRF logout → anonymous session geçti. Yusuf'un cüzdanı kullanılmadı; anahtar yalnız bellekteydi, yazdırılmadı/kaydedilmedi; gönderilen transaction 0. Auth doğrulayıcısı Arc'a salt-okuma attestation yaptı; bu tam marketplace E2E değildir.
+- Next.js route native Node import kullanır: PGlite WASM/SQL dosyalarının webpack URL dönüşümünü V1 build ayarını değiştirmeden önler. Sabit local Host doğrulanır; Next'in internal URL hostname'i sabit origin'e yalnız path/query/header/body korunarak uyarlanır. Deploy/production paketleme kanıtı değildir.
+- İş taslağı/preflight canonical ABI/terms helper adayı ve testleri eklendi; API spec incelemesi FAIL: account preflight route'u eksik/job rolüne yanlış bağlı, award admission/stake kontrolleri eksik, draft identity ham caller terms üzerinden hesaplanıyor, ABI seçimi tam signature'a bağlı değil. Mevcut iki action testi tüm advertised lifecycle yüzeyini kanıtlamıyor. Düzeltme ve on aksiyonun davranış matrisi sürüyor; UI kapısı henüz açılmadı.
+
+## ABI provenance düzeltmesi: salt-okuma kök neden kanıtı
+
+- Daha önce kullanılan `artifacts-v2-final2/build-info/485d4238c6e0b10cdff6a496e5894686.json` SHA-256 `28709ec142c70bd2f7f7c142a481db5d596da8f433a4830fe30173067d8c39ca` Marketplace runtime boyutu **23118 byte**, kendi immutable referansları sıfırlanmış hash'i `0x6b4e076706147e23409ed83a6414723ab7926dfa0fd16b1e46f3accde8b77afe`. Dağıtılmış pin ile **eşleşmez**. Bu build'in ABI'sini canonical/deployed diye adlandıran önceki kayıtlar hatalıdır.
+- Parent tüm yerel `artifacts-v2*/build-info` adaylarını kendi immutable referanslarıyla normalize ederek taradı. Eşleşen Marketplace: `artifacts-v2-runs50/build-info/aa06f923b29a016fd50e070a2e74426f.json`, SHA-256 `4753ec82c34e978ab8d57e5b9a84686d6ed97bdb2e19ef503c4999a94bb6ea31`, **23908 byte**, normalized hash `0x7d24e8ddcdcb8b42aa93c453c363ad0b25f259e38362d5a11df3d5a87ed45166`.
+- Taze Arc salt-okuma attestation: blok **68942712**, chain **5042002**, 25 okuma, transaction **0**. Marketplace raw hash `0xb0c95b7be8af29f83ccda60bbf4f7503fb93e505c8cf425fd3e5a3bb6b4acd2b`, normalized hash yukarıdaki runs50 ile eşleşir. Mevcut runtime/read pin'leri doğru; yanlış olan ABI kaynak seçimi.
+- Eşleşen ABI'de `resolveDispute(uint256,uint256,bool,bytes32,bytes32,uint256)` vardır. Marketplace event sayısı 36'dır; eski 34-event manifest'te `OperatorFaultDeclared` ve `OwnershipTransferStarted` eksiktir. Eski `OperatorFaultDeclared` kaynak-drift açıklaması geri çekilir. Bağımsız denetim ve parent readback Vault için `artifacts-v2-runs50/build-info/eaa02ef53ac5f224ef8259f9c7e6e483.json` SHA-256 `7b906c45043419597eaa714d996cc5ffb5e9df1b5c21bf48f822bdf432817d7f`, 4854 byte ve mevcut normalized pin eşleşmesini doğruladı. Storage manifest/read adapter'ın jobs=11 ve diğer slotları doğru build ile uyumlu; bunlar değişmeyecek. Eski final2 jobs=10'dur. Event/preflight manifestleri web-only düzeltme ve portable ABI/runtime proof testleriyle yeniden üretiliyor.
+- Yeni deploy/kontrat edit'i, git reset/history rewrite veya ek zincir işlemi yapılmayacak. Web ABI/decoder/preflight provenance düzeltmesi ve buna bağlı test/review kapıları tamamlanmadan UI/API kabul edilmeyecek. Lokal Next preview bu sırada durduruldu.
 
 ## Onay sınırları
 

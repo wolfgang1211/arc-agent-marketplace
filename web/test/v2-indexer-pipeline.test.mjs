@@ -108,6 +108,36 @@ test('canonical JobPosted + JobTerms + JobState + JobAwarded logs increment raw 
   } finally { await teardown(ctx); }
 });
 
+test('foreign token logs remain in bloom proof but not marketplace event completeness', async () => {
+  const ctx = await setup();
+  try {
+    const logs = ['JobPosted', 'JobTerms', 'JobState', 'JobAwarded'].map((name, index) => canonicalLog('marketplace', name, 68072744, 0, index));
+    const transfer = {
+      ...logs[0], address: address(0xdead), logIndex: '0x4',
+      topics: [keccak256(new TextEncoder().encode('Transfer(address,address,uint256)')), encodeAbiParameters([{ type: 'address' }], [address(0x11)]), encodeAbiParameters([{ type: 'address' }], [market])],
+      data: encodeAbiParameters([{ type: 'uint256' }], [12345n]),
+    };
+    const rpc = makeTransport({ head: 68072744, logs: [...logs, transfer] });
+    const indexer = createV2Indexer({ readerFactory: fixtureReader, db: ctx.db, transport: rpc.transport, store: ctx.store, initialAnchor: { blockNumber: '68072733', blockHash: hash(68072733) }, confirmations: 0 });
+    assert.equal((await indexer.syncOnce()).status, 'healthy');
+    assert.equal((await ctx.store.rawEvents()).length, 4);
+    assert.equal((await ctx.db.query('SELECT count(*)::int AS n FROM v2_jobs')).rows[0].n, 1);
+  } finally { await teardown(ctx); }
+});
+
+test('foreign-only nonempty blocks advance without fabricating marketplace events', async () => {
+  const ctx = await setup();
+  try {
+    const foreign = { ...canonicalLog('marketplace', 'JobPosted', 68072744), address: address(0xdead) };
+    const rpc = makeTransport({ head: 68072744, logs: [foreign] });
+    const indexer = createV2Indexer({ readerFactory: fixtureReader, db: ctx.db, transport: rpc.transport, store: ctx.store, initialAnchor: { blockNumber: '68072733', blockHash: hash(68072733) }, confirmations: 0 });
+    assert.equal((await indexer.syncOnce()).status, 'healthy');
+    assert.equal((await ctx.store.rawEvents()).length, 0);
+    assert.equal((await ctx.db.query('SELECT count(*)::int AS n FROM v2_jobs')).rows[0].n, 0);
+    assert.deepEqual(await ctx.store.cursor(), { blockNumber: '68072744', blockHash: hash(68072744) });
+  } finally { await teardown(ctx); }
+});
+
 test('verified empty range advances the real pipeline cursor without fabricated logs', async () => {
   const ctx = await setup();
   try {
@@ -143,8 +173,8 @@ test('requested ranges are bounded to one configured batch and do not chase an u
 });
 
 test('deployment anchors preserve the explicit 68072734 and marketplace 68072744 fixture pair', async () => {
-  assert.equal(Number(manifest.deployments?.marketplace?.startingBlock ?? 68072744), 68072744);
-  assert.equal(68072734, 68072734);
+  assert.equal(manifest.deployments.marketplace.startingBlock, 68072744);
+  assert.equal(manifest.deployments.vault.startingBlock, 68072734);
   assert.equal(market, '0xFA156B7A5205B123c8a22A807ba98405e36130f1');
   assert.equal(vault, '0xD5B271b7Bf4696d662B2bcB1a94b408887c6C423');
 });

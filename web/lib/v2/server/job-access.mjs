@@ -1,4 +1,5 @@
 import { getAddress, isAddress } from 'viem';
+import { ARC_TESTNET_PROFILE, assertV2Profile } from '../chain-profile.mjs';
 
 const UINT256_MAX = (1n << 256n) - 1n;
 const FIXED_CHAIN_ID = 5042002n;
@@ -22,8 +23,13 @@ function binding(job, expectedChain, expectedMarket) { const fresh = plainJob(jo
 function isParty(session, job) { const w = wallet(session); return Boolean(w && (w === job.client || w === job.operator || w === job.resolver)); }
 function role(job, session) { const w = wallet(session); if (!w) return null; if (w === job.client) return 'client'; if (w === job.operator) return 'operator'; if (w === job.resolver) return 'resolver'; return null; }
 
-export function createJobAcl({ chainId, marketplace } = {}) {
-  const expectedChain = typeof chainId === 'bigint' && chainId === FIXED_CHAIN_ID ? chainId.toString() : null; const expectedMarket = wallet(marketplace); if (expectedChain === null || expectedMarket !== FIXED_MARKETPLACE) throw new TypeError('fixed job binding is required');
+export function createJobAcl({ profile = ARC_TESTNET_PROFILE, chainId, marketplace } = {}) {
+  assertV2Profile(profile);
+  // Legacy callers may still pass the pinned Arc pair; never allow those
+  // arguments to select an arbitrary chain or marketplace.
+  const expectedChain = profile.canonicalChainId.toString(); const expectedMarket = wallet(profile.marketplace);
+  if (chainId !== undefined && (typeof chainId !== 'bigint' || chainId !== profile.canonicalChainId)) throw new TypeError('fixed job binding is required');
+  if (marketplace !== undefined && wallet(marketplace) !== expectedMarket) throw new TypeError('fixed job binding is required');
   const fresh = (job) => binding(job, expectedChain, expectedMarket);
   const canReadApplications = (sessionWallet, job, applicationOperator = undefined) => { const j = fresh(job); if (!j) return false; const r = role(j, sessionWallet); if (r === 'client' || r === 'resolver') return true; if (r !== 'operator' || applicationOperator === undefined) return false; return wallet(applicationOperator) === wallet(sessionWallet); };
   const canReadDeliveries = (sessionWallet, job) => { const j = fresh(job); return Boolean(j && isParty(sessionWallet, j)); };

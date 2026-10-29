@@ -3,15 +3,15 @@ import { keccak256, hexToBytes } from 'viem';
 import { createV2IndexerProjector } from './indexer-projection.mjs';
 import { prepareV2Projection } from './indexer-projection.mjs';
 import { createV2ChainReader } from './chain-reader.mjs';
+import { ARC_TESTNET_PROFILE, assertV2Profile } from '../chain-profile.mjs';
 
 const MAX_RANGE = 1000;
 const MAX_BATCHES = 8;
 // Keep the caller-owned transaction snapshot bounded by the store's 10,000-event limit.
 const MAX_BLOCK_TRANSACTIONS = 10_000;
-const DEFAULT_CHAIN_ID = 5042002;
-const DEFAULT_MARKETPLACE = INDEXER_EVENT_SOURCES.marketplace;
-const DEFAULT_VAULT = INDEXER_EVENT_SOURCES.vault;
-const DEFAULT_ANCHOR = 68072733n;
+const DEFAULT_CHAIN_ID = Number(ARC_TESTNET_PROFILE.canonicalChainId);
+const DEFAULT_MARKETPLACE = ARC_TESTNET_PROFILE.marketplace;
+const DEFAULT_VAULT = ARC_TESTNET_PROFILE.vault;
 const ALLOWED_RPC = new Set(['eth_chainId', 'eth_blockNumber', 'eth_getBlockByNumber', 'eth_getLogs', 'eth_getBlockReceipts', 'eth_getTransactionReceipt', 'eth_getCode', 'eth_getStorageAt', 'eth_call']);
 const RETRYABLE = new Set([-32005, 413, 429]);
 const hexQty = (n) => `0x${BigInt(n).toString(16)}`;
@@ -89,15 +89,15 @@ function sameLogPayload(left, right) {
     && lowerHex(left.data, 'log data') === lowerHex(right.data, 'log data');
 }
 
-export function createV2Indexer({ db, transport, store, readerFactory, projector, initialAnchor = null, chainId = DEFAULT_CHAIN_ID, marketplace = DEFAULT_MARKETPLACE, vault = DEFAULT_VAULT, batchSize = MAX_RANGE, maxBatches = 1, confirmations = 32, retries = 2, timeoutMs = 5000, totalBudgetMs = 60000, sleep = async () => {} } = {}) {
+export function createV2Indexer({ db, transport, store, readerFactory, projector, profile = ARC_TESTNET_PROFILE, initialAnchor = null, chainId = Number(profile.canonicalChainId), marketplace = profile.marketplace, vault = profile.vault, batchSize = MAX_RANGE, maxBatches = 1, confirmations = 32, retries = 2, timeoutMs = 5000, totalBudgetMs = 60000, sleep = async () => {} } = {}) {
   if (!db || typeof transport !== 'function' || !store) throw new TypeError('indexer requires db, transport, and store');
-  if (chainId !== DEFAULT_CHAIN_ID || marketplace.toLowerCase() !== DEFAULT_MARKETPLACE.toLowerCase() || vault.toLowerCase() !== DEFAULT_VAULT.toLowerCase()) throw new TypeError('configured Arc deployment is required');
+  assertV2Profile(profile); if (chainId !== Number(profile.canonicalChainId) || marketplace.toLowerCase() !== profile.marketplace.toLowerCase() || vault.toLowerCase() !== profile.vault.toLowerCase()) throw new TypeError('profile deployment mismatch');
   if (!Number.isInteger(batchSize) || batchSize < 1 || batchSize > MAX_RANGE) throw new TypeError('batchSize must be between 1 and 1000');
   if (!Number.isSafeInteger(maxBatches) || maxBatches < 1 || maxBatches > MAX_BATCHES) throw new TypeError('maxBatches must be between 1 and 8');
   if (!Number.isSafeInteger(confirmations) || confirmations < 0) throw new TypeError('confirmations must be a safe non-negative integer');
   if (!Number.isSafeInteger(retries) || retries < 0 || retries > 5) throw new TypeError('retries must be between 0 and 5');
   if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 1 || !Number.isSafeInteger(totalBudgetMs) || totalBudgetMs < 1 || totalBudgetMs > 60000) throw new TypeError('invalid RPC budget');
-  const project = projector ?? createV2IndexerProjector({ chainId, marketplace });
+  const project = projector ?? createV2IndexerProjector({ profile, chainId, marketplace });
   let health = { status: 'starting', finalityMode: 'unverified', buffer: confirmations, cursor: null, indexedBlock: null, indexedHash: null, head: null, safeHead: null, lag: null, lastSyncedAt: null, stale: true, gap: null, code: null, reason: null };
   const started = () => Date.now();
   let budgetStart = null;
@@ -180,7 +180,7 @@ export function createV2Indexer({ db, transport, store, readerFactory, projector
     const seen = new Map(); const decoded = [];
     for (const raw of all) {
       if (parseRpcQuantity(raw.blockNumber, 'log block') < from || parseRpcQuantity(raw.blockNumber, 'log block') > to) throw new Error('log outside requested range');
-      const d = decodeIndexerLog(raw, { chainId: INDEXER_CHAIN_ID });
+      const d = decodeIndexerLog(raw, { chainId: profile.canonicalChainId, profile });
       const key = `${d.source}:${d.address}:${d.blockHash}:${d.transactionHash}:${d.logIndex}`;
       const event = { stream: d.source, emitter: d.address, blockNumber: d.blockNumber, blockHash: d.blockHash, transactionHash: d.transactionHash, transactionIndex: Number(parseDecimal(d.transactionIndex, 'transaction index')), logIndex: Number(parseDecimal(d.logIndex, 'log index')), topics: raw.topics, data: raw.data, decoded: { args: d.args }, eventName: d.event };
       const prior = seen.get(key);
@@ -219,9 +219,15 @@ export function createV2Indexer({ db, transport, store, readerFactory, projector
           const logIndex = parseRpcQuantity(raw.logIndex, 'receipt log index');
           if (logIndex <= previousLogIndex) throw new Error('receipt log ordering mismatch');
           previousLogIndex = logIndex;
+          receiptLogs.push(raw);
+          if (typeof raw.address !== 'string' || !/^0x[0-9a-fA-F]{40}$/.test(raw.address)) throw new Error('invalid receipt log emitter');
+          const emitter = raw.address.toLowerCase();
+          // Header bloom covers ALL logs, but getLogs queries only our pinned
+          // pair. Token transfers and unrelated contracts are not missing V2 events.
+          if (emitter !== marketplace.toLowerCase() && emitter !== vault.toLowerCase()) continue;
           const key = `${hash(raw.transactionHash, 'receipt transaction hash')}:${logIndex.toString()}`;
           if (receiptByKey.has(key) && !sameLogPayload(receiptByKey.get(key), raw)) throw new Error('conflicting receipt log identity');
-          receiptByKey.set(key, raw); receiptLogs.push(raw);
+          receiptByKey.set(key, raw);
         }
       }
       for (const event of queried) {
@@ -243,10 +249,10 @@ export function createV2Indexer({ db, transport, store, readerFactory, projector
     // Only the reader's head query is pinned. All other RPC calls retain their
     // original parameters, so the reader's own snapshot/hash guards remain in force.
     const pinnedTransport = expectedTag === null ? transport : async (method, params, signal) => { const value = await transport(method, method === 'eth_blockNumber' ? [] : params, signal); return method === 'eth_blockNumber' ? expectedTag : value; };
-    const reader = await factory({ transport: pinnedTransport, chainId: DEFAULT_CHAIN_ID, marketplace: DEFAULT_MARKETPLACE, vault: DEFAULT_VAULT, toBlockTag: expectedTag });
+    const reader = await factory({ transport: pinnedTransport, profile, chainId: profile.canonicalChainId, marketplace: profile.marketplace, vault: profile.vault, toBlockTag: expectedTag });
     if (!reader || typeof reader.read !== 'function' || reader.verify === true || typeof reader.attest === 'function') throw new Error('indexer reader attestation failed');
     const snapshot = await reader.read();
-    if (!snapshot || snapshot.chainId !== BigInt(DEFAULT_CHAIN_ID) || typeof snapshot.blockTag !== 'string' || !/^0x(?:0|[1-9a-fA-F][0-9a-fA-F]*)$/.test(snapshot.blockTag) || typeof snapshot.blockHash !== 'string' || !/^0x[0-9a-fA-F]{64}$/.test(snapshot.blockHash) || !/^0x[0-9a-fA-F]{64}$/.test(snapshot.hashes?.marketplaceNormalized ?? '') || !/^0x[0-9a-fA-F]{64}$/.test(snapshot.hashes?.vaultNormalized ?? '')) throw new Error('indexer reader attestation failed');
+    if (!snapshot || snapshot.chainId !== profile.canonicalChainId || typeof snapshot.blockTag !== 'string' || !/^0x(?:0|[1-9a-fA-F][0-9a-fA-F]*)$/.test(snapshot.blockTag) || typeof snapshot.blockHash !== 'string' || !/^0x[0-9a-fA-F]{64}$/.test(snapshot.blockHash) || !/^0x[0-9a-fA-F]{64}$/.test(snapshot.hashes?.marketplaceNormalized ?? '') || !/^0x[0-9a-fA-F]{64}$/.test(snapshot.hashes?.vaultNormalized ?? '')) throw new Error('indexer reader attestation failed');
     if (expectedBlockNumber !== null && parseQty(snapshot.blockTag, 'snapshot block tag') !== expectedBlockNumber) throw new Error('indexer reader attestation failed');
     return snapshot;
   }
@@ -255,7 +261,7 @@ export function createV2Indexer({ db, transport, store, readerFactory, projector
     const currentBefore = await store.cursor();
     try {
       const chain = parseQty(await rpc('eth_chainId'), 'chain id');
-      if (chain !== BigInt(DEFAULT_CHAIN_ID)) throw new Error('chain mismatch');
+      if (chain !== profile.canonicalChainId) throw new Error('chain mismatch');
       const final = await finalHead();
       const current = await store.cursor();
       health = { ...health, finalityMode: final.tag, buffer: final.tag === 'confirmations' ? confirmations : 0, cursor: current, head: final.head == null ? null : final.head.toString(), safeHead: final.number.toString() };
@@ -282,12 +288,13 @@ export function createV2Indexer({ db, transport, store, readerFactory, projector
       let anchor = current;
       if (!anchor) {
         const supplied = initialAnchor;
-        if (supplied && BigInt(supplied.blockNumber) !== DEFAULT_ANCHOR) throw new Error('invalid initial anchor');
-        const anchorBlock = await rpc('eth_getBlockByNumber', [hexQty(DEFAULT_ANCHOR), false]);
+        const configuredAnchor = profile.initialAnchor?.blockNumber ?? 0;
+        const suppliedAnchor = supplied?.blockNumber ?? configuredAnchor;
+        const anchorBlock = await rpc('eth_getBlockByNumber', [hexQty(suppliedAnchor), false]);
         if (!anchorBlock?.hash) throw new Error('invalid initial anchor');
         const anchorHash = hash(anchorBlock.hash, 'initial anchor hash');
         if (supplied && anchorHash !== hash(supplied.blockHash, 'initial anchor hash')) throw new Error('initial anchor mismatch');
-        anchor = { blockNumber: DEFAULT_ANCHOR.toString(), blockHash: anchorHash };
+        anchor = { blockNumber: String(suppliedAnchor), blockHash: anchorHash };
       }
       let from = reorgAncestor ? BigInt(reorgAncestor.blockNumber) + 1n : BigInt(anchor.blockNumber) + 1n; let totalHeaders = 0; let totalEvents = 0; let batches = 0; let expectedCursorForBatch = current;
       while (from <= final.number && batches < maxBatches) {
@@ -295,7 +302,7 @@ export function createV2Indexer({ db, transport, store, readerFactory, projector
         const headers = await readHeaders(from, to); const events = await readLogs(from, to); await verifyCompleteness(headers, events);
         const snapshot = await attest(to);
         if (hash(snapshot.blockHash, 'snapshot block hash') !== headers.at(-1).blockHash) throw new Error('projection source block mismatch');
-        const prepared = await prepareV2Projection({ snapshot, events, canonicalHistory: reorgAncestor ? (await store.rawEvents()).filter((e) => e.canonical !== false && BigInt(e.block_number) <= BigInt(reorgAncestor.blockNumber)).map((e) => ({ stream: e.stream, emitter: e.emitter, blockNumber: String(e.block_number), blockHash: String(e.block_hash), transactionHash: String(e.transaction_hash), transactionIndex: Number(e.transaction_index), logIndex: Number(e.log_index), topics: e.topics, data: e.data, decoded: e.decoded, eventName: e.event_name })) : null, chainId: DEFAULT_CHAIN_ID, marketplace: DEFAULT_MARKETPLACE, trustedFixedConfig: { chainId: DEFAULT_CHAIN_ID, marketplace: DEFAULT_MARKETPLACE } });
+        const prepared = await prepareV2Projection({ snapshot, events, profile, canonicalHistory: reorgAncestor ? (await store.rawEvents()).filter((e) => e.canonical !== false && BigInt(e.block_number) <= BigInt(reorgAncestor.blockNumber)).map((e) => ({ stream: e.stream, emitter: e.emitter, blockNumber: String(e.block_number), blockHash: String(e.block_hash), transactionHash: String(e.transaction_hash), transactionIndex: Number(e.transaction_index), logIndex: Number(e.log_index), topics: e.topics, data: e.data, decoded: e.decoded, eventName: e.event_name })) : null, chainId: Number(profile.canonicalChainId), marketplace: profile.marketplace, trustedFixedConfig: { chainId: Number(profile.canonicalChainId), marketplace: profile.marketplace } });
         // Recheck the pinned source immediately before opening the atomic store
         // transaction. The original cursor is also passed as the store CAS.
         const sourceBlock = await rpc('eth_getBlockByNumber', [hexQty(to), false]);

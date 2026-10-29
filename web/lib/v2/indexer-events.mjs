@@ -1,8 +1,9 @@
 import manifest from './indexer-event-manifest.json' with { type: 'json' };
+import { ARC_TESTNET_PROFILE, assertV2Profile } from './chain-profile.mjs';
 import { decodeEventLog, encodeAbiParameters, encodeEventTopics, getAddress, keccak256, toBytes } from 'viem';
 
 const MAX_UINT256 = (1n << 256n) - 1n;
-export const INDEXER_CHAIN_ID = 5042002n;
+export const INDEXER_CHAIN_ID = ARC_TESTNET_PROFILE.canonicalChainId;
 const MAX_TOPICS = 4;
 const SOURCES = Object.freeze(['marketplace', 'vault']);
 const EMITTERS = Object.freeze(Object.fromEntries(SOURCES.map((source) => [source, getAddress(manifest.emitters[source])] )));
@@ -116,11 +117,14 @@ function verifyCanonicalEncoding(event, decoded, topics, data) {
 
 export function decodeIndexerLog(rawLog, context) {
   try {
-    if (context === null || typeof context !== 'object' || context.chainId !== INDEXER_CHAIN_ID) reject();
+    if (context === null || typeof context !== 'object') reject();
+    const profile = context.profile ?? ARC_TESTNET_PROFILE; assertV2Profile(profile);
+    if (typeof context.chainId !== 'bigint' || context.chainId !== profile.canonicalChainId) reject();
     const log = snapshot(rawLog);
     const meta = metadata(log);
     const emitter = getAddress(log.address);
-    const source = SOURCES.find((candidate) => EMITTERS[candidate] === emitter);
+    const configuredEmitters = { marketplace: getAddress(profile.marketplace), vault: getAddress(profile.vault) };
+    const source = SOURCES.find((candidate) => configuredEmitters[candidate] === emitter);
     if (!source) reject();
     const topics = log.topics;
     for (const topic of topics) hex(topic, 32);

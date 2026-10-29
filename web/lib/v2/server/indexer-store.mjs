@@ -1,4 +1,5 @@
 import { getAddress } from 'viem';
+import { ARC_TESTNET_PROFILE, assertV2Profile } from '../chain-profile.mjs';
 import assert from 'node:assert/strict';
 
 const HASH = /^0x[0-9a-fA-F]{64}$/;
@@ -167,12 +168,12 @@ function normalizeCursor(value) {
 }
 function cursorText(cursor) { return cursor ? JSON.stringify(cursor) : null; }
 
-export function createV2IndexerStore({ db, chainId, marketplace, vault, maxHeaders = MAX_HEADERS } = {}) {
+export function createV2IndexerStore({ db, profile = ARC_TESTNET_PROFILE, chainId = Number(profile.canonicalChainId), marketplace = profile.marketplace, vault = profile.vault, maxHeaders = MAX_HEADERS } = {}) {
   if (!db || typeof db.transaction !== 'function') throw new TypeError('db is required');
-  if (chainId !== ARC_CHAIN) throw new TypeError('configured Arc chain and deployments are required');
+  assertV2Profile(profile); if (chainId !== Number(profile.canonicalChainId)) throw new TypeError('profile chain mismatch');
   marketplace = address(marketplace, 'marketplace');
   vault = address(vault, 'vault');
-  if (marketplace !== ARC_MARKETPLACE || vault !== ARC_VAULT) throw new TypeError('configured Arc chain and deployments are required');
+  if (marketplace !== profile.marketplace || vault !== profile.vault) throw new TypeError('configured Arc chain and deployments are required');
   if (!Number.isInteger(maxHeaders) || maxHeaders < 1 || maxHeaders > MAX_HEADERS) throw new TypeError('maxHeaders must be between 1 and 1000');
 
   async function currentCursor(tx) {

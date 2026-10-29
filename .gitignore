@@ -16,6 +16,7 @@ keystores/
 
 # builds
 .next/
+.next-v2-local/
 out/
 dist/
 artifacts/
@@ -26,6 +27,9 @@ typechain/
 typechain-types/
 listener/data/
 bot/data/
+
+# local V2 PGlite databases and temporary fixtures
+.hermes-scratch/
 
 # OS / editor
 .DS_Store

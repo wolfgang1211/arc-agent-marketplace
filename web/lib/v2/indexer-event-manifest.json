@@ -1,16 +1,41 @@
 {
   "schemaVersion": 1,
   "canonical": {
-    "compiler": "0.8.28",
-    "evmVersion": "cancun",
-    "viaIR": true,
-    "optimizerRuns": 50,
-    "buildInfo": "contract/artifacts-v2-final2/build-info/485d4238c6e0b10cdff6a496e5894686.json",
-    "buildInfoSha256": "28709ec142c70bd2f7f7c142a481db5d596da8f433a4830fe30173067d8c39ca",
+    "compiler": {
+      "solcVersion": "0.8.28",
+      "solcLongVersion": "0.8.28+commit.7893614a",
+      "evmVersion": "cancun",
+      "viaIR": true,
+      "optimizerRuns": 50
+    },
+    "buildInfo": {
+      "marketplace": {
+        "path": "contract/artifacts-v2-runs50/build-info/aa06f923b29a016fd50e070a2e74426f.json",
+        "sha256": "4753ec82c34e978ab8d57e5b9a84686d6ed97bdb2e19ef503c4999a94bb6ea31"
+      },
+      "vault": {
+        "path": "contract/artifacts-v2-runs50/build-info/eaa02ef53ac5f224ef8259f9c7e6e483.json",
+        "sha256": "7b906c45043419597eaa714d996cc5ffb5e9df1b5c21bf48f822bdf432817d7f"
+      }
+    },
     "artifacts": {
-      "marketplace": "contract/artifacts-v2-final2/contracts/AgentMarketplaceV2.sol/AgentMarketplaceV2.json",
-      "vault": "contract/artifacts-v2-final2/contracts/OperatorCollateralVaultV2.sol/OperatorCollateralVaultV2.json"
+      "marketplace": "contract/artifacts-v2-runs50/contracts/AgentMarketplaceV2.sol/AgentMarketplaceV2.json",
+      "vault": "contract/artifacts-v2-runs50/contracts/OperatorCollateralVaultV2.sol/OperatorCollateralVaultV2.json"
+    },
+    "source": {
+      "marketplace": {
+        "path": "contract/contracts/AgentMarketplaceV2.sol",
+        "sha256": "52641ab6c47b98da6454ddafa04a2e7895757d8b7ba10f132e76490a4a2f1720"
+      },
+      "vault": {
+        "path": "contract/contracts/OperatorCollateralVaultV2.sol",
+        "sha256": "58b95582923b33f170e0879c0eb9c5fede1d1dfc6553fc3a68ed04f03880f89f"
+      }
     }
+  },
+  "deployments": {
+    "marketplace": { "startingBlock": 68072744 },
+    "vault": { "startingBlock": 68072734 }
   },
   "emitters": {
     "marketplace": "0xFA156B7A5205B123c8a22A807ba98405e36130f1",
@@ -791,12 +816,56 @@
         "inputs": [
           {
             "indexed": true,
+            "internalType": "uint256",
+            "name": "jobId",
+            "type": "uint256"
+          },
+          {
+            "indexed": true,
+            "internalType": "address",
+            "name": "operator",
+            "type": "address"
+          },
+          {
+            "indexed": false,
+            "internalType": "uint256",
+            "name": "slashedAmount",
+            "type": "uint256"
+          }
+        ],
+        "name": "OperatorFaultDeclared",
+        "type": "event"
+      },
+      {
+        "anonymous": false,
+        "inputs": [
+          {
+            "indexed": true,
             "internalType": "address",
             "name": "operator",
             "type": "address"
           }
         ],
         "name": "OperatorRegistered",
+        "type": "event"
+      },
+      {
+        "anonymous": false,
+        "inputs": [
+          {
+            "indexed": true,
+            "internalType": "address",
+            "name": "previousOwner",
+            "type": "address"
+          },
+          {
+            "indexed": true,
+            "internalType": "address",
+            "name": "newOwner",
+            "type": "address"
+          }
+        ],
+        "name": "OwnershipTransferStarted",
         "type": "event"
       },
       {

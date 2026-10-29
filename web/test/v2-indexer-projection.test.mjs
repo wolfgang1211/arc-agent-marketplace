@@ -27,8 +27,8 @@ function eventValue(input, index) {
 }
 const allEvents = [...manifest.abis.marketplace, ...manifest.abis.vault].filter((event) => event.type === 'event');
 
-test('all 42 canonical manifest events prepare through the strict pinned reader', async (t) => {
-  assert.equal(allEvents.length, 42);
+test('all 44 canonical manifest events prepare through the strict pinned reader', async (t) => {
+  assert.equal(allEvents.length, 44);
   for (const [index, abi] of allEvents.entries()) await t.test(`${abi.name} (${abi.inputs.length} ABI args)`, async () => {
     const calls = {};
     const args = Object.fromEntries(abi.inputs.map((input, inputIndex) => [input.name, eventValue(input, index + inputIndex)]));
