@@ -115,10 +115,68 @@ function safeHealth(input) {
   return { status, gap, stale, reader, code };
 }
 function same(a, b) { return String(a).toLowerCase() === String(b).toLowerCase(); }
+function uintValue(value) {
+  if (typeof value === 'bigint' && value >= 0n) return value;
+  if (typeof value === 'string' && /^(?:0|[1-9][0-9]*)$/.test(value)) return BigInt(value);
+  return null;
+}
+function signedValue(value) {
+  const text = String(value ?? '');
+  if (/^(?:0|[1-9][0-9]*)$/.test(text)) return BigInt(text);
+  if (/^-(?:0|[1-9][0-9]*)$/.test(text)) return -BigInt(text.slice(1));
+  return null;
+}
+function readBalance(actual, field) {
+  if (!actual || typeof actual !== 'object' || !Object.prototype.hasOwnProperty.call(actual, field)) return null;
+  return uintValue(actual[field]);
+}
+export function proveAccountReadback(intent, actual) {
+  const expected = intent?.expected;
+  const pre = intent?.snapshot?.balances;
+  if (!expected || typeof expected !== 'object' || Array.isArray(expected)) return null;
+  if (expected.action === 'registerOperator') {
+    if (actual?.registered !== true || !expected.wallet) return null;
+    return { action: 'registerOperator', wallet: String(expected.wallet).toLowerCase(), registered: true };
+  }
+  if (!pre || typeof pre !== 'object') return null;
+  const fields = ['freeStake', 'reservedStake', 'credits', 'stakeLiability', 'tokenBalance', 'creditsLiability'];
+  const before = {};
+  const after = {};
+  for (const field of fields) {
+    before[field] = uintValue(pre[field]);
+    after[field] = readBalance(actual, field);
+    if (before[field] === null || after[field] === null) return null;
+  }
+  const wallet = expected.wallet ? String(expected.wallet).toLowerCase() : null;
+  if (!wallet) return null;
+  const base = { action: expected.action, wallet, freeStake: after.freeStake.toString(), reservedStake: after.reservedStake.toString(), credits: after.credits.toString(), stakeLiability: after.stakeLiability.toString(), tokenBalance: after.tokenBalance.toString(), creditsLiability: after.creditsLiability.toString() };
+  if (expected.action === 'depositStake') {
+    const amount = uintValue(expected.stakeLiabilityDelta);
+    if (amount === null || amount === 0n) return null;
+    if (after.freeStake !== before.freeStake + amount || after.reservedStake !== before.reservedStake || after.stakeLiability !== before.stakeLiability + amount || after.tokenBalance !== before.tokenBalance - amount || after.credits !== before.credits || after.creditsLiability !== before.creditsLiability) return null;
+    if (String(expected.freeStake) !== after.freeStake.toString() || String(expected.reservedStake) !== after.reservedStake.toString()) return null;
+    return { ...base, stakeLiabilityDelta: amount.toString() };
+  }
+  if (expected.action === 'withdrawStake') {
+    const delta = signedValue(expected.stakeLiabilityDelta);
+    if (delta === null || delta >= 0n) return null;
+    const amount = -delta;
+    if (before.freeStake < amount) return null;
+    if (after.freeStake !== before.freeStake - amount || after.reservedStake !== before.reservedStake || after.stakeLiability !== before.stakeLiability - amount || after.tokenBalance !== before.tokenBalance + amount || after.credits !== before.credits || after.creditsLiability !== before.creditsLiability) return null;
+    if (String(expected.freeStake) !== after.freeStake.toString() || String(expected.walletTokenIncrease) !== amount.toString()) return null;
+    return { ...base, stakeLiabilityDelta: delta.toString(), walletTokenIncrease: amount.toString() };
+  }
+  if (expected.action === 'withdrawCredit') {
+    const amount = before.credits;
+    if (amount === 0n || after.credits !== 0n || after.tokenBalance !== before.tokenBalance + amount || after.creditsLiability !== before.creditsLiability - amount || after.freeStake !== before.freeStake || after.reservedStake !== before.reservedStake || after.stakeLiability !== before.stakeLiability) return null;
+    if (String(expected.walletTokenIncrease) !== amount.toString() || String(expected.liabilityDecrease) !== amount.toString() || String(expected.credits) !== '0') return null;
+    return { ...base, walletTokenIncrease: amount.toString(), liabilityDecrease: amount.toString() };
+  }
+  return null;
+}
 function expectedState(intent, actual) {
   const expected = intent.expected;
   if (!expected || typeof expected !== 'object' || Array.isArray(expected)) return null;
-  const state = { ...expected };
   if (expected.action === 'postJob') {
     if (!actual || !actual.jobId || !same(actual.client, expected.client) || !same(actual.criteriaHash, expected.criteriaHash) || !same(actual.descriptionHash, expected.descriptionHash) || !same(actual.canonicalTermsHash, expected.termsHash)) return null;
     return { action: 'postJob', jobId: String(actual.jobId), client: String(actual.client).toLowerCase(), criteriaHash: String(actual.criteriaHash).toLowerCase(), descriptionHash: String(actual.descriptionHash).toLowerCase(), termsHash: String(actual.canonicalTermsHash).toLowerCase() };
@@ -128,10 +186,7 @@ function expectedState(intent, actual) {
     for (const role of ['client', 'operator', 'resolver']) if (expected[role] !== null && expected[role] !== undefined && !same(actual[role], expected[role])) return null;
     return { action: expected.action, jobId: String(actual.jobId), stateVersion: String(actual.stateVersion), status: Number(actual.status), ...(actual.client ? { client: String(actual.client).toLowerCase() } : {}), ...(actual.operator ? { operator: String(actual.operator).toLowerCase() } : {}), ...(actual.resolver ? { resolver: String(actual.resolver).toLowerCase() } : {}) };
   }
-  if (!actual || typeof actual !== 'object') return null;
-  for (const key of Object.keys(expected)) if (key !== 'action' && key !== 'wallet' && actual[key] !== undefined && String(actual[key]).toLowerCase() !== String(expected[key]).toLowerCase()) return null;
-  for (const key of Object.keys(expected)) if (key !== 'action' && key !== 'wallet' && actual[key] === undefined && !['walletTokenIncrease', 'liabilityDecrease', 'stakeLiabilityDelta'].includes(key)) return null;
-  return { ...expected, ...(actual.freeStake !== undefined ? { freeStake: String(actual.freeStake) } : {}), ...(actual.reservedStake !== undefined ? { reservedStake: String(actual.reservedStake) } : {}), ...(actual.credits !== undefined ? { credits: String(actual.credits) } : {}) };
+  return proveAccountReadback(intent, actual);
 }
 
 export function createV2ReadApi({ db, getHealth, profile = ARC_TESTNET_PROFILE, transport, auth, readerFactory } = {}) {

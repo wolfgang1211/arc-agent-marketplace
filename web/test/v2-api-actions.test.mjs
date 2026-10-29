@@ -12,12 +12,13 @@ import { createV2Api } from '../lib/v2/server/api-runtime.mjs';
 import { V2_TERMS_SCHEMA, canonicalTermsHash } from '../lib/v2/terms.mjs';
 import manifest from '../lib/v2/action-manifest.json' with { type: 'json' };
 import runtimeProof from '../lib/v2/runtime-abi-proof.json' with { type: 'json' };
+import { scratchDir } from './scratch-dir.mjs';
 
 const ORIGIN = 'https://app.example.test';
 const MARKETPLACE = manifest.contracts.marketplace.address;
 const HASH = (value) => keccak256(stringToHex(JSON.stringify(value)));
 const address = (byte) => `0x${byte.repeat(40)}`;
-const scratch = process.env.TMPDIR ?? path.join(process.cwd(), '.hermes-scratch');
+const scratch = scratchDir();
 
 async function fixture() {
   const dir = await mkdtemp(path.join(scratch, 'v2-api-actions-'));
@@ -96,20 +97,37 @@ test('draft rejects browser policy/hash forgery before any PGlite audit write', 
 test('account preflight exposes only canonical account actions with reader-backed gates', async () => {
   const f = await fixture();
   try {
-    const account = { registered: false, maxActiveJobs: '2', activeJobs: '0', credits: '9', nonceEpoch: '0', freeStake: '100', reservedStake: '0', applicationNonce: async () => 0n };
+    const account = { registered: false, maxActiveJobs: '2', activeJobs: '0', credits: '9', nonceEpoch: '0', freeStake: '100', reservedStake: '0', stakeLiability: '100', tokenBalance: '1000', creditsLiability: '9', applicationNonce: async () => 0n };
     const auth = { authorizeMutation: async () => ({ wallet: f.client.address }) };
     f.api = createV2ActionsApi({ db: f.db, auth, readerFactory: () => ({ read: async () => ({ chainId: 5042002n, readAccount: async () => account, getters: {} }) }), origin: ORIGIN, getHealth: async () => ({ status: 'healthy', stale: false, gap: null }) });
-    for (const [action, params, name] of [['registerOperator', {}, 'registerOperator'], ['depositStake', { amount: '7' }, 'depositStake'], ['withdrawCredit', {}, 'withdrawCredit']]) {
+    for (const [action, params, name] of [['registerOperator', {}, 'registerOperator'], ['depositStake', { amount: '7' }, 'depositStake'], ['withdrawStake', { amount: '40' }, 'withdrawStake'], ['withdrawCredit', {}, 'withdrawCredit']]) {
       const out = await call(f, '/api/v2/accounts/preflight', jsonInit({ action, params }));
-      assert.equal(out.response.status, 200); assert.equal(decodeFunctionData({ abi: action === 'depositStake' ? manifest.contracts.vault.abi : manifest.contracts.marketplace.abi, data: out.body.transaction.data }).functionName, name);
+      assert.equal(out.response.status, 200); assert.equal(decodeFunctionData({ abi: action === 'depositStake' || action === 'withdrawStake' ? manifest.contracts.vault.abi : manifest.contracts.marketplace.abi, data: out.body.transaction.data }).functionName, name);
+      if (action === 'depositStake') {
+        assert.equal(out.body.allowance.requiredAmount, '7');
+        assert.equal(out.body.allowance.token.toLowerCase(), '0x3600000000000000000000000000000000000000');
+        assert.equal(out.body.allowance.spender.toLowerCase(), '0xd5b271b7bf4696d662b2bcb1a94b408887c6c423');
+        assert.equal(out.body.expected.freeStake, '107');
+        assert.equal(out.body.expected.stakeLiabilityDelta, '7');
+        const stored = await f.db.query("SELECT payload FROM v2_audit_events WHERE entity_id=$1", [out.body.intentId]);
+        assert.deepEqual(stored.rows[0].payload.snapshot.balances, { freeStake: '100', reservedStake: '0', credits: '9', stakeLiability: '100', tokenBalance: '1000', creditsLiability: '9' });
+      }
+      if (action === 'withdrawStake') {
+        assert.equal(out.body.expected.freeStake, '60');
+        assert.equal(out.body.expected.stakeLiabilityDelta, '-40');
+        assert.equal(out.body.expected.walletTokenIncrease, '40');
+        assert.equal(out.body.allowance, undefined);
+      }
     }
+    const overdraw = await call(f, '/api/v2/accounts/preflight', jsonInit({ action: 'withdrawStake', params: { amount: '101' } }));
+    assert.equal(overdraw.response.status, 403);
     const rejected = await call(f, '/api/v2/accounts/preflight', jsonInit({ action: 'approve', params: {} }));
     assert.equal(rejected.response.status, 409); assert.equal(rejected.body.error, 'UNSUPPORTED_ACTION');
   } finally { await f.db.close(); await rm(f.dir, { recursive: true, force: true }); }
 });
 
 test('advertised action manifest is complete and selected by immutable full signature', () => {
-  const expected = ['postJob','awardJob','submitDelivery','approve','requestRevision','openDispute','resolveDispute','proposeMutual','acceptMutual','rejectMutual','revokeMutual','claimOpenJobTimeout','claimDeliveryTimeout','withdrawCredit','registerOperator','depositStake','withdrawStake'];
+  const expected = ['postJob','awardJob','submitDelivery','submitRevision','approve','requestRevision','openDispute','resolveDispute','proposeMutual','acceptMutual','rejectMutual','revokeMutual','claimOpenJobTimeout','claimDeliveryTimeout','withdrawCredit','registerOperator','depositStake','withdrawStake'];
   const actual = [...manifest.contracts.marketplace.abi, ...manifest.contracts.vault.abi].map((item) => item.name);
   assert.deepEqual(new Set(actual), new Set(expected));
   assert.equal(actual.length, expected.length);

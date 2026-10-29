@@ -18,6 +18,7 @@ const FULL_SIGNATURES = Object.freeze({
   postJob: 'postJob(uint256,uint64,uint64,uint64,uint64,uint8,bool,bytes32,bytes32,bool)',
   awardJob: 'awardJob(uint256,(uint256,address,bytes32,uint64,uint64,uint256,uint256),bytes)',
   submitDelivery: 'submitDelivery(uint256,bytes32,uint256)',
+  submitRevision: 'submitRevision(uint256,bytes32,uint256)',
   approve: 'approve(uint256,uint256)',
   requestRevision: 'requestRevision(uint256,bytes32,bytes32,uint64)',
   openDispute: 'openDispute(uint256,uint256)',
@@ -155,6 +156,15 @@ export function createV2ActionsApi({ db, auth, readerFactory, getHealth, origin,
     const out = { registered: account.registered }; for (const field of fields) { if (!(field in account)) fail('READER_UNAVAILABLE', 503); out[field] = uint(String(account[field]), 'READER_UNAVAILABLE'); }
     if (typeof account.applicationNonce !== 'function') fail('READER_UNAVAILABLE', 503); out.applicationNonce = account.applicationNonce.bind(account); return out;
   }
+  function economicBalances(account) {
+    const fields = ['freeStake','reservedStake','credits','stakeLiability','tokenBalance','creditsLiability'];
+    const out = {};
+    for (const field of fields) {
+      if (!account || !Object.prototype.hasOwnProperty.call(account, field)) fail('READER_UNAVAILABLE', 503);
+      out[field] = uint(String(account[field]), 'READER_UNAVAILABLE').toString();
+    }
+    return out;
+  }
   function requiredStake(reward) {
     const proportional = reward / 10n + (reward % 10n === 0n ? 0n : 1n);
     const base = proportional > POLICY.stakeFloor ? proportional : POLICY.stakeFloor;
@@ -162,21 +172,23 @@ export function createV2ActionsApi({ db, auth, readerFactory, getHealth, origin,
   }
   async function accountPreflight(request, wallet) {
     await healthy(getHealth); const value = await readBody(request); if (!exact(value, ['action','params'], ['action','params']) || !SUPPORTED.has(value.action)) fail('UNSUPPORTED_ACTION', 409);
-    if (!['registerOperator','depositStake','withdrawCredit'].includes(value.action)) fail('UNSUPPORTED_ACTION', 409);
-    let snap; try { snap = await readerFactory().read(); } catch { fail('READER_UNAVAILABLE', 503); } const account = accountFields(await snap.readAccount(wallet));
-    let args; let to = MARKETPLACE; let expected;
+    if (!['registerOperator','depositStake','withdrawCredit','withdrawStake'].includes(value.action)) fail('UNSUPPORTED_ACTION', 409);
+    let snap; try { snap = await readerFactory().read(); } catch { fail('READER_UNAVAILABLE', 503); } const rawAccount = await snap.readAccount(wallet); const account = accountFields(rawAccount);
+    let args; let to = MARKETPLACE; let expected; let allowance; let balances = null;
     if (value.action === 'registerOperator') { if (account.registered) fail('FORBIDDEN', 403); args = []; expected = { action: value.action, wallet, registered: true }; }
-    else if (value.action === 'depositStake') { to = VAULT; const amount = uint(value.params?.amount, 'BAD_BODY'); if (amount === 0n) fail('BAD_BODY'); args = [amount]; expected = { action: value.action, wallet, freeStake: (account.freeStake + amount).toString(), reservedStake: account.reservedStake.toString(), stakeLiabilityDelta: amount.toString() }; }
-    else { if (account.credits === 0n) fail('FORBIDDEN', 403); args = []; expected = { action: value.action, wallet, credits: '0', walletTokenIncrease: account.credits.toString(), liabilityDecrease: account.credits.toString() }; }
-    const data = encode(value.action, args, value.action === 'depositStake' ? 'vault' : 'marketplace');
-    const transaction = txForProfile(to, data); const prepared = await persistIntent(db, wallet, intentFor({ wallet, profile, action: value.action, transaction, snapshot: { blockTag: snap.blockTag ?? null, blockHash: snap.blockHash ?? null }, expected, now, readback: { kind: 'receipt-and-action', action: value.action, to: transaction.to } }));
-    return json({ action: value.action, role: 'account', transaction: prepared.transaction, intentId: prepared.intentId, expected: prepared.expected, expiry: prepared.expiryISOorEpochMillis, expiryISOorEpochMillis: prepared.expiryISOorEpochMillis, readback: prepared.intent.readback, chainId: profile.canonicalChainId.toString(), onchainStatus: 'not_submitted' });
+    else if (value.action === 'depositStake') { to = VAULT; const amount = uint(value.params?.amount, 'BAD_BODY'); if (amount === 0n) fail('BAD_BODY'); balances = economicBalances(rawAccount); args = [amount]; expected = { action: value.action, wallet, freeStake: (BigInt(balances.freeStake) + amount).toString(), reservedStake: balances.reservedStake, stakeLiabilityDelta: amount.toString() }; allowance = { token: profile.usdc, spender: VAULT, requiredAmount: amount.toString() }; }
+    else if (value.action === 'withdrawStake') { to = VAULT; const amount = uint(value.params?.amount, 'BAD_BODY'); if (amount === 0n) fail('BAD_BODY'); balances = economicBalances(rawAccount); if (BigInt(balances.freeStake) < amount) fail('FORBIDDEN', 403); args = [amount]; expected = { action: value.action, wallet, freeStake: (BigInt(balances.freeStake) - amount).toString(), reservedStake: balances.reservedStake, stakeLiabilityDelta: `-${amount}`, walletTokenIncrease: amount.toString() }; }
+    else { if (account.credits === 0n) fail('FORBIDDEN', 403); balances = economicBalances(rawAccount); if (BigInt(balances.credits) !== account.credits) fail('READER_UNAVAILABLE', 503); args = []; expected = { action: value.action, wallet, credits: '0', walletTokenIncrease: balances.credits, liabilityDecrease: balances.credits }; }
+    const data = encode(value.action, args, to === VAULT ? 'vault' : 'marketplace');
+    const transaction = txForProfile(to, data); const prepared = await persistIntent(db, wallet, intentFor({ wallet, profile, action: value.action, transaction, snapshot: { blockTag: snap.blockTag ?? null, blockHash: snap.blockHash ?? null, ...(balances ? { balances } : {}) }, expected, now, readback: { kind: 'receipt-and-action', action: value.action, to: transaction.to } }));
+    return json({ action: value.action, role: 'account', transaction: prepared.transaction, intentId: prepared.intentId, expected: prepared.expected, expiry: prepared.expiryISOorEpochMillis, expiryISOorEpochMillis: prepared.expiryISOorEpochMillis, readback: prepared.intent.readback, chainId: profile.canonicalChainId.toString(), onchainStatus: 'not_submitted', ...(allowance ? { allowance } : {}) });
   }
   async function preflight(request, wallet, jobId) {
-    await healthy(getHealth); const value = await readBody(request); if (!exact(value, ['action','params','application','signature'], ['action','params'])) fail('BAD_BODY'); if (typeof value.action !== 'string' || !SUPPORTED.has(value.action) || ['registerOperator','depositStake','withdrawCredit'].includes(value.action)) fail('UNSUPPORTED_ACTION', 409); const { row, snap, chainJob } = await loadJob(jobId); const r = role(wallet, chainJob); if (!r) fail('FORBIDDEN', 403); const params = value.params;
+    await healthy(getHealth); const value = await readBody(request); if (!exact(value, ['action','params','application','signature'], ['action','params'])) fail('BAD_BODY'); if (typeof value.action !== 'string' || !SUPPORTED.has(value.action) || ['registerOperator','depositStake','withdrawCredit','withdrawStake'].includes(value.action)) fail('UNSUPPORTED_ACTION', 409); const { row, snap, chainJob } = await loadJob(jobId); const r = role(wallet, chainJob); if (!r) fail('FORBIDDEN', 403); const params = value.params;
     let args; let to = MARKETPLACE; let expected;
     const beforeVersion = BigInt(row.state_version);
-    const transition = (status) => ({ action: value.action, jobId: jobId.toString(), stateVersion: (beforeVersion + 1n).toString(), status, client: String(chainJob.client).toLowerCase(), operator: chainJob.operator ? String(chainJob.operator).toLowerCase() : null, resolver: chainJob.resolver ? String(chainJob.resolver).toLowerCase() : null });
+    const party = (value) => { if (value == null) return null; const text = String(value).toLowerCase(); return text === '0x0000000000000000000000000000000000000000' ? null : text; };
+    const transition = (status, { bump = true } = {}) => ({ action: value.action, jobId: jobId.toString(), stateVersion: (bump ? beforeVersion + 1n : beforeVersion).toString(), status, client: party(chainJob.client), operator: party(chainJob.operator), resolver: party(chainJob.resolver) });
     try {
       const id = jobId;
       if (value.action === 'awardJob') {
@@ -187,18 +199,18 @@ export function createV2ActionsApi({ db, auth, readerFactory, getHealth, origin,
         const checked = validateApplication(app, { expectedJobId: id, expectedOperator: app.operator, currentTermsHash: chainJob.canonicalTermsHash, now: BigInt(Math.floor(now() / 1000)), applyBy: BigInt(chainJob.applyBy), currentNonceEpoch: account.nonceEpoch, currentOperatorNonce: BigInt(await account.applicationNonce(id)) });
         const digest = hashApplication(checked, applicationDomain(CHAIN_ID, MARKETPLACE)); let valid = false; if (typeof readSignature === 'function') { try { valid = await validateApplicationERC1271(app.operator, digest, value.signature, (...args) => readSignature(...args, snap.blockTag)); } catch {} }
         if (!valid) { const signer = (await recoverApplicationEOASigner(checked, applicationDomain(CHAIN_ID, MARKETPLACE), value.signature)).toLowerCase(); valid = signer === app.operator.toLowerCase(); }
-        if (!valid) fail('INVALID_APPLICATION'); args = [id, checked, value.signature]; expected = transition(1);
+        if (!valid) fail('INVALID_APPLICATION'); args = [id, checked, value.signature]; expected = { ...transition(1), operator: checked.operator.toLowerCase() };
       } else if (value.action === 'submitDelivery') { if (r !== 'operator' || Number(chainJob.status) !== 1) fail('FORBIDDEN', 403); args = [id, hash(params?.blobHash), uint(params?.expected)]; expected = transition(2);
+      } else if (value.action === 'submitRevision') { if (r !== 'operator' || Number(chainJob.status) !== 3) fail('FORBIDDEN', 403); args = [id, hash(params?.blobHash), uint(params?.expected)]; expected = transition(2);
       } else if (value.action === 'approve') { if (r !== 'client' || ![2, 3].includes(Number(chainJob.status))) fail('FORBIDDEN', 403); args = [id, uint(params?.expected)]; expected = transition(6);
       } else if (value.action === 'requestRevision') { if (r !== 'client' || Number(chainJob.status) !== 2) fail('FORBIDDEN', 403); args = [id, hash(params?.criterionHash), hash(params?.referenceHash), uint(params?.expected ?? String(chainJob.reviewDeadline))]; expected = transition(3);
       } else if (value.action === 'openDispute') { if (!['client','operator'].includes(r) || ![1, 2, 3, 4].includes(Number(chainJob.status))) fail('FORBIDDEN', 403); args = [id, uint(params?.expected)]; expected = transition(5);
-      } else if (value.action === 'resolveDispute') { if (typeof params?.operatorFault !== 'boolean') fail('BAD_BODY'); if (r !== 'resolver' || Number(chainJob.status) !== 5) fail('FORBIDDEN', 403); const grossPayout = uint(params?.grossPayout); if (grossPayout > uint(String(chainJob.reward ?? row.reward), 'READER_UNAVAILABLE')) fail('BAD_BODY'); args = [id, grossPayout, params.operatorFault, hash(params?.reasonHash), hash(params?.evidenceHash), uint(params?.expected)]; expected = transition(params.operatorFault ? 7 : 6);
-      } else if (value.action === 'proposeMutual') { if (!['client','operator'].includes(r) || Number(chainJob.status) >= 6) fail('FORBIDDEN', 403); const refund = uint(params?.refund); const grossPayout = uint(params?.grossPayout); if (refund + grossPayout !== uint(String(chainJob.reward ?? row.reward), 'READER_UNAVAILABLE')) fail('BAD_BODY'); args = [id, refund, grossPayout, uint(params?.expiry), uint(params?.expected)]; expected = transition(Number(chainJob.status));
+      } else if (value.action === 'resolveDispute') { if (typeof params?.operatorFault !== 'boolean') fail('BAD_BODY'); if (r !== 'resolver' || Number(chainJob.status) !== 5) fail('FORBIDDEN', 403); const grossPayout = uint(params?.grossPayout); if (grossPayout > uint(String(chainJob.reward ?? row.reward), 'READER_UNAVAILABLE')) fail('BAD_BODY'); args = [id, grossPayout, params.operatorFault, hash(params?.reasonHash), hash(params?.evidenceHash), uint(params?.expected)]; expected = transition(grossPayout === 0n ? 7 : 6);
+      } else if (value.action === 'proposeMutual') { if (!['client','operator'].includes(r) || Number(chainJob.status) >= 6) fail('FORBIDDEN', 403); const refund = uint(params?.refund); const grossPayout = uint(params?.grossPayout); if (refund + grossPayout !== uint(String(chainJob.reward ?? row.reward), 'READER_UNAVAILABLE')) fail('BAD_BODY'); args = [id, refund, grossPayout, uint(params?.expiry), uint(params?.expected)]; expected = transition(Number(chainJob.status), { bump: false });
       } else if (value.action === 'acceptMutual') { if (!['client','operator'].includes(r)) fail('FORBIDDEN', 403); args = [id, uint(params?.expected), uint(params?.expectedRequestVersion)]; expected = transition(6);
-      } else if (value.action === 'rejectMutual' || value.action === 'revokeMutual') { if (!['client','operator'].includes(r)) fail('FORBIDDEN', 403); args = [id, uint(params?.expected)]; expected = transition(Number(chainJob.status));
+      } else if (value.action === 'rejectMutual' || value.action === 'revokeMutual') { if (!['client','operator'].includes(r)) fail('FORBIDDEN', 403); args = [id, uint(params?.expected)]; expected = transition(Number(chainJob.status), { bump: false });
       } else if (value.action === 'claimOpenJobTimeout') { if (Number(chainJob.status) !== 0 || !['client','resolver'].includes(r)) fail('FORBIDDEN', 403); args = [id, uint(params?.expected)]; expected = transition(7);
       } else if (value.action === 'claimDeliveryTimeout') { if (Number(chainJob.status) !== 1 || r !== 'operator') fail('FORBIDDEN', 403); args = [id, uint(params?.expected)]; expected = transition(4);
-      } else if (value.action === 'withdrawStake') { if (r !== 'operator') fail('FORBIDDEN', 403); const amount = uint(params?.amount); if (amount === 0n) fail('BAD_BODY'); to = VAULT; args = [amount]; expected = { action: value.action, wallet, freeStake: (await snap.readAccount(wallet)).freeStake.toString(), reservedStake: (await snap.readAccount(wallet)).reservedStake.toString(), stakeLiabilityDelta: `-${amount}` };
       } else if (value.action === 'withdrawCredit') { fail('UNSUPPORTED_ACTION', 409);
       } else fail('UNSUPPORTED_ACTION', 409);
       const data = encode(value.action, args, to === VAULT ? 'vault' : 'marketplace'); const transaction = txForProfile(to, data); const prepared = await persistIntent(db, wallet, intentFor({ wallet, profile, action: value.action, transaction, snapshot: { blockTag: snap.blockTag, blockHash: snap.blockHash, jobId: jobId.toString() }, expected, now, readback: { kind: 'receipt-and-job-transition', action: value.action, jobId: jobId.toString(), to: transaction.to } }));

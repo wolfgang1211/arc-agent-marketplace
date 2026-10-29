@@ -49,7 +49,7 @@ test('role/status matrix exposes only canonical actions', () => {
     ['client open', { client, operator: null, resolver, status: 0 }, client, ['awardJob']],
     ['operator delivery', { client, operator, resolver, status: 1 }, operator, ['submitDelivery', 'openDispute']],
     ['client submitted', { client, operator, resolver, status: 2 }, client, ['approve', 'requestRevision', 'openDispute']],
-    ['operator revision', { client, operator, resolver, status: 3 }, operator, ['openDispute']],
+    ['operator revision', { client, operator, resolver, status: 3 }, operator, ['submitRevision', 'openDispute']],
     ['resolver dispute', { client, operator, resolver, status: 5 }, resolver, ['resolveDispute']],
     ['wrong wallet', { client, operator, resolver, status: 1 }, '0x4444444444444444444444444444444444444444', []],
   ];

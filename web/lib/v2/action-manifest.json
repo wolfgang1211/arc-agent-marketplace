@@ -465,6 +465,29 @@
           "type": "function"
         },
         {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "id",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "blobHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint256",
+              "name": "expected",
+              "type": "uint256"
+            }
+          ],
+          "name": "submitRevision",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
           "inputs": [],
           "name": "withdrawCredit",
           "outputs": [],
@@ -481,6 +504,11 @@
             {
               "internalType": "uint256",
               "name": "expected",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "expectedRequestVersion",
               "type": "uint256"
             }
           ],

@@ -3,8 +3,9 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import test from 'node:test';
 import { createPgDb, createPgliteDb, migrate } from '../lib/v2/server/db.mjs';
+import { scratchDir } from './scratch-dir.mjs';
 
-const scratch = process.env.TMPDIR ?? join(process.cwd(), '.hermes-scratch');
+const scratch = scratchDir();
 async function dbAt() {
   const dir = await mkdtemp(join(scratch, 'v2-db-'));
   const db = await createPgliteDb({ dataDir: dir });

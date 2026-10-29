@@ -91,7 +91,7 @@ function sameLogPayload(left, right) {
 
 export function createV2Indexer({ db, transport, store, readerFactory, projector, profile = ARC_TESTNET_PROFILE, initialAnchor = null, chainId = Number(profile.canonicalChainId), marketplace = profile.marketplace, vault = profile.vault, batchSize = MAX_RANGE, maxBatches = 1, confirmations = 32, retries = 2, timeoutMs = 5000, totalBudgetMs = 60000, sleep = async () => {} } = {}) {
   if (!db || typeof transport !== 'function' || !store) throw new TypeError('indexer requires db, transport, and store');
-  assertV2Profile(profile); if (chainId !== Number(profile.canonicalChainId) || marketplace.toLowerCase() !== profile.marketplace.toLowerCase() || vault.toLowerCase() !== profile.vault.toLowerCase()) throw new TypeError('profile deployment mismatch');
+  assertV2Profile(profile); if (chainId !== Number(profile.canonicalChainId) || marketplace.toLowerCase() !== profile.marketplace.toLowerCase() || vault.toLowerCase() !== profile.vault.toLowerCase()) throw new TypeError('configured Arc deployment mismatch');
   if (!Number.isInteger(batchSize) || batchSize < 1 || batchSize > MAX_RANGE) throw new TypeError('batchSize must be between 1 and 1000');
   if (!Number.isSafeInteger(maxBatches) || maxBatches < 1 || maxBatches > MAX_BATCHES) throw new TypeError('maxBatches must be between 1 and 8');
   if (!Number.isSafeInteger(confirmations) || confirmations < 0) throw new TypeError('confirmations must be a safe non-negative integer');
@@ -290,6 +290,7 @@ export function createV2Indexer({ db, transport, store, readerFactory, projector
         const supplied = initialAnchor;
         const configuredAnchor = profile.initialAnchor?.blockNumber ?? 0;
         const suppliedAnchor = supplied?.blockNumber ?? configuredAnchor;
+        if (supplied && String(supplied.blockNumber) !== String(configuredAnchor)) throw new Error('initial anchor mismatch');
         const anchorBlock = await rpc('eth_getBlockByNumber', [hexQty(suppliedAnchor), false]);
         if (!anchorBlock?.hash) throw new Error('invalid initial anchor');
         const anchorHash = hash(anchorBlock.hash, 'initial anchor hash');

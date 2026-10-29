@@ -1,5 +1,6 @@
 const { expect } = require("chai");
 const fs = require("fs");
+const os = require("os");
 const path = require("path");
 const { spawnSync } = require("child_process");
 const { LIMIT, checkBytes, measureCanonical } = require("../scripts/check-v2-size");
@@ -26,7 +27,8 @@ describe("V2 canonical runtime size gate", function () {
   });
 
   it("rejects an oversized artifact through the checker CLI", function () {
-    const scratchRoot = process.env.TMPDIR || path.resolve("C:/Users/wolfgang/AppData/Local/hermes/cache/scratch");
+    const scratchRoot = process.env.TMPDIR || os.tmpdir();
+    fs.mkdirSync(scratchRoot, { recursive: true });
     const dir = fs.mkdtempSync(path.join(scratchRoot, "v2-size-gate-"));
     try {
       for (const name of ["AgentMarketplaceV2", "OperatorCollateralVaultV2"]) {

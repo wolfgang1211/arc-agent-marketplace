@@ -7,12 +7,13 @@ import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 import { verifyMessage } from 'viem';
 import { createPgliteDb, migrate } from '../lib/v2/server/db.mjs';
 import { createV2AuthApi } from '../lib/v2/server/api-auth.mjs';
+import { scratchDir } from './scratch-dir.mjs';
 
 const ORIGIN = 'https://app.example.test';
 const LOCAL_ORIGIN = 'http://127.0.0.1';
 const CHAIN_ID = '5042002';
 const MARKETPLACE = '0xFA156B7A5205B123c8a22A807ba98405e36130f1';
-const scratch = process.env.TMPDIR ?? path.join(process.cwd(), '.hermes-scratch');
+const scratch = scratchDir();
 async function fixture(origin = ORIGIN) {
   const dir = await mkdtemp(path.join(scratch, 'v2-api-auth-'));
   const db = await createPgliteDb({ dataDir: dir }); await migrate(db);

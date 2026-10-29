@@ -10,6 +10,7 @@ import { createV2IndexerProjector } from '../lib/v2/server/indexer-projection.mj
 import { createV2IndexerStore } from '../lib/v2/server/indexer-store.mjs';
 import { decodeIndexerLog } from '../lib/v2/indexer-events.mjs';
 import { snapshot as pinnedSnapshot, pinnedReader } from './fixtures/v2-indexer-snapshot.mjs';
+import { scratchDir } from './scratch-dir.mjs';
 
 const chainId = 5042002;
 const market = manifest.emitters.marketplace;
@@ -82,7 +83,7 @@ function makeTransport({ head = 68072744, logs = [], blocks = {}, errors = {} } 
   return { transport, calls };
 }
 async function setup() {
-  const dir = await mkdtemp(join(process.env.TMPDIR ?? join(process.cwd(), '.hermes-scratch'), 'v2-pipeline-'));
+  const dir = await mkdtemp(join(scratchDir(), 'v2-pipeline-'));
   const db = await createPgliteDb({ dataDir: dir }); await migrate(db);
   const store = createV2IndexerStore({ db, chainId, marketplace: market, vault });
   return { dir, db, store };

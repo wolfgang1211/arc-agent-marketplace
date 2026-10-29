@@ -6,12 +6,13 @@ import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 import { verifyMessage } from 'viem';
 import { createPgliteDb, migrate } from '../lib/v2/server/db.mjs';
 import { createWalletSessionService, sessionCookie, verifySessionCookie } from '../lib/v2/server/wallet-session.mjs';
+import { scratchDir } from './scratch-dir.mjs';
 
 const ORIGIN = 'https://app.example.test';
 const DOMAIN = 'app.example.test';
 const CHAIN_ID = 5042002n;
 const MARKET = '0xFA156B7A5205B123c8a22A807ba98405e36130f1';
-const scratch = process.env.TMPDIR ?? join(process.cwd(), '.hermes-scratch');
+const scratch = scratchDir();
 async function fixture() { const dir = await mkdtemp(join(scratch, 'v2-auth-')); const db = await createPgliteDb({ dataDir: dir }); await migrate(db); return { db, dir }; }
 async function dispose(x) { await x.db.close(); await rm(x.dir, { recursive: true, force: true }); }
 
