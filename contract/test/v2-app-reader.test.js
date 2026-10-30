@@ -1,5 +1,6 @@
 const { ethers } = require('hardhat');
 const assert = require('node:assert/strict');
+const { explicitLocalProfile } = require('./helpers/v2-explicit-local-profile');
 
 describe('V2 canonical web reader local integration', function () {
   it('reads the actual canonical pair and posted job at one pinned block', async function () {
@@ -20,7 +21,8 @@ describe('V2 canonical web reader local integration', function () {
     const tx = await market.postJob(1_000_000, applyBy, 3600, 86400, 43200, 2, false, hash('criteria'), hash('description'), false);
     const receipt = await tx.wait();
     const transport = (method, params) => ethers.provider.send(method, params);
-    const reader = createV2ChainReader({ transport, chainId: 31337n, marketplace: await market.getAddress(), vault: await vault.getAddress(), localTestConfig: true, token: await token.getAddress(), treasury: treasury.address });
+    const profile = await explicitLocalProfile({ market, vault, token, treasury });
+    const reader = createV2ChainReader({ transport, profile });
     const snapshot = await reader.read();
     const job = await snapshot.readJob(1n);
     assert.equal(job.client.toLowerCase(), owner.address.toLowerCase());
@@ -68,7 +70,8 @@ describe('V2 canonical web reader local integration', function () {
       if (method === 'eth_getBlockByNumber' && changed) return { hash: '0x' + '22'.repeat(32) };
       return original(method, params);
     };
-    const reader = createV2ChainReader({ transport, chainId: 31337n, marketplace: await market.getAddress(), vault: await vault.getAddress(), localTestConfig: true, token: await token.getAddress(), treasury: treasury.address });
+    const profile = await explicitLocalProfile({ market, vault, token, treasury });
+    const reader = createV2ChainReader({ transport, profile });
     const snapshot = await reader.read();
     assert.equal((await snapshot.readClientPolicy(owner.address)).listedHouse, true);
     changed = true;

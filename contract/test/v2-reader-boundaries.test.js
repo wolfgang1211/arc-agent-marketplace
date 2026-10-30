@@ -1,6 +1,7 @@
 const assert = require('node:assert/strict');
 const { ethers } = require('hardhat');
 const { deployV2Pair } = require('./helpers/deploy-v2-pair');
+const { explicitLocalProfile } = require('./helpers/v2-explicit-local-profile');
 
 const U = 1_000_000n;
 const hash = (s) => ethers.keccak256(ethers.toUtf8Bytes(s));
@@ -49,8 +50,8 @@ async function fixture() {
   await (await market.connect(operator).registerOperator()).wait();
   const { createV2ChainReader } = await import('../../web/lib/v2/server/chain-reader.mjs');
   const original = (method, params) => ethers.provider.send(method, params);
-  const options = { chainId: 31337n, marketplace: await market.getAddress(), vault: await vault.getAddress(), token: await token.getAddress(), treasury: treasury.address, localTestConfig: true };
-  const readerFor = (transport = original) => createV2ChainReader({ ...options, transport });
+  const profile = await explicitLocalProfile({ market, vault, token, treasury });
+  const readerFor = (transport = original) => createV2ChainReader({ transport, profile });
   return { owner, client, operator, treasury, resolver, other, token, market, vault, readerFor, original, createV2ChainReader };
 }
 
@@ -134,9 +135,9 @@ describe('V2 reader boundary coverage', function () {
     const marketCode = await e.original('eth_getCode', [await e.market.getAddress(), base.snapshot.blockTag]);
     const vaultCode = await e.original('eth_getCode', [await e.vault.getAddress(), base.snapshot.blockTag]);
     const cases = [
-      ['market immutable domain', await e.market.getAddress(), mutateCode(marketCode, 23229, (parseInt(marketCode.slice(2 + 23229 * 2, 2 + 23229 * 2 + 2), 16) ^ 1)), /immutable mismatch/],
-      ['market immutable token', await e.market.getAddress(), mutateCode(marketCode, 3731, (parseInt(marketCode.slice(2 + 3731 * 2, 2 + 3731 * 2 + 2), 16) ^ 1)), /immutable mismatch/],
-      ['vault runtime', await e.vault.getAddress(), mutateCode(vaultCode, 0, (parseInt(vaultCode.slice(2, 4), 16) ^ 1)), /runtime mismatch/],
+      ['market immutable domain', await e.market.getAddress(), mutateCode(marketCode, 23229, (parseInt(marketCode.slice(2 + 23229 * 2, 2 + 23229 * 2 + 2), 16) ^ 1)), /runtime raw hash mismatch/],
+      ['market immutable token', await e.market.getAddress(), mutateCode(marketCode, 3731, (parseInt(marketCode.slice(2 + 3731 * 2, 2 + 3731 * 2 + 2), 16) ^ 1)), /runtime raw hash mismatch/],
+      ['vault runtime', await e.vault.getAddress(), mutateCode(vaultCode, 0, (parseInt(vaultCode.slice(2, 4), 16) ^ 1)), /runtime raw hash mismatch/],
       ['empty market code', await e.market.getAddress(), '0x', /empty runtime/],
     ];
     for (const [name, address, replacement, error] of cases) {
