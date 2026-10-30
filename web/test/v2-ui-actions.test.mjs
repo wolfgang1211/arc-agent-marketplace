@@ -52,6 +52,8 @@ test('role/status matrix exposes only canonical actions', () => {
     ['operator revision', { client, operator, resolver, status: 3 }, operator, ['submitRevision', 'openDispute']],
     ['resolver dispute', { client, operator, resolver, status: 5 }, resolver, ['resolveDispute']],
     ['wrong wallet', { client, operator, resolver, status: 1 }, '0x4444444444444444444444444444444444444444', []],
+    ['outsider delivery timeout', { client, operator, resolver, status: 1, timeout: { deliveryClaimable: true } }, '0x4444444444444444444444444444444444444444', ['claimDeliveryTimeout']],
+    ['operator delivery timeout', { client, operator, resolver, status: 1, timeout: { deliveryClaimable: true } }, operator, ['submitDelivery', 'openDispute', 'claimDeliveryTimeout']],
   ];
   for (const [label, value, wallet, expected] of cases) { assert.deepEqual(availableActions(value, wallet), expected, label); }
   assert.equal(jobRole({ client, operator, resolver }, client), 'client');

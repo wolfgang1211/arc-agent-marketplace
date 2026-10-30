@@ -174,7 +174,7 @@ export function proveAccountReadback(intent, actual) {
   }
   return null;
 }
-function expectedState(intent, actual) {
+function expectedState(intent, actual, context = {}) {
   const expected = intent.expected;
   if (!expected || typeof expected !== 'object' || Array.isArray(expected)) return null;
   if (expected.action === 'postJob') {
@@ -184,7 +184,13 @@ function expectedState(intent, actual) {
   if (expected.jobId !== undefined) {
     if (!actual || String(actual.jobId) !== String(expected.jobId) || String(actual.stateVersion) !== String(expected.stateVersion) || Number(actual.status) !== Number(expected.status)) return null;
     for (const role of ['client', 'operator', 'resolver']) if (expected[role] !== null && expected[role] !== undefined && !same(actual[role], expected[role])) return null;
-    return { action: expected.action, jobId: String(actual.jobId), stateVersion: String(actual.stateVersion), status: Number(actual.status), ...(actual.client ? { client: String(actual.client).toLowerCase() } : {}), ...(actual.operator ? { operator: String(actual.operator).toLowerCase() } : {}), ...(actual.resolver ? { resolver: String(actual.resolver).toLowerCase() } : {}) };
+    const state = { action: expected.action, jobId: String(actual.jobId), stateVersion: String(actual.stateVersion), status: Number(actual.status), ...(actual.client ? { client: String(actual.client).toLowerCase() } : {}), ...(actual.operator ? { operator: String(actual.operator).toLowerCase() } : {}), ...(actual.resolver ? { resolver: String(actual.resolver).toLowerCase() } : {}) };
+    if (expected.deadlineFailureClaimed !== undefined || expected.faultReviewPending !== undefined) {
+      if (actual.deadlineFailureClaimed !== true || actual.faultReviewPending !== true || typeof context.blockTimestamp !== 'bigint') return null;
+      if (BigInt(actual.faultReviewDeadline) !== context.blockTimestamp + 7n * 86400n) return null;
+      state.deadlineFailureClaimed = true; state.faultReviewPending = true; state.faultReviewDeadline = String(actual.faultReviewDeadline);
+    }
+    return state;
   }
   return proveAccountReadback(intent, actual);
 }
@@ -243,7 +249,7 @@ export function createV2ReadApi({ db, getHealth, profile = ARC_TESTNET_PROFILE, 
         } else if (intent.expected?.jobId !== undefined) { if (typeof snap.readJob !== 'function') return error('READER_UNAVAILABLE', 503); actual = { ...(await snap.readJob(BigInt(intent.expected.jobId))), jobId: String(intent.expected.jobId) }; }
         else if (typeof snap.readAccount === 'function') actual = await snap.readAccount(intent.wallet);
         else return error('READER_UNAVAILABLE', 503);
-        const state = expectedState(intent, actual);
+        const state = expectedState(intent, actual, { blockTimestamp: snap.blockTimestamp });
         if (!state) return error('READBACK_MISMATCH', 409);
         return json({ ok: true, intentId, confirmed: true, hash: txHash.toLowerCase(), profileId: profile.name, chainId: profile.canonicalChainId.toString(), wallet: intent.wallet, action: intent.action, expected: intent.expected, state });
       }
@@ -303,4 +309,4 @@ export function createV2ReadApi({ db, getHealth, profile = ARC_TESTNET_PROFILE, 
   };
 }
 
-export { CHAIN_ID, MARKETPLACE, UINT256_MAX };
+export { CHAIN_ID, MARKETPLACE, UINT256_MAX, expectedState };

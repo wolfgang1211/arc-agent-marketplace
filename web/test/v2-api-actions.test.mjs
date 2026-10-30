@@ -8,6 +8,8 @@ import { keccak256, stringToHex, decodeFunctionData, verifyMessage } from 'viem'
 import { createPgliteDb, migrate } from '../lib/v2/server/db.mjs';
 import { createV2AuthApi } from '../lib/v2/server/api-auth.mjs';
 import { createV2ActionsApi } from '../lib/v2/server/api-actions.mjs';
+import { expectedState } from '../lib/v2/server/api-read.mjs';
+import { sameExpected } from '../lib/v2/new-wallet-execution.mjs';
 import { createV2Api } from '../lib/v2/server/api-runtime.mjs';
 import { V2_TERMS_SCHEMA, canonicalTermsHash } from '../lib/v2/terms.mjs';
 import manifest from '../lib/v2/action-manifest.json' with { type: 'json' };
@@ -199,6 +201,73 @@ test('authenticated draft-context returns exact pinned reader-owned policy and r
     const crossSite = await get({ 'sec-fetch-site': 'cross-site' }); assert.equal(crossSite.status, 403);
     f.api = createV2ActionsApi({ db: f.db, auth: f.auth, readerFactory: () => ({ read: async () => { throw new Error('must not read'); } }), origin: ORIGIN, getHealth: async () => ({ status: 'stale', stale: true, gap: null }) });
     const stale = await f.api(request(f, '/api/v2/draft-context', { method: 'GET', headers: { cookie: session.cookie } })); assert.equal(stale.status, 503);
+  } finally { await f.db.close(); await rm(f.dir, { recursive: true, force: true }); }
+});
+
+test('pinned mutual payout and timeout deadlines match the contract outcome', async () => {
+  const f = await fixture();
+  try {
+    const operator = privateKeyToAccount(generatePrivateKey());
+    const outsider = privateKeyToAccount(generatePrivateKey());
+    const resolver = privateKeyToAccount(generatePrivateKey());
+    const nowMs = 1_800_000_000_000;
+    const baseAuth = createV2AuthApi({ db: f.db, origin: ORIGIN, now: () => nowMs, verifyWalletSignature: ({ wallet, message, signature }) => verifyMessage({ address: wallet, message, signature }) });
+    async function session(account) {
+      const ch = await baseAuth(request(f, '/api/v2/auth/challenge', jsonInit({ wallet: account.address, chainId: '5042002' })));
+      const c = await ch.json();
+      const sig = await account.signMessage({ message: c.message });
+      const v = await baseAuth(request(f, '/api/v2/auth/verify', jsonInit({ challengeId: c.challengeId, wallet: account.address, chainId: '5042002', signature: sig })));
+      return { cookie: v.headers.get('set-cookie'), csrf: (await v.json()).csrf };
+    }
+    const clientSession = await session(f.client);
+    const operatorSession = await session(operator);
+    const outsiderSession = await session(outsider);
+    const termsHash = `0x${'11'.repeat(32)}`;
+    const sourceHash = `0x${'aa'.repeat(32)}`;
+    const blockTimestamp = 1_800_000_000n;
+    await f.db.query('INSERT INTO v2_jobs(chain_id,marketplace,job_id,reward,status,state_version,terms_hash,client,operator,resolver,source_block,source_hash,data) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)', ['5042002', MARKETPLACE, '1', '1000', 'submitted', 7, termsHash, f.client.address, operator.address, resolver.address, '100', sourceHash, {}]);
+    const job = { status: 2, stateVersion: 7n, canonicalTermsHash: termsHash, client: f.client.address, operator: operator.address, resolver: resolver.address, reward: 1000n, applyBy: blockTimestamp + 100n, deliveryDeadline: blockTimestamp + 50n, reviewDeadline: blockTimestamp + 80n, repairDeadline: blockTimestamp + 80n, episodeStart: blockTimestamp - 10n, disputeTimeUsed: 0n, lastAdminActionAt: blockTimestamp - 10n, deadlineFailureClaimed: false, faultReviewPending: false };
+    let mutual = { version: 1n, jobStateVersion: 7n, refund: 1000n, grossPayout: 0n, expiry: blockTimestamp + 100n, proposer: f.client.address, active: true };
+    const readerFactory = () => ({ read: async () => ({ chainId: 5042002n, blockTag: '0x64', blockHash: sourceHash, blockTimestamp, getters: { usdc: f.token, collateralVault: f.vault, feeBps: 250n, treasury: f.treasury, minReward: 100n }, readJob: async () => job, readMutual: async () => mutual, readAccount: async () => ({ registered: true, maxActiveJobs: 2n, activeJobs: 0n, credits: 0n, nonceEpoch: 0n, freeStake: 0n, reservedStake: 0n, applicationNonce: async () => 0n }), readClientPolicy: async () => ({ resolvedResolver: f.resolver }) }) });
+    const api = createV2Api({ db: f.db, origin: ORIGIN, readerFactory, verifyWalletSignature: ({ wallet, message, signature }) => verifyMessage({ address: wallet, message, signature }), getHealth: async () => ({ status: 'healthy', stale: false, gap: null }), now: () => nowMs });
+    const call = async (s, body) => { const r = await api.handle(request(f, '/api/v2/jobs/1/preflight', jsonInit(body, { cookie: s.cookie, 'x-v2-csrf': s.csrf }))); return { response: r, body: await r.json() }; };
+    const refunded = await call(operatorSession, { action: 'acceptMutual', params: { expected: '7', expectedRequestVersion: '1' } });
+    assert.equal(refunded.response.status, 200, JSON.stringify(refunded.body));
+    assert.equal(refunded.body.expected.status, 7);
+    mutual = { ...mutual, refund: 400n, grossPayout: 600n };
+    const paid = await call(operatorSession, { action: 'acceptMutual', params: { expected: '7', expectedRequestVersion: '1' } });
+    assert.equal(paid.response.status, 200, JSON.stringify(paid.body));
+    assert.equal(paid.body.expected.status, 6);
+    const proposer = await call(clientSession, { action: 'acceptMutual', params: { expected: '7', expectedRequestVersion: '1' } });
+    assert.equal(proposer.response.status, 403);
+    const wrongVersion = await call(operatorSession, { action: 'acceptMutual', params: { expected: '7', expectedRequestVersion: '9' } });
+    assert.equal(wrongVersion.body.error, 'STALE_DATA');
+    const wrongState = await call(operatorSession, { action: 'acceptMutual', params: { expected: '8', expectedRequestVersion: '1' } });
+    assert.equal(wrongState.body.error, 'STALE_DATA');
+    job.status = 1; await f.db.query('UPDATE v2_jobs SET status=$1 WHERE job_id=$2', ['inprogress', '1']);
+    job.deliveryDeadline = blockTimestamp + 1n;
+    const early = await call(outsiderSession, { action: 'claimDeliveryTimeout', params: { expected: '7' } });
+    assert.equal(early.response.status, 409, JSON.stringify(early.body));
+    job.deliveryDeadline = blockTimestamp;
+    const boundary = await call(outsiderSession, { action: 'claimDeliveryTimeout', params: { expected: '7' } });
+    assert.equal(boundary.response.status, 200, JSON.stringify(boundary.body));
+    assert.equal(boundary.body.expected.status, 7);
+    assert.equal(boundary.body.expected.deadlineFailureClaimed, true);
+    assert.equal(boundary.body.expected.faultReviewPending, true);
+    const deadline = blockTimestamp + 7n * 86400n;
+    const readback = expectedState({ expected: boundary.body.expected }, { ...job, jobId: '1', status: 7, stateVersion: 8n, deadlineFailureClaimed: true, faultReviewPending: true, faultReviewDeadline: deadline }, { blockTimestamp });
+    assert.equal(sameExpected(readback, boundary.body.expected), true);
+    assert.equal(expectedState({ expected: boundary.body.expected }, { ...job, jobId: '1', status: 7, stateVersion: 8n, deadlineFailureClaimed: true, faultReviewPending: true, faultReviewDeadline: deadline + 1n }, { blockTimestamp }), null);
+    job.deliveryDeadline = blockTimestamp - 1n;
+    const late = await call(operatorSession, { action: 'claimDeliveryTimeout', params: { expected: '7' } });
+    assert.equal(late.body.expected.status, 7);
+    job.status = 0; job.applyBy = blockTimestamp + 1n; await f.db.query('UPDATE v2_jobs SET status=$1 WHERE job_id=$2', ['open', '1']);
+    const openEarly = await call(outsiderSession, { action: 'claimOpenJobTimeout', params: { expected: '7' } });
+    assert.equal(openEarly.response.status, 409);
+    job.applyBy = blockTimestamp;
+    const openOnTime = await call(outsiderSession, { action: 'claimOpenJobTimeout', params: { expected: '7' } });
+    assert.equal(openOnTime.response.status, 200, JSON.stringify(openOnTime.body));
+    assert.equal(openOnTime.body.expected.status, 7);
   } finally { await f.db.close(); await rm(f.dir, { recursive: true, force: true }); }
 });
 
