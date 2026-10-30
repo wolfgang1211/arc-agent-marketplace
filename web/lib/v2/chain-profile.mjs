@@ -4,6 +4,7 @@ const ARC_CHAIN_ID = 5042002n;
 const LOCAL_CHAIN_ID = 31337n;
 const ARC_RPC_URL = 'https://rpc.testnet.arc.io';
 const LOCAL_RPC_URL = 'http://127.0.0.1:8545';
+const LOCAL_RPC_PATTERN = /^http:\/\/127\.0\.0\.1:\d+$/;
 const ARC_MARKETPLACE = '0xFA156B7A5205B123c8a22A807ba98405e36130f1';
 const ARC_VAULT = '0xD5B271b7Bf4696d662B2bcB1a94b408887c6C423';
 const ARC_USDC = '0x3600000000000000000000000000000000000000';
@@ -33,7 +34,7 @@ export const ARC_TESTNET_PROFILE = freeze({
 });
 
 function localProfile(manifest) {
-  if (!manifest || manifest.chainId !== '31337' || manifest.rpcUrl !== LOCAL_RPC_URL) throw new Error('invalid local V2 manifest witness');
+  if (!manifest || manifest.chainId !== '31337' || !LOCAL_RPC_PATTERN.test(manifest.rpcUrl ?? '')) throw new Error('invalid local V2 manifest witness');
   const pair = manifest.pair ?? {}, runtime = manifest.runtime ?? {};
   const marketplace = address(pair.market, 'local marketplace'); const vault = address(pair.vault, 'local vault'); const usdc = address(pair.token, 'local usdc'); const treasury = address(pair.treasury, 'local treasury');
   if (runtime.market?.address?.toLowerCase() !== marketplace.toLowerCase() || runtime.vault?.address?.toLowerCase() !== vault.toLowerCase()) throw new Error('local manifest pair mismatch');
@@ -49,7 +50,7 @@ function localProfile(manifest) {
   const normalized = { marketplace: runtime.market?.normalizedHash, vault: runtime.vault?.normalizedHash };
   if (normalized.marketplace !== undefined && !HASH.test(normalized.marketplace)) throw new Error('invalid local marketplace normalized hash');
   if (normalized.vault !== undefined && !HASH.test(normalized.vault)) throw new Error('invalid local vault normalized hash');
-  return freeze({ id: 'local-hardhat', name: 'local-hardhat', chainId: LOCAL_CHAIN_ID, canonicalChainId: LOCAL_CHAIN_ID, rpcUrl: LOCAL_RPC_URL, marketplace, vault, usdc, treasury,
+  return freeze({ id: 'local-hardhat', name: 'local-hardhat', chainId: LOCAL_CHAIN_ID, canonicalChainId: LOCAL_CHAIN_ID, rpcUrl: manifest.rpcUrl, marketplace, vault, usdc, treasury,
     deployBlocks: freeze({ marketplace: marketBlock, vault: vaultBlock }), initialAnchor: freeze({ blockNumber: 0, blockHash: null }),
     proofAnchor: freeze({ blockNumber: anchorNumber, blockHash: hash(anchor.hash, 'local anchor hash') }),
     runtime: freeze({ marketplace: freeze({ bytes: runtime.market.bytes, rawHash: hash(runtime.market.rawHash, 'local marketplace raw hash'), ...(normalized.marketplace ? { normalizedHash: normalized.marketplace.toLowerCase() } : {}) }), vault: freeze({ bytes: runtime.vault.bytes, rawHash: hash(runtime.vault.rawHash, 'local vault raw hash'), ...(normalized.vault ? { normalizedHash: normalized.vault.toLowerCase() } : {}) }) }),
@@ -61,7 +62,7 @@ function localProfile(manifest) {
 export function assertV2Profile(profile) {
   if (!profile || (profile.name !== 'arc-testnet' && profile.name !== 'local-hardhat')) throw new TypeError('invalid V2 profile');
   if (typeof profile.canonicalChainId !== 'bigint' || !/^https?:\/\//.test(profile.rpcUrl) || !isAddress(profile.marketplace) || !isAddress(profile.vault) || !isAddress(profile.usdc) || !isAddress(profile.treasury)) throw new TypeError('invalid V2 profile');
-  if (profile.name === 'local-hardhat' && profile.rpcUrl !== LOCAL_RPC_URL) throw new TypeError('invalid local V2 RPC');
+  if (profile.name === 'local-hardhat' && !LOCAL_RPC_PATTERN.test(profile.rpcUrl)) throw new TypeError('invalid local V2 RPC');
   if (profile.name === 'local-hardhat' && profile.canonicalChainId !== LOCAL_CHAIN_ID) throw new TypeError('invalid local V2 chain');
   if (profile.name === 'arc-testnet' && (profile.canonicalChainId !== ARC_CHAIN_ID || profile.marketplace.toLowerCase() !== ARC_MARKETPLACE.toLowerCase() || profile.vault.toLowerCase() !== ARC_VAULT.toLowerCase())) throw new TypeError('invalid Arc V2 profile');
   for (const key of ['marketplace', 'vault']) uint(profile.deployBlocks?.[key], `deployBlocks.${key}`);

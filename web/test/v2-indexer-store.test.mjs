@@ -4,12 +4,13 @@ import { join } from 'node:path';
 import test from 'node:test';
 import { createPgliteDb, migrate } from '../lib/v2/server/db.mjs';
 import { createV2IndexerStore } from '../lib/v2/server/indexer-store.mjs';
+import { scratchDir } from './scratch-dir.mjs';
 
 const market = '0xFA156B7A5205B123c8a22A807ba98405e36130f1';
 const vault = '0xD5B271b7Bf4696d662B2bcB1a94b408887c6C423';
 const zero = `0x${'00'.repeat(32)}`;
 const block = (number, parentHash = zero, suffix = String(number)) => ({ blockNumber: String(number), blockHash: `0x${suffix.padStart(64, '0')}`, parentHash, transactionCount: 1 });
-async function setup() { const dir = await mkdtemp(join(process.env.TMPDIR ?? join(process.cwd(), '.hermes-scratch'), 'v2-indexer-')); const db = await createPgliteDb({ dataDir: dir }); await migrate(db); return { db, dir, store: createV2IndexerStore({ db, chainId: 5042002, marketplace: market, vault }) }; }
+async function setup() { const dir = await mkdtemp(join(scratchDir(), 'v2-indexer-')); const db = await createPgliteDb({ dataDir: dir }); await migrate(db); return { db, dir, store: createV2IndexerStore({ db, chainId: 5042002, marketplace: market, vault }) }; }
 async function teardown({ db, dir }) { await db.close(); await rm(dir, { recursive: true, force: true }); }
 
 test('batch persistence is atomic, idempotent, ordered, and retains reorg orphans', async () => {

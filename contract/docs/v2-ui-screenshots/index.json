@@ -1,0 +1,186 @@
+{
+  "capturedWith": "installed Google Chrome headless, not Edge",
+  "shots": [
+    {
+      "file": "home-jobs-desktop-1440x900.png",
+      "route": "/v2",
+      "viewport": "1440x900",
+      "state": "jobs list, reader available"
+    },
+    {
+      "file": "jobs-desktop-1440x900.png",
+      "route": "/v2/jobs",
+      "viewport": "1440x900",
+      "state": "jobs route, reader available"
+    },
+    {
+      "file": "new-job-empty-desktop-1440x900.png",
+      "route": "/v2/jobs/new",
+      "viewport": "1440x900",
+      "state": "empty new job form"
+    },
+    {
+      "file": "new-job-filled-desktop-1440x900.png",
+      "route": "/v2/jobs/new",
+      "viewport": "1440x900",
+      "state": "filled new job form; datetime control left unset"
+    },
+    {
+      "file": "job-1-0-desktop-1440x900.png",
+      "route": "/v2/jobs/1",
+      "viewport": "1440x900",
+      "state": "Open detail"
+    },
+    {
+      "file": "job-2-1-desktop-1440x900.png",
+      "route": "/v2/jobs/2",
+      "viewport": "1440x900",
+      "state": "In progress detail"
+    },
+    {
+      "file": "job-3-2-desktop-1440x900.png",
+      "route": "/v2/jobs/3",
+      "viewport": "1440x900",
+      "state": "Submitted detail"
+    },
+    {
+      "file": "job-4-3-desktop-1440x900.png",
+      "route": "/v2/jobs/4",
+      "viewport": "1440x900",
+      "state": "Revision pending detail"
+    },
+    {
+      "file": "job-5-5-desktop-1440x900.png",
+      "route": "/v2/jobs/5",
+      "viewport": "1440x900",
+      "state": "Disputed detail"
+    },
+    {
+      "file": "job-6-6-desktop-1440x900.png",
+      "route": "/v2/jobs/6",
+      "viewport": "1440x900",
+      "state": "Completed detail"
+    },
+    {
+      "file": "job-7-7-desktop-1440x900.png",
+      "route": "/v2/jobs/7",
+      "viewport": "1440x900",
+      "state": "Refunded detail"
+    },
+    {
+      "file": "account-desktop-1440x900.png",
+      "route": "/v2/account",
+      "viewport": "1440x900",
+      "state": "account and collateral, signed out"
+    },
+    {
+      "file": "resolver-desktop-1440x900.png",
+      "route": "/v2/resolver",
+      "viewport": "1440x900",
+      "state": "resolver queue, signed out"
+    },
+    {
+      "file": "home-jobs-mobile-390x844.png",
+      "route": "/v2",
+      "viewport": "390x844",
+      "state": "jobs list, reader available"
+    },
+    {
+      "file": "jobs-mobile-390x844.png",
+      "route": "/v2/jobs",
+      "viewport": "390x844",
+      "state": "jobs route, reader available"
+    },
+    {
+      "file": "new-job-empty-mobile-390x844.png",
+      "route": "/v2/jobs/new",
+      "viewport": "390x844",
+      "state": "empty new job form"
+    },
+    {
+      "file": "new-job-filled-mobile-390x844.png",
+      "route": "/v2/jobs/new",
+      "viewport": "390x844",
+      "state": "filled new job form; datetime control left unset"
+    },
+    {
+      "file": "job-1-0-mobile-390x844.png",
+      "route": "/v2/jobs/1",
+      "viewport": "390x844",
+      "state": "Open detail"
+    },
+    {
+      "file": "job-2-1-mobile-390x844.png",
+      "route": "/v2/jobs/2",
+      "viewport": "390x844",
+      "state": "In progress detail"
+    },
+    {
+      "file": "job-3-2-mobile-390x844.png",
+      "route": "/v2/jobs/3",
+      "viewport": "390x844",
+      "state": "Submitted detail"
+    },
+    {
+      "file": "job-4-3-mobile-390x844.png",
+      "route": "/v2/jobs/4",
+      "viewport": "390x844",
+      "state": "Revision pending detail"
+    },
+    {
+      "file": "job-5-5-mobile-390x844.png",
+      "route": "/v2/jobs/5",
+      "viewport": "390x844",
+      "state": "Disputed detail"
+    },
+    {
+      "file": "job-6-6-mobile-390x844.png",
+      "route": "/v2/jobs/6",
+      "viewport": "390x844",
+      "state": "Completed detail"
+    },
+    {
+      "file": "job-7-7-mobile-390x844.png",
+      "route": "/v2/jobs/7",
+      "viewport": "390x844",
+      "state": "Refunded detail"
+    },
+    {
+      "file": "account-mobile-390x844.png",
+      "route": "/v2/account",
+      "viewport": "390x844",
+      "state": "account and collateral, signed out"
+    },
+    {
+      "file": "resolver-mobile-390x844.png",
+      "route": "/v2/resolver",
+      "viewport": "390x844",
+      "state": "resolver queue, signed out"
+    },
+    {
+      "file": "wrong-network-desktop-1440x900.png",
+      "route": "/v2/account",
+      "viewport": "1440x900",
+      "state": "account connect rejected for chain id 1"
+    },
+    {
+      "file": "wrong-network-mobile-390x844.png",
+      "route": "/v2/account",
+      "viewport": "390x844",
+      "state": "account connect rejected for chain id 1"
+    },
+    {
+      "file": "reader-stale-desktop-1440x900.png",
+      "route": "/v2",
+      "viewport": "1440x900",
+      "state": "jobs list after the local node stopped; reader reported stale"
+    },
+    {
+      "file": "reader-stale-mobile-390x844.png",
+      "route": "/v2",
+      "viewport": "390x844",
+      "state": "jobs list after the local node stopped; reader reported stale"
+    }
+  ],
+  "jobCount": 7
+}

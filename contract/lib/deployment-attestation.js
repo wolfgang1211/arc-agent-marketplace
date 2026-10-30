@@ -43,16 +43,24 @@ function compilerMetadataFromBuildInfo(buildInfo) {
   };
 }
 
-function loadCompilerMetadata(root) {
-  const directory = path.join(root, "artifacts", "build-info");
-  const candidates = fs
-    .readdirSync(directory)
-    .filter((name) => name.endsWith(".json"))
-    .map((name) => path.join(directory, name));
+function buildInfoDirectories(root) {
+  return ["artifacts/build-info", "artifacts-v2-runs50/build-info"]
+    .map((relative) => path.join(root, relative))
+    .filter((directory) => fs.existsSync(directory));
+}
 
-  for (const candidate of candidates) {
-    const metadata = compilerMetadataFromBuildInfo(readJson(candidate));
-    if (metadata) return metadata;
+function loadCompilerMetadata(root) {
+  const directories = buildInfoDirectories(root);
+  if (!directories.length) throw new Error(`No build-info directory found for ${CONTRACT_ID}`);
+  for (const directory of directories) {
+    const candidates = fs
+      .readdirSync(directory)
+      .filter((name) => name.endsWith(".json"))
+      .map((name) => path.join(directory, name));
+    for (const candidate of candidates) {
+      const metadata = compilerMetadataFromBuildInfo(readJson(candidate));
+      if (metadata) return metadata;
+    }
   }
   throw new Error(`No build-info entry found for ${CONTRACT_ID}`);
 }

@@ -83,7 +83,7 @@ export function createV2Api({ db, origin = V2_LOCAL_ORIGIN, profile = ARC_TESTNE
       if (url.pathname === '/api/v2/profile' && request.method === 'GET') return Response.json({ profile: toPublicV2Profile(profile) }, { headers: { 'cache-control': 'no-store', 'content-type': 'application/json; charset=utf-8' } });
       if (url.pathname.startsWith('/api/v2/auth/')) return await auth(request);
       if ((request.method === 'POST' && url.pathname === '/api/v2/jobs') || url.pathname === '/api/v2/draft-context' || /^\/api\/v2\/jobs\/[^/]+\/preflight$/.test(url.pathname) || url.pathname.startsWith('/api/v2/drafts/') || url.pathname === '/api/v2/accounts/preflight') return await actions(request);
-      if (/^\/api\/v2\/jobs\/[^/]+\/(applications|deliveries)$/.test(url.pathname) || url.pathname === '/api/v2/resolver') return await privateApi(request);
+      if (/^\/api\/v2\/jobs\/[^/]+\/(applications|deliveries|application-context)$/.test(url.pathname) || url.pathname === '/api/v2/resolver') return await privateApi(request);
       return await read(request);
     } catch {
       return Response.json({ error: 'V2_API_UNAVAILABLE' }, { status: 503, headers: { 'cache-control': 'no-store' } });

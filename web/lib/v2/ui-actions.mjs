@@ -28,10 +28,16 @@ export function jobRole(job, wallet) {
   if (canonicalAddress(job.resolver) === address) return 'resolver';
   return null;
 }
+function pushTimeouts(actions, job, wallet, status) {
+  if (!canonicalAddress(wallet)) return;
+  if (status === STATUS.open && job?.timeout?.openJobClaimable === true) actions.push('claimOpenJobTimeout');
+  if (status === STATUS.inprogress && job?.timeout?.deliveryClaimable === true) actions.push('claimDeliveryTimeout');
+}
 export function availableActions(job, wallet) {
   const role = jobRole(job, wallet); const status = normalizeStatus(job?.status);
-  if (!role || status == null) return [];
+  if (status == null) return [];
   const actions = [];
+  if (!role) { pushTimeouts(actions, job, wallet, status); return actions; }
   if (role === 'client' && status === STATUS.open && !canonicalAddress(job.operator)) actions.push('awardJob');
   if (role === 'operator' && status === STATUS.inprogress) actions.push('submitDelivery');
   if (role === 'operator' && status === STATUS.revisionpending) actions.push('submitRevision');
@@ -43,8 +49,7 @@ export function availableActions(job, wallet) {
   if ((role === 'client' || role === 'operator') && mutual?.proposable === true) actions.push('proposeMutual');
   const mutualVersion = job?.mutualRequestVersion ?? job?.data?.mutualRequestVersion ?? mutual?.version;
   if ((role === 'client' || role === 'operator') && mutualVersion != null) actions.push('acceptMutual', 'rejectMutual', 'revokeMutual');
-  if ((role === 'client' || role === 'resolver') && status === STATUS.open && job?.timeout?.openJobClaimable === true) actions.push('claimOpenJobTimeout');
-  if (role === 'operator' && status === STATUS.inprogress && job?.timeout?.deliveryClaimable === true) actions.push('claimDeliveryTimeout');
+  pushTimeouts(actions, job, wallet, status);
   return actions;
 }
 

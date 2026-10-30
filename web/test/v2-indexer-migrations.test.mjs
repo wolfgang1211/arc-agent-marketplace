@@ -4,8 +4,9 @@ import { join } from 'node:path';
 import test from 'node:test';
 import { createHash } from 'node:crypto';
 import { createPgliteDb, MIGRATIONS, migrate } from '../lib/v2/server/db.mjs';
+import { scratchDir } from './scratch-dir.mjs';
 
-const scratch = process.env.TMPDIR ?? join(process.cwd(), '.hermes-scratch');
+const scratch = scratchDir();
 async function fresh() { const dir = await mkdtemp(join(scratch, 'v2-migration-')); const db = await createPgliteDb({ dataDir: dir }); return { db, dir }; }
 async function dispose(ctx) { await ctx.db.close(); await rm(ctx.dir, { recursive: true, force: true }); }
 const EXPECTED_MIGRATIONS = ['001-core', '002-indexer', '003-indexer-projection'];

@@ -5,6 +5,7 @@ import test from 'node:test';
 import { createPgliteDb, migrate } from '../lib/v2/server/db.mjs';
 import { createV2Indexer } from '../lib/v2/server/indexer.mjs';
 import { createV2IndexerStore } from '../lib/v2/server/indexer-store.mjs';
+import { scratchDir } from './scratch-dir.mjs';
 
 const chainId = 5042002;
 const marketplace = '0xFA156B7A5205B123c8a22A807ba98405e36130f1';
@@ -31,7 +32,7 @@ function fixtureSnapshot(number) {
 }
 
 async function setup() {
-  const dir = await mkdtemp(join(process.env.TMPDIR ?? join(process.cwd(), '.hermes-scratch'), 'v2-preparation-'));
+  const dir = await mkdtemp(join(scratchDir(), 'v2-preparation-'));
   const db = await createPgliteDb({ dataDir: dir });
   await migrate(db);
   return { dir, db, store: createV2IndexerStore({ db, chainId, marketplace, vault }) };

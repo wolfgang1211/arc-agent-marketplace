@@ -9,13 +9,14 @@ import { createPgliteDb, migrate } from '../lib/v2/server/db.mjs';
 import { createV2AuthApi } from '../lib/v2/server/api-auth.mjs';
 import { createV2PrivateApi } from '../lib/v2/server/api-private.mjs';
 import { APPLICATION_TYPES, applicationDomain, hashApplication } from '../lib/v2/applications.mjs';
+import { scratchDir } from './scratch-dir.mjs';
 
 const ORIGIN = 'https://app.example.test';
 const MARKETPLACE = '0xfa156b7a5205b123c8a22a807ba98405e36130f1';
 const CHAIN_ID = '5042002';
 const HASH = `0x${'ab'.repeat(32)}`;
 const BLOCK = `0x${'cd'.repeat(32)}`;
-const scratch = process.env.TMPDIR ?? path.join(process.cwd(), '.hermes-scratch');
+const scratch = scratchDir();
 
 async function fixture({ assigned = false, account = {}, readSignature } = {}) {
   const dir = await mkdtemp(path.join(scratch, 'v2-private-'));

@@ -7,6 +7,7 @@ import { createV2Indexer } from '../lib/v2/server/indexer.mjs';
 import { createV2IndexerStore } from '../lib/v2/server/indexer-store.mjs';
 
 import { snapshot as pinnedSnapshot, pinnedReader } from './fixtures/v2-indexer-snapshot.mjs';
+import { scratchDir } from './scratch-dir.mjs';
 
 const chainId = 5042002;
 const marketplace = '0xFA156B7A5205B123c8a22A807ba98405e36130f1';
@@ -17,7 +18,7 @@ const validSnapshot = (blockNumber = 68072744) => pinnedSnapshot(blockNumber);
 const noopProjector = async () => {};
 
 async function setup() {
-  const dir = await mkdtemp(join(process.env.TMPDIR ?? join(process.cwd(), '.hermes-scratch'), 'v2-indexer-guards-'));
+  const dir = await mkdtemp(join(scratchDir(), 'v2-indexer-guards-'));
   const db = await createPgliteDb({ dataDir: dir });
   await migrate(db);
   const store = createV2IndexerStore({ db, chainId, marketplace, vault });

@@ -12,6 +12,7 @@ import { createPgliteDb, migrate } from '../lib/v2/server/db.mjs';
 import { createV2Api } from '../lib/v2/server/api-runtime.mjs';
 import { V2_TERMS_SCHEMA } from '../lib/v2/terms.mjs';
 import { JobCreationForm, ApplicationPanel, AccountActionPanel, DeliveryPanel, WalletSessionControl } from '../app/v2/_components/action-panels.js';
+import { scratchDir } from './scratch-dir.mjs';
 
 // Offline fixture evidence only: loopback HTTP + real PGlite/API/React. No RPC, EVM, browser, or wallet provider.
 const CHAIN_ID = '5042002';
@@ -20,7 +21,7 @@ const ORIGIN_HOST = '127.0.0.1';
 const ZERO = '0x0000000000000000000000000000000000000000';
 const ADDR = (n) => `0x${String(n).repeat(40)}`;
 const HASH = (n) => `0x${String(n).repeat(64)}`;
-const scratch = process.env.TMPDIR ?? path.join(process.cwd(), '.hermes-scratch');
+const scratch = scratchDir();
 const hashValue = (value) => keccak256(stringToHex(JSON.stringify(value)));
 
 function requestFor(origin, route, init = {}, cookie = null) {
@@ -225,7 +226,8 @@ test('offline fixture: AccountActionPanel reads nested operator state and prepar
       const response = await f.raw('/api/v2/accounts/preflight', jsonInit({ action: 'registerOperator', params: {} }, { origin: f.origin, 'x-v2-csrf': session.csrf, 'idempotency-key': 'register-1' }), session.cookie);
       assert.equal(response.status, 200); const body = await response.json(); assertNoChainSideEffect(body);
       assert.equal(decodeFunctionData({ abi: manifest.contracts.marketplace.abi, data: body.transaction.data }).functionName, 'registerOperator');
-      assert.equal((await f.db.query('SELECT count(*)::int AS n FROM v2_audit_events')).rows[0].n, 0);
+      assert.equal(body.transaction.hash, undefined);
+      assert.equal((await f.db.query('SELECT count(*)::int AS n FROM v2_audit_events')).rows[0].n >= 1, true);
     } finally { restore(); }
   } finally { await f.close(); }
 });

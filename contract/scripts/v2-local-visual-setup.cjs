@@ -6,7 +6,7 @@ const crypto = require('node:crypto');
 const { ethers } = require('ethers');
 const { wrapMarket } = require('../test/helpers/v2-read-model');
 
-const RPC_URL = 'http://127.0.0.1:8545';
+const RPC_URL = process.env.V2_LOCAL_RPC_URL || 'http://127.0.0.1:8545';
 const CHAIN_ID = 31337n;
 const U = 1_000_000n;
 const DAY = 86400;

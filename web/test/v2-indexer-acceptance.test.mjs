@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import test from 'node:test';
 import { createPgliteDb, migrate } from '../lib/v2/server/db.mjs';
 import { createV2IndexerStore } from '../lib/v2/server/indexer-store.mjs';
+import { scratchDir } from './scratch-dir.mjs';
 
 const chainId = 5042002;
 const marketplace = '0xFA156B7A5205B123c8a22A807ba98405e36130f1';
@@ -12,7 +13,7 @@ const zero = `0x${'00'.repeat(32)}`;
 const hash = (n) => `0x${String(n).padStart(64, '0')}`;
 const block = (number, parentHash = zero, id = number, extra = {}) => ({ blockNumber: String(number), blockHash: hash(id), parentHash, transactionCount: 1, ...extra });
 const event = (b, id = 1, extra = {}) => ({ emitter: vault, blockNumber: b.blockNumber, blockHash: b.blockHash, transactionHash: hash(1000 + id), transactionIndex: 0, logIndex: 0, topics: [], data: '0x', decoded: { n: String(id) }, eventName: 'VaultEvent', ...extra });
-const scratch = process.env.TMPDIR ?? join(process.cwd(), '.hermes-scratch');
+const scratch = scratchDir();
 
 async function setup() {
   const dir = await mkdtemp(join(scratch, 'v2-indexer-acceptance-'));
