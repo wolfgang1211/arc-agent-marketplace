@@ -1,13 +1,12 @@
 import assert from 'node:assert/strict';
-import { spawn } from 'node:child_process';
-import { mkdtemp, rm, writeFile, readFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { mkdtemp, rm, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import test from 'node:test';
 import { createPublicClient, createWalletClient, http, keccak256, stringToHex } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { hardhat } from 'viem/chains';
 import { scratchDir } from './scratch-dir.mjs';
+import { deployFixture, localRpc, startIsolatedNode, stopIsolatedNode } from './v2-local-node.mjs';
 import { createPgliteDb, migrate } from '../lib/v2/server/db.mjs';
 import { createV2Api } from '../lib/v2/server/api-runtime.mjs';
 import { createV2ChainReader } from '../lib/v2/server/chain-reader.mjs';
@@ -15,7 +14,6 @@ import { resolveV2ChainProfile } from '../lib/v2/chain-profile.mjs';
 import { executeWalletAction } from '../lib/v2/new-wallet-execution.mjs';
 import { documentHash } from '../lib/v2/ui-actions.mjs';
 
-const RPC = 'http://127.0.0.1:8545';
 const ORIGIN = 'http://127.0.0.1:3104';
 const KEYS = [
   '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
@@ -30,22 +28,16 @@ function memoryStorage() {
   const map = new Map();
   return { get length() { return map.size; }, key: (index) => [...map.keys()][index] ?? null, getItem: (key) => map.get(key) ?? null, setItem: (key, value) => { map.set(key, String(value)); }, removeItem: (key) => { map.delete(key); }, clear: () => { map.clear(); } };
 }
-async function rpc(method, params = []) {
-  const response = await fetch(RPC, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }) });
-  const body = await response.json();
-  if (body.error) throw new Error(body.error.message || 'rpc');
-  return body.result;
-}
-function providerFor(account) {
+function providerFor(account, rpcUrl) {
   return { request: async ({ method, params }) => {
     if (method === 'eth_accounts' || method === 'eth_requestAccounts') return [account.address];
     if (method === 'eth_chainId') return '0x7a69';
     if (method === 'eth_sendTransaction') {
       const tx = params[0];
-      const client = createWalletClient({ account, chain: hardhat, transport: http(RPC) });
+      const client = createWalletClient({ account, chain: hardhat, transport: http(rpcUrl) });
       return client.sendTransaction({ to: tx.to, data: tx.data, value: BigInt(tx.value ?? 0) });
     }
-    return rpc(method, params);
+    return localRpc(rpcUrl, method, params);
   } };
 }
 function requestFor(route, init = {}, cookie = null) {
@@ -53,28 +45,15 @@ function requestFor(route, init = {}, cookie = null) {
   if (cookie) headers.cookie = cookie;
   return new Request(`${ORIGIN}${route}`, { ...init, headers });
 }
-async function waitForRpc(child) {
-  const started = Date.now();
-  while (Date.now() - started < 30000) {
-    if (child.exitCode != null) throw new Error('hardhat node exited');
-    try { if (await rpc('eth_chainId') === '0x7a69') return; } catch {}
-    await new Promise((resolve) => setTimeout(resolve, 250));
-  }
-  throw new Error('local chain did not start');
-}
-
-test('local PGlite, chain and wallet complete the MVP job and collateral flow', { timeout: 180000 }, async () => {
-  const contractDir = path.resolve(import.meta.dirname, '../../contract');
+test('scripted local API and wallet integration, not a browser or indexer end-to-end run', { timeout: 180000 }, async () => {
   const dir = await mkdtemp(path.join(scratchDir(), 'v2-local-chain-'));
   const manifestPath = path.join(dir, 'manifest.json');
-  const node = spawn('npx', ['hardhat', 'node', '--hostname', '127.0.0.1', '--port', '8545'], { cwd: contractDir, stdio: 'ignore' });
+  const node = await startIsolatedNode();
+  const rpc = (method, params) => localRpc(node.rpcUrl, method, params);
   globalThis.localStorage = memoryStorage();
   let db;
   try {
-    await waitForRpc(node);
-    const deploy = spawn('npx', ['hardhat', 'run', 'scripts/v2-local-deploy-fixture.cjs', '--config', 'hardhat.v2.config.js', '--network', 'localhost'], { cwd: contractDir, env: { ...process.env, V2_LOCAL_MANIFEST_OUT: manifestPath }, stdio: 'ignore' });
-    const deployCode = await new Promise((resolve) => deploy.on('exit', resolve));
-    if (deployCode !== 0) throw new Error('local deployment failed');
+    await deployFixture(node.rpcUrl, manifestPath);
     const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
     const profile = resolveV2ChainProfile({ env: { V2_CHAIN_PROFILE: 'local-hardhat' }, localManifest: manifest });
     const [owner, client, operator, treasury] = KEYS.map((key) => privateKeyToAccount(key));
@@ -102,7 +81,7 @@ test('local PGlite, chain and wallet complete the MVP job and collateral flow', 
       await db.query('INSERT INTO v2_indexer_cursors (chain_id, marketplace, cursor) VALUES ($1,$2,$3) ON CONFLICT (chain_id, marketplace) DO UPDATE SET cursor = EXCLUDED.cursor', [profile.canonicalChainId.toString(), profile.marketplace, cursor]);
     }
     async function send(account, prepared) {
-      const outcome = await executeWalletAction(prepared, { profile, provider: providerFor(account), readback: async (hash, intentId) => {
+      const outcome = await executeWalletAction(prepared, { profile, provider: providerFor(account, node.rpcUrl), readback: async (hash, intentId) => {
         await markCanonical(hash);
         const result = await call(`/api/v2/transactions/${hash}?intent=${encodeURIComponent(intentId)}`, { method: 'GET' }, (await login(account)).cookie);
         if (result.body?.ok !== true) {
@@ -213,7 +192,7 @@ test('local PGlite, chain and wallet complete the MVP job and collateral flow', 
     assert.equal(collateral.body.expected.stakeLiabilityDelta, `-${5n * U}`);
     const withdrawn = await send(operator, collateral.body);
     assert.equal(withdrawn.readback.state.walletTokenIncrease, (5n * U).toString());
-    const publicClient = createPublicClient({ chain: hardhat, transport: http(RPC) });
+    const publicClient = createPublicClient({ chain: hardhat, transport: http(node.rpcUrl) });
     const vaultLiability = await publicClient.readContract({ address: profile.vault, abi: [{ type: 'function', name: 'stakeLiability', stateMutability: 'view', inputs: [], outputs: [{ type: 'uint256' }] }], functionName: 'stakeLiability' });
     const operatorCredit = await publicClient.readContract({ address: profile.marketplace, abi: [{ type: 'function', name: 'credits', stateMutability: 'view', inputs: [{ type: 'address' }], outputs: [{ type: 'uint256' }] }], functionName: 'credits', args: [operator.address] });
     assert.equal(operatorCredit, 0n);
@@ -221,7 +200,7 @@ test('local PGlite, chain and wallet complete the MVP job and collateral flow', 
     assert.equal(treasury.address.toLowerCase(), manifest.roles.treasury.toLowerCase());
   } finally {
     if (db) await db.close();
-    node.kill('SIGTERM');
+    stopIsolatedNode(node.node);
     await rm(dir, { recursive: true, force: true });
     delete globalThis.localStorage;
   }
