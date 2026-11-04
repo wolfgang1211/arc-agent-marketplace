@@ -48,6 +48,18 @@ function publicDocument(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   const out = {};
   for (const key of ['title', 'summary', 'description', 'category']) { const v = boundedString(own(value, key)); if (v !== undefined) out[key] = v; }
+  const tags = own(value, 'tags');
+  if (tags !== undefined) {
+    if (!Array.isArray(tags) || tags.length > 16) return null;
+    const keys = Object.keys(tags);
+    if (keys.length !== tags.length || keys.some((key, index) => key !== String(index))) return null;
+    out.tags = [];
+    for (let index = 0; index < tags.length; index += 1) {
+      const descriptor = Object.getOwnPropertyDescriptor(tags, String(index));
+      if (!descriptor || !('value' in descriptor) || boundedString(descriptor.value, 48) === undefined) return null;
+      out.tags.push(descriptor.value);
+    }
+  }
   const criteria = own(value, 'criteria');
   if (criteria !== undefined) {
     if (!Array.isArray(criteria) || criteria.length > 32 || criteria.some((v) => boundedString(v, 1024) === undefined)) return null;
@@ -55,7 +67,7 @@ function publicDocument(value) {
   }
   return Object.keys(out).length ? out : null;
 }
-function job(row, document = null) {
+function job(row, document = null, actions = null) {
   const out = {
     chainId: text(row.chain_id), marketplace: text(row.marketplace), jobId: text(row.job_id),
     reward: text(row.reward), status: text(row.status), stateVersion: text(row.state_version),
@@ -63,7 +75,18 @@ function job(row, document = null) {
     sourceBlock: text(row.source_block), sourceHash: text(row.source_hash), data: publicData(row.data),
   };
   if (document) out.document = document;
+  if (actions) { out.mutual = actions.mutual; out.timeout = actions.timeout; }
   return out;
+}
+async function canonicalActionContext(readerFactory, jobId, indexedRow) {
+  if (typeof readerFactory !== 'function') return null;
+  try {
+    const snap = await readerFactory().read();
+    if (typeof snap?.readJob !== 'function' || typeof snap?.readMutual !== 'function' || typeof snap?.blockTimestamp !== 'bigint') return null;
+    const canonical = await snap.readJob(BigInt(jobId));
+    const mutual = await snap.readMutual(BigInt(jobId));
+    return actionContext({ ...indexedRow, ...canonical }, mutual, snap.blockTimestamp);
+  } catch { return null; }
 }
 function parseQuery(url) {
   const seen = new Set();
@@ -116,6 +139,7 @@ function safeHealth(input) {
 }
 function same(a, b) { return String(a).toLowerCase() === String(b).toLowerCase(); }
 function uintValue(value) {
+  if (typeof value === 'number' && Number.isSafeInteger(value) && value >= 0) return BigInt(value);
   if (typeof value === 'bigint' && value >= 0n) return value;
   if (typeof value === 'string' && /^(?:0|[1-9][0-9]*)$/.test(value)) return BigInt(value);
   return null;
@@ -125,6 +149,35 @@ function signedValue(value) {
   if (/^(?:0|[1-9][0-9]*)$/.test(text)) return BigInt(text);
   if (/^-(?:0|[1-9][0-9]*)$/.test(text)) return -BigInt(text.slice(1));
   return null;
+}
+function actionContext(job, mutual, blockTimestamp) {
+  if (typeof blockTimestamp !== 'bigint' || !job || typeof job !== 'object') return null;
+  const status = uintValue(job.status); const stateVersion = uintValue(job.stateVersion);
+  if (status === null || status > 8n || stateVersion === null) return null;
+  const now = blockTimestamp; const deadline = (key) => uintValue(job[key]);
+  let financialWindowOpen = false;
+  if (status === 0n) financialWindowOpen = true;
+  else if (status === 1n) { const value = deadline('deliveryDeadline'); financialWindowOpen = value !== null && now < value; }
+  else if (status === 2n) { const value = deadline('reviewDeadline'); financialWindowOpen = value !== null && now < value; }
+  else if (status === 3n) financialWindowOpen = true;
+  else if (status === 4n) { const value = deadline('repairDeadline'); financialWindowOpen = value !== null && now < value; }
+  else if (status === 5n) {
+    const episodeStart = deadline('episodeStart'); const used = deadline('disputeTimeUsed'); const lastAction = deadline('lastAdminActionAt');
+    if (episodeStart !== null && used !== null && lastAction !== null && episodeStart + 21n * 86400n >= used) {
+      const hard = episodeStart + 21n * 86400n - used; const idle = lastAction + 7n * 86400n;
+      financialWindowOpen = now < (hard < idle ? hard : idle);
+    }
+  }
+  const party = (value) => typeof value === 'string' && ADDRESS.test(value) && !/^0x0{40}$/i.test(value);
+  const proposer = mutual && party(mutual.proposer) ? mutual.proposer.toLowerCase() : null;
+  const version = mutual ? uintValue(mutual.version) : null; const requestStateVersion = mutual ? uintValue(mutual.jobStateVersion) : null; const expiry = mutual ? uintValue(mutual.expiry) : null;
+  const currentMutual = mutual?.active === true && version !== null && version > 0n && requestStateVersion === stateVersion && expiry !== null && now < expiry && status < 6n && financialWindowOpen && proposer !== null && (same(proposer, job.client) || same(proposer, job.operator));
+  const out = { mutual: { proposable: status < 6n && financialWindowOpen }, timeout: {
+    openJobClaimable: status === 0n && deadline('applyBy') !== null && now >= deadline('applyBy'),
+    deliveryClaimable: status === 1n && deadline('deliveryDeadline') !== null && now >= deadline('deliveryDeadline') && job.deadlineFailureClaimed === false,
+  } };
+  if (currentMutual) out.mutual = { proposable: out.mutual.proposable, active: true, version: version.toString(), jobStateVersion: requestStateVersion.toString(), proposer, expiry: expiry.toString() };
+  return out;
 }
 function readBalance(actual, field) {
   if (!actual || typeof actual !== 'object' || !Object.prototype.hasOwnProperty.call(actual, field)) return null;
@@ -183,8 +236,10 @@ function expectedState(intent, actual, context = {}) {
   }
   if (expected.jobId !== undefined) {
     if (!actual || String(actual.jobId) !== String(expected.jobId) || String(actual.stateVersion) !== String(expected.stateVersion) || Number(actual.status) !== Number(expected.status)) return null;
-    for (const role of ['client', 'operator', 'resolver']) if (expected[role] !== null && expected[role] !== undefined && !same(actual[role], expected[role])) return null;
-    const state = { action: expected.action, jobId: String(actual.jobId), stateVersion: String(actual.stateVersion), status: Number(actual.status), ...(actual.client ? { client: String(actual.client).toLowerCase() } : {}), ...(actual.operator ? { operator: String(actual.operator).toLowerCase() } : {}), ...(actual.resolver ? { resolver: String(actual.resolver).toLowerCase() } : {}) };
+    const party = value => value == null || String(value).toLowerCase() === '0x0000000000000000000000000000000000000000' ? null : String(value).toLowerCase();
+    for (const role of ['client', 'operator', 'resolver']) if (Object.hasOwn(expected, role) && party(actual[role]) !== party(expected[role])) return null;
+    const state = { action: expected.action, jobId: String(actual.jobId), stateVersion: String(actual.stateVersion), status: Number(actual.status) };
+    for (const role of ['client', 'operator', 'resolver']) if (Object.hasOwn(expected, role) || actual[role] != null) state[role] = party(actual[role]);
     if (expected.deadlineFailureClaimed !== undefined || expected.faultReviewPending !== undefined) {
       if (actual.deadlineFailureClaimed !== true || actual.faultReviewPending !== true || typeof context.blockTimestamp !== 'bigint') return null;
       if (BigInt(actual.faultReviewDeadline) !== context.blockTimestamp + 7n * 86400n) return null;
@@ -214,7 +269,8 @@ export function createV2ReadApi({ db, getHealth, profile = ARC_TESTNET_PROFILE, 
         if (!/^0x[0-9a-fA-F]{64}$/.test(txHash) || !intentId || !/^[0-9a-f-]{36}$/i.test(intentId)) return error('INVALID_QUERY', 400);
         let found = await db.query('SELECT payload,actor_wallet FROM v2_audit_events WHERE entity_type=$1 AND entity_id=$2 ORDER BY created_at DESC LIMIT 1', ['transaction-intent', intentId]);
         let intent = found.rows[0]?.payload;
-        if (!intent) { found = await db.query("SELECT payload,actor_wallet FROM v2_audit_events WHERE entity_type='job-draft' ORDER BY created_at DESC"); const match = found.rows.find((row) => row.payload?.intent?.intentId === intentId || row.payload?.intent?.id === intentId); intent = match?.payload?.intent; }
+        let draftPayload = null;
+        if (!intent) { found = await db.query("SELECT payload,actor_wallet FROM v2_audit_events WHERE entity_type='job-draft' AND payload->'intent'->>'intentId'=$1 ORDER BY created_at DESC LIMIT 1", [intentId]); draftPayload = found.rows[0]?.payload ?? null; intent = draftPayload?.intent; }
         if (!intent || (intent.intentId ?? intent.id) !== intentId || intent.profile !== profile.name || String(intent.chainId) !== profile.canonicalChainId.toString()) return error('NOT_FOUND', 404);
         if (!auth || typeof auth.authenticateRequest !== 'function') return error('INVALID_SESSION', 401);
         let session; try { session = await auth.authenticateRequest(request); } catch { return error('INVALID_SESSION', 401); }
@@ -226,7 +282,7 @@ export function createV2ReadApi({ db, getHealth, profile = ARC_TESTNET_PROFILE, 
         if (!receipt || !transaction) return json({ status: 'pending', intentId, profile: profile.name }, 200);
         const bound = intent.transaction ?? intent;
         if (String(transaction.from).toLowerCase() !== String(bound.from ?? intent.wallet).toLowerCase() || String(transaction.to).toLowerCase() !== String(bound.to ?? intent.to).toLowerCase() || BigInt(transaction.value ?? '0x0') !== BigInt(bound.value ?? '0') || String(transaction.input ?? transaction.data).toLowerCase() !== String(bound.data ?? intent.data).toLowerCase()) return error('INTENT_MISMATCH', 409);
-        if (String(transaction.chainId ?? `0x${profile.canonicalChainId.toString(16)}`).toLowerCase() !== `0x${profile.canonicalChainId.toString(16)}` && BigInt(transaction.chainId) !== profile.canonicalChainId) return error('INTENT_MISMATCH', 409);
+        if (transaction.chainId == null || (String(transaction.chainId).toLowerCase() !== `0x${profile.canonicalChainId.toString(16)}` && BigInt(transaction.chainId) !== profile.canonicalChainId)) return error('INTENT_MISMATCH', 409);
         if (String(receipt.to).toLowerCase() !== String(bound.to ?? intent.to).toLowerCase() || String(receipt.from).toLowerCase() !== String(bound.from ?? intent.wallet).toLowerCase() || String(receipt.transactionHash).toLowerCase() !== txHash.toLowerCase() || String(receipt.blockHash).length !== 66) return error('INTENT_MISMATCH', 409);
         if (String(receipt.status).toLowerCase() !== '0x1' && String(receipt.status).toLowerCase() !== 'success') return json({ status: 'reverted', intentId }, 200);
         const h = safeHealth(await (getHealth ? getHealth() : {}));
@@ -243,7 +299,7 @@ export function createV2ReadApi({ db, getHealth, profile = ARC_TESTNET_PROFILE, 
         if (intent.action === 'postJob') {
           const item = (receipt.logs ?? []).find((log) => String(log.address).toLowerCase() === profile.marketplace.toLowerCase());
           if (!item) return error('READBACK_MISMATCH', 409);
-          try { const decoded = decodeEventLog({ abi: [...manifest.contracts.marketplace.abi, ...(manifest.contracts.marketplace.events ?? [])], data: item.data, topics: item.topics }); const a = decoded.args ?? {}; actual = { jobId: a.id ?? a.jobId, client: a.client ?? a.owner ?? intent.wallet, criteriaHash: a.criteriaHash, descriptionHash: a.descriptionHash }; } catch { return error('READBACK_MISMATCH', 409); }
+          try { const decoded = decodeEventLog({ abi: [...manifest.contracts.marketplace.abi, ...(manifest.contracts.marketplace.events ?? [])], data: item.data, topics: item.topics }); if (decoded.eventName !== 'JobPosted') return error('READBACK_MISMATCH', 409); const a = decoded.args ?? {}; actual = { jobId: a.id ?? a.jobId, client: a.client ?? a.owner ?? intent.wallet, criteriaHash: a.criteriaHash, descriptionHash: a.descriptionHash }; } catch { return error('READBACK_MISMATCH', 409); }
           if (!actual.jobId || typeof snap.readJob !== 'function') return error('READBACK_MISMATCH', 409);
           const job = await snap.readJob(BigInt(actual.jobId)); actual = { ...actual, ...job, jobId: String(actual.jobId) };
         } else if (intent.expected?.jobId !== undefined) { if (typeof snap.readJob !== 'function') return error('READER_UNAVAILABLE', 503); actual = { ...(await snap.readJob(BigInt(intent.expected.jobId))), jobId: String(intent.expected.jobId) }; }
@@ -251,6 +307,21 @@ export function createV2ReadApi({ db, getHealth, profile = ARC_TESTNET_PROFILE, 
         else return error('READER_UNAVAILABLE', 503);
         const state = expectedState(intent, actual, { blockTimestamp: snap.blockTimestamp });
         if (!state) return error('READBACK_MISMATCH', 409);
+        if (intent.action === 'postJob') {
+          const document = draftPayload?.document;
+          const visibility = draftPayload?.public === true ? 'public' : 'private';
+          if (!document || typeof document !== 'object' || Array.isArray(document)) return error('READBACK_MISMATCH', 409);
+          const jobId = String(state.jobId);
+          await db.transaction(async (tx) => {
+            const existing = await tx.query('SELECT id, content_hash, content, visibility FROM v2_job_documents WHERE chain_id=$1 AND marketplace=$2 AND job_id=$3 ORDER BY version DESC LIMIT 1 FOR UPDATE', [profile.canonicalChainId.toString(), profile.marketplace, jobId]);
+            if (existing.rows.length) {
+              const row = existing.rows[0];
+              if (String(row.content_hash).toLowerCase() !== String(intent.draftHash ?? '').toLowerCase() && JSON.stringify(row.content) !== JSON.stringify(document)) throw new ReadApiError('READBACK_MISMATCH');
+              return;
+            }
+            await tx.query('INSERT INTO v2_job_documents(id,chain_id,marketplace,job_id,version,content_hash,content,visibility) VALUES($1,$2,$3,$4,1,$5,$6,$7)', [`${intent.draftHash ?? intentId}:${jobId}`, profile.canonicalChainId.toString(), profile.marketplace, jobId, intent.draftHash ?? intentId, document, visibility]);
+          });
+        }
         return json({ ok: true, intentId, confirmed: true, hash: txHash.toLowerCase(), profileId: profile.name, chainId: profile.canonicalChainId.toString(), wallet: intent.wallet, action: intent.action, expected: intent.expected, state });
       }
       const query = parseQuery(url);
@@ -270,14 +341,15 @@ export function createV2ReadApi({ db, getHealth, profile = ARC_TESTNET_PROFILE, 
         const hasMore = result.rows.length > limit;
         const rows = hasMore ? result.rows.slice(0, limit) : result.rows;
         const items = [];
-        for (const row of rows) items.push(job(row, await publicDocumentFor(db, text(row.job_id), profile)));
+        for (const row of rows) items.push(job(row, await publicDocumentFor(db, text(row.job_id), profile), await canonicalActionContext(readerFactory, text(row.job_id), row)));
         return json(envelope({ items, nextCursor: hasMore ? text(rows.at(-1)?.job_id) : null, count: items.length }));
       }
       if (parts.length === 4 && parts[2] === 'jobs') {
         const id = parseId(parts[3]);
         const result = await db.query(`SELECT ${JOB_COLUMNS.join(', ')} FROM v2_jobs WHERE chain_id = $1 AND marketplace = $2 AND job_id = $3`, [...ctx, id]);
         if (!result.rows.length) return error('NOT_FOUND', 404);
-        return json(envelope(job(result.rows[0], await publicDocumentFor(db, id, profile))));
+        const row = result.rows[0];
+        return json(envelope(job(row, await publicDocumentFor(db, id, profile), await canonicalActionContext(readerFactory, id, row))));
       }
       if (parts.length === 4 && parts[2] === 'accounts') {
         if (typeof parts[3] !== 'string' || parts[3].length !== 42 || !ADDRESS.test(parts[3])) fail('BAD_ADDRESS');

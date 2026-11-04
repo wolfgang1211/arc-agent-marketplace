@@ -111,7 +111,7 @@ export function getV2LocalRuntime() {
     const profile = await loadRuntimeProfile();
     // Separate from prior development databases; never opens a V1 database.
     const dataRoot = path.join(os.homedir(), 'AppData', 'Local', 'hermes', 'state', 'alphaboard-v2');
-    const dataDir = profile.name === 'local-hardhat' ? path.join(dataRoot, 'local-hardhat', profile.marketplace.toLowerCase(), 'pglite-api') : path.join(dataRoot, 'pglite-api');
+    const dataDir = profile.name === 'local-hardhat' ? path.join(dataRoot, 'local-hardhat', profile.marketplace.toLowerCase(), profile.proofAnchor.blockHash.toLowerCase(), 'pglite-api') : path.join(dataRoot, 'pglite-api');
     await mkdir(dataDir, { recursive: true });
     const db = await createPgliteDb({ dataDir });
     try {

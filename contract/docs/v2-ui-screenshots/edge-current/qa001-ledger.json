@@ -1,0 +1,357 @@
+{
+  "evidence": "real UI + isolated local EVM + PGlite import",
+  "chainId": "31337",
+  "origin": "http://127.0.0.1:3104",
+  "rpcGuard": "loopback-only; explicit manifest RPC; never 8545",
+  "browser": {
+    "channel": "msedge",
+    "headless": true,
+    "version": "156.0.4314.58",
+    "viewports": {
+      "desktop": {
+        "width": 1440,
+        "height": 1000
+      },
+      "mobile": {
+        "width": 390,
+        "height": 844
+      }
+    }
+  },
+  "rows": [
+    {
+      "number": 1,
+      "slug": "filled-chip-form-48-24-24utc",
+      "role": "client",
+      "route": "/v2/jobs/new",
+      "viewport": "desktop",
+      "filename": "qa001-filled-chip-form-48-24-24utc-desktop.png",
+      "actualObservedState": "A AlphaBoard AGENT MARKETPLACE Jobs New job Account Resolver Local test network LIVE Jobs Session DRAFT A REQUEST Post a new job. Describe the work, define what success looks like, and set your budget. Job details Set the outcome, timing, and audience. Connect and sign in with a wallet to enable this action. Reward (USDC) * Delivery * Unit Hours Days Review * Unit Hours Days Revision * Unit Hours Days Revision limit * Apply by (UTC) * Title * Description * Category * Website × Tags * landing-page × frontend × Acceptance criteria * Make this job public Off by default: the public read model only returns documents marked public. Keep it off to keep the job document private to authorized views. Create job Before you publish Connect your wallet and sign in. You will review and confirm the payment in your wallet before publishing. No transaction submitted",
+      "statusLabels": [],
+      "actualBlock": {
+        "number": "33",
+        "hash": "0x2cf2ec46a4080e0e81b3ac1bb9a41e792d713e89141325b94b0404ab92c4858d"
+      },
+      "walletAuditMethods": [],
+      "transactionSendAttempts": [],
+      "domOverflowMetrics": {
+        "viewportWidth": 1440,
+        "documentScrollWidth": 1440,
+        "bodyScrollWidth": 1440,
+        "elements": []
+      },
+      "status": "captured"
+    },
+    {
+      "number": 2,
+      "slug": "filled-chip-form-48-24-24utc",
+      "role": "client",
+      "route": "/v2/jobs/new",
+      "viewport": "mobile",
+      "filename": "qa001-filled-chip-form-48-24-24utc-mobile.png",
+      "actualObservedState": "A AlphaBoard AGENT MARKETPLACE Jobs New job Account Resolver LIVE DRAFT A REQUEST Post a new job. Describe the work, define what success looks like, and set your budget. Job details Set the outcome, timing, and audience. Connect and sign in with a wallet to enable this action. Reward (USDC) * Delivery * Unit Hours Days Review * Unit Hours Days Revision * Unit Hours Days Revision limit * Apply by (UTC) * Title * Description * Category * Website × Tags * landing-page × frontend × Acceptance criteria * Make this job public Off by default: the public read model only returns documents marked public. Keep it off to keep the job document private to authorized views. Create job Before you publish Connect your wallet and sign in. You will review and confirm the payment in your wallet before publishing. No transaction submitted",
+      "statusLabels": [],
+      "actualBlock": {
+        "number": "33",
+        "hash": "0x2cf2ec46a4080e0e81b3ac1bb9a41e792d713e89141325b94b0404ab92c4858d"
+      },
+      "walletAuditMethods": [],
+      "transactionSendAttempts": [],
+      "domOverflowMetrics": {
+        "viewportWidth": 390,
+        "documentScrollWidth": 390,
+        "bodyScrollWidth": 390,
+        "elements": []
+      },
+      "status": "captured"
+    },
+    {
+      "number": 3,
+      "slug": "disconnected-next-connect",
+      "role": "client",
+      "route": "/v2/jobs/1",
+      "viewport": "desktop",
+      "disconnected": true,
+      "assertText": {},
+      "filename": "qa001-disconnected-next-connect-desktop.png",
+      "actualObservedState": "A AlphaBoard AGENT MARKETPLACE Jobs New job Account Resolver Local test network LIVE Jobs Session JOB DETAILS Build a deterministic game bot tutorial video Build a deterministic game bot tutorial video. Deliver a reviewable artifact with evidence. Open Job overview $100 USDC REWARD gamebot CATEGORY Apply by 05.12.2026 00:09:52 Delivery 168 hours Status Open automation game-ai Technical details Applications Next action Connect your wallet to see the next action. Connect wallet Before you continue Actions depend on the job’s progress and your role. Confirm each transaction in your wallet. No transaction submitted",
+      "statusLabels": [
+        "Open"
+      ],
+      "actualBlock": {
+        "number": "33",
+        "hash": "0x2cf2ec46a4080e0e81b3ac1bb9a41e792d713e89141325b94b0404ab92c4858d"
+      },
+      "walletAuditMethods": [],
+      "transactionSendAttempts": [],
+      "domOverflowMetrics": {
+        "viewportWidth": 1440,
+        "documentScrollWidth": 1440,
+        "bodyScrollWidth": 1440,
+        "elements": []
+      },
+      "status": "captured"
+    },
+    {
+      "number": 4,
+      "slug": "disconnected-next-connect",
+      "role": "client",
+      "route": "/v2/jobs/1",
+      "viewport": "mobile",
+      "disconnected": true,
+      "assertText": {},
+      "filename": "qa001-disconnected-next-connect-mobile.png",
+      "actualObservedState": "A AlphaBoard AGENT MARKETPLACE Jobs New job Account Resolver LIVE JOB DETAILS Build a deterministic game bot tutorial video Build a deterministic game bot tutorial video. Deliver a reviewable artifact with evidence. Open Job overview $100 USDC REWARD gamebot CATEGORY Apply by 05.12.2026 00:09:52 Delivery 168 hours Status Open automation game-ai Technical details Applications Next action Connect your wallet to see the next action. Connect wallet Before you continue Actions depend on the job’s progress and your role. Confirm each transaction in your wallet. No transaction submitted",
+      "statusLabels": [
+        "Open"
+      ],
+      "actualBlock": {
+        "number": "33",
+        "hash": "0x2cf2ec46a4080e0e81b3ac1bb9a41e792d713e89141325b94b0404ab92c4858d"
+      },
+      "walletAuditMethods": [],
+      "transactionSendAttempts": [],
+      "domOverflowMetrics": {
+        "viewportWidth": 390,
+        "documentScrollWidth": 390,
+        "bodyScrollWidth": 390,
+        "elements": []
+      },
+      "status": "captured"
+    },
+    {
+      "number": 5,
+      "slug": "client-open-applications-empty-load",
+      "role": "client",
+      "route": "/v2/jobs/1",
+      "viewport": "desktop",
+      "auth": true,
+      "assertText": {},
+      "filename": "qa001-client-open-applications-empty-load-desktop.png",
+      "actualObservedState": "A AlphaBoard AGENT MARKETPLACE Jobs New job Account Resolver Local test network LIVE Jobs Session JOB DETAILS Build a deterministic game bot tutorial video Build a deterministic game bot tutorial video. Deliver a reviewable artifact with evidence. Open Job overview $100 USDC REWARD gamebot CATEGORY Apply by 05.12.2026 00:09:52 Delivery 168 hours Status Open automation game-ai Technical details Applications Applications are private. Only the client can read signatures and prepare an award. Load applications No applications yet. Next action Available to the client. Award Propose settlement Award Before you continue Actions depend on the job’s progress and your role. Confirm each transaction in your wallet. No transaction submitted",
+      "statusLabels": [
+        "Open"
+      ],
+      "actualBlock": {
+        "number": "33",
+        "hash": "0x2cf2ec46a4080e0e81b3ac1bb9a41e792d713e89141325b94b0404ab92c4858d"
+      },
+      "walletAuditMethods": [
+        "personal_sign"
+      ],
+      "transactionSendAttempts": [],
+      "domOverflowMetrics": {
+        "viewportWidth": 1440,
+        "documentScrollWidth": 1440,
+        "bodyScrollWidth": 1440,
+        "elements": []
+      },
+      "status": "captured"
+    },
+    {
+      "number": 6,
+      "slug": "operator-inprogress-delivery-visible",
+      "role": "operator",
+      "route": "/v2/jobs/2",
+      "viewport": "desktop",
+      "auth": true,
+      "assertText": {},
+      "filename": "qa001-operator-inprogress-delivery-visible-desktop.png",
+      "actualObservedState": "A AlphaBoard AGENT MARKETPLACE Jobs New job Account Resolver Local test network LIVE Jobs Session JOB DETAILS Refresh the public landing page for the marketplace Refresh the public landing page for the marketplace. Deliver a reviewable artifact with evidence. In progress Job overview $100 USDC REWARD website CATEGORY Apply by 05.12.2026 00:09:52 Delivery 168 hours Status In progress frontend accessibility Technical details Applications Sign an off-chain application for this job. Pitch * Apply Submit delivery Add the result link or content for this delivery. Delivery link Delivery type Delivery Revision Technical details Save delivery Next action Available to the operator. Submit delivery Open dispute Propose settlement Technical details Submit delivery Before you continue Actions depend on the job’s progress and your role. Confirm each transaction in your wallet. No transaction submitted",
+      "statusLabels": [
+        "In progress"
+      ],
+      "actualBlock": {
+        "number": "33",
+        "hash": "0x2cf2ec46a4080e0e81b3ac1bb9a41e792d713e89141325b94b0404ab92c4858d"
+      },
+      "walletAuditMethods": [
+        "personal_sign"
+      ],
+      "transactionSendAttempts": [],
+      "domOverflowMetrics": {
+        "viewportWidth": 1440,
+        "documentScrollWidth": 1440,
+        "bodyScrollWidth": 1440,
+        "elements": []
+      },
+      "status": "captured"
+    },
+    {
+      "number": 7,
+      "slug": "operator-revisionpending-delivery-visible",
+      "role": "operator",
+      "route": "/v2/jobs/4",
+      "viewport": "desktop",
+      "auth": true,
+      "assertText": {},
+      "filename": "qa001-operator-revisionpending-delivery-visible-desktop.png",
+      "actualObservedState": "A AlphaBoard AGENT MARKETPLACE Jobs New job Account Resolver Local test network LIVE Jobs Session JOB DETAILS Produce a concise launch explainer short Produce a concise launch explainer short. Deliver a reviewable artifact with evidence. Revision pending Job overview $100 USDC REWARD shortvideo CATEGORY Apply by 05.12.2026 00:09:52 Delivery 168 hours Status Revision pending editing motion Technical details Applications Sign an off-chain application for this job. Pitch * Apply Submit revision Add the result link or content for this delivery. Delivery link Delivery type Delivery Revision Technical details Save revision Next action Available to the operator. Submit revision Open dispute Propose settlement Technical details Submit revision Before you continue Actions depend on the job’s progress and your role. Confirm each transaction in your wallet. No transaction submitted",
+      "statusLabels": [
+        "Revision pending"
+      ],
+      "actualBlock": {
+        "number": "33",
+        "hash": "0x2cf2ec46a4080e0e81b3ac1bb9a41e792d713e89141325b94b0404ab92c4858d"
+      },
+      "walletAuditMethods": [
+        "personal_sign"
+      ],
+      "transactionSendAttempts": [],
+      "domOverflowMetrics": {
+        "viewportWidth": 1440,
+        "documentScrollWidth": 1440,
+        "bodyScrollWidth": 1440,
+        "elements": []
+      },
+      "status": "captured"
+    },
+    {
+      "number": 8,
+      "slug": "client-submitted-delivery-hidden-connected-approve",
+      "role": "client",
+      "route": "/v2/jobs/3",
+      "viewport": "desktop",
+      "auth": true,
+      "assertText": {},
+      "filename": "qa001-client-submitted-delivery-hidden-connected-approve-desktop.png",
+      "actualObservedState": "A AlphaBoard AGENT MARKETPLACE Jobs New job Account Resolver Local test network LIVE Jobs Session JOB DETAILS Create a CLI tool for validating job evidence Create a CLI tool for validating job evidence. Deliver a reviewable artifact with evidence. Submitted Job overview $100 USDC REWARD tool CATEGORY Apply by 05.12.2026 00:09:52 Delivery 168 hours Status Submitted nodejs cli Technical details Applications Applications are private. Only the client can read signatures and prepare an award. Load applications Next action Available to the client. Approve Request revision Open dispute Propose settlement Approve Before you continue Actions depend on the job’s progress and your role. Confirm each transaction in your wallet. No transaction submitted",
+      "statusLabels": [
+        "Submitted"
+      ],
+      "actualBlock": {
+        "number": "33",
+        "hash": "0x2cf2ec46a4080e0e81b3ac1bb9a41e792d713e89141325b94b0404ab92c4858d"
+      },
+      "walletAuditMethods": [
+        "personal_sign"
+      ],
+      "transactionSendAttempts": [],
+      "domOverflowMetrics": {
+        "viewportWidth": 1440,
+        "documentScrollWidth": 1440,
+        "bodyScrollWidth": 1440,
+        "elements": []
+      },
+      "status": "captured"
+    },
+    {
+      "number": 9,
+      "slug": "client-submitted-delivery-hidden-connected-approve",
+      "role": "client",
+      "route": "/v2/jobs/3",
+      "viewport": "mobile",
+      "auth": true,
+      "assertText": {},
+      "filename": "qa001-client-submitted-delivery-hidden-connected-approve-mobile.png",
+      "actualObservedState": "A AlphaBoard AGENT MARKETPLACE Jobs New job Account Resolver LIVE JOB DETAILS Create a CLI tool for validating job evidence Create a CLI tool for validating job evidence. Deliver a reviewable artifact with evidence. Submitted Job overview $100 USDC REWARD tool CATEGORY Apply by 05.12.2026 00:09:52 Delivery 168 hours Status Submitted nodejs cli Technical details Applications Applications are private. Only the client can read signatures and prepare an award. Load applications Next action Available to the client. Approve Request revision Open dispute Propose settlement Approve Before you continue Actions depend on the job’s progress and your role. Confirm each transaction in your wallet. No transaction submitted",
+      "statusLabels": [
+        "Submitted"
+      ],
+      "actualBlock": {
+        "number": "33",
+        "hash": "0x2cf2ec46a4080e0e81b3ac1bb9a41e792d713e89141325b94b0404ab92c4858d"
+      },
+      "walletAuditMethods": [
+        "personal_sign"
+      ],
+      "transactionSendAttempts": [],
+      "domOverflowMetrics": {
+        "viewportWidth": 390,
+        "documentScrollWidth": 390,
+        "bodyScrollWidth": 390,
+        "elements": []
+      },
+      "status": "captured"
+    },
+    {
+      "number": 10,
+      "slug": "operator-inprogress-delivery-visible",
+      "role": "operator",
+      "route": "/v2/jobs/2",
+      "viewport": "mobile",
+      "auth": true,
+      "assertText": {},
+      "filename": "qa001-operator-inprogress-delivery-visible-mobile.png",
+      "actualObservedState": "A AlphaBoard AGENT MARKETPLACE Jobs New job Account Resolver LIVE JOB DETAILS Refresh the public landing page for the marketplace Refresh the public landing page for the marketplace. Deliver a reviewable artifact with evidence. In progress Job overview $100 USDC REWARD website CATEGORY Apply by 05.12.2026 00:09:52 Delivery 168 hours Status In progress frontend accessibility Technical details Applications Sign an off-chain application for this job. Pitch * Apply Submit delivery Add the result link or content for this delivery. Delivery link Delivery type Delivery Revision Technical details Save delivery Next action Available to the operator. Submit delivery Open dispute Propose settlement Technical details Submit delivery Before you continue Actions depend on the job’s progress and your role. Confirm each transaction in your wallet. No transaction submitted",
+      "statusLabels": [
+        "In progress"
+      ],
+      "actualBlock": {
+        "number": "33",
+        "hash": "0x2cf2ec46a4080e0e81b3ac1bb9a41e792d713e89141325b94b0404ab92c4858d"
+      },
+      "walletAuditMethods": [
+        "personal_sign"
+      ],
+      "transactionSendAttempts": [],
+      "domOverflowMetrics": {
+        "viewportWidth": 390,
+        "documentScrollWidth": 390,
+        "bodyScrollWidth": 390,
+        "elements": []
+      },
+      "status": "captured"
+    },
+    {
+      "number": 11,
+      "slug": "operator-revisionpending-delivery-visible",
+      "role": "operator",
+      "route": "/v2/jobs/4",
+      "viewport": "mobile",
+      "auth": true,
+      "assertText": {},
+      "filename": "qa001-operator-revisionpending-delivery-visible-mobile.png",
+      "actualObservedState": "A AlphaBoard AGENT MARKETPLACE Jobs New job Account Resolver LIVE JOB DETAILS Produce a concise launch explainer short Produce a concise launch explainer short. Deliver a reviewable artifact with evidence. Revision pending Job overview $100 USDC REWARD shortvideo CATEGORY Apply by 05.12.2026 00:09:52 Delivery 168 hours Status Revision pending editing motion Technical details Applications Sign an off-chain application for this job. Pitch * Apply Submit revision Add the result link or content for this delivery. Delivery link Delivery type Delivery Revision Technical details Save revision Next action Available to the operator. Submit revision Open dispute Propose settlement Technical details Submit revision Before you continue Actions depend on the job’s progress and your role. Confirm each transaction in your wallet. No transaction submitted",
+      "statusLabels": [
+        "Revision pending"
+      ],
+      "actualBlock": {
+        "number": "33",
+        "hash": "0x2cf2ec46a4080e0e81b3ac1bb9a41e792d713e89141325b94b0404ab92c4858d"
+      },
+      "walletAuditMethods": [
+        "personal_sign"
+      ],
+      "transactionSendAttempts": [],
+      "domOverflowMetrics": {
+        "viewportWidth": 390,
+        "documentScrollWidth": 390,
+        "bodyScrollWidth": 390,
+        "elements": []
+      },
+      "status": "captured"
+    },
+    {
+      "number": 12,
+      "slug": "client-open-applications-empty-load",
+      "role": "client",
+      "route": "/v2/jobs/1",
+      "viewport": "mobile",
+      "auth": true,
+      "assertText": {},
+      "filename": "qa001-client-open-applications-empty-load-mobile.png",
+      "actualObservedState": "A AlphaBoard AGENT MARKETPLACE Jobs New job Account Resolver LIVE JOB DETAILS Build a deterministic game bot tutorial video Build a deterministic game bot tutorial video. Deliver a reviewable artifact with evidence. Open Job overview $100 USDC REWARD gamebot CATEGORY Apply by 05.12.2026 00:09:52 Delivery 168 hours Status Open automation game-ai Technical details Applications Applications are private. Only the client can read signatures and prepare an award. Load applications No applications yet. Next action Available to the client. Award Propose settlement Award Before you continue Actions depend on the job’s progress and your role. Confirm each transaction in your wallet. No transaction submitted",
+      "statusLabels": [
+        "Open"
+      ],
+      "actualBlock": {
+        "number": "33",
+        "hash": "0x2cf2ec46a4080e0e81b3ac1bb9a41e792d713e89141325b94b0404ab92c4858d"
+      },
+      "walletAuditMethods": [
+        "personal_sign"
+      ],
+      "transactionSendAttempts": [],
+      "domOverflowMetrics": {
+        "viewportWidth": 390,
+        "documentScrollWidth": 390,
+        "bodyScrollWidth": 390,
+        "elements": []
+      },
+      "status": "captured"
+    }
+  ],
+  "failures": [],
+  "transactionSendAttempts": []
+}

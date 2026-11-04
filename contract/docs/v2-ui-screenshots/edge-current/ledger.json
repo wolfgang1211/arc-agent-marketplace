@@ -1,0 +1,1816 @@
+{
+  "browser": {
+    "channel": "msedge",
+    "headless": true,
+    "version": "156.0.4314.50",
+    "playwrightResolution": "existing installation; explicit override or user-home fallback",
+    "viewportSet": [
+      {
+        "name": "desktop",
+        "width": 1440,
+        "height": 1000
+      },
+      {
+        "name": "mobile",
+        "width": 390,
+        "height": 844
+      }
+    ]
+  },
+  "origin": "http://127.0.0.1:3104",
+  "localStateDirectoryVariable": "V2_LOCAL_UI_STATE",
+  "chainId": "31337",
+  "anchorBlock": {
+    "number": 3,
+    "hash": "0x9e0d9642b8ef0b85523cbf23bf360f57b87d171043c7541402804c650e1dcd53"
+  },
+  "latestBlockAtStart": {
+    "number": "50",
+    "hash": "0x4d3e33588314e958aa589ccef716cc095cdb2d745f6048c8e2aa0796fb54c65e"
+  },
+  "rows": [
+    {
+      "filename": "01-desktop-jobs-list.png",
+      "viewport": "1440x1000",
+      "route": "/v2/jobs",
+      "case": "jobs-list",
+      "actor": "client",
+      "expectedStatus": [
+        "Open",
+        "In progress",
+        "Submitted",
+        "Revision pending",
+        "Disputed",
+        "Completed",
+        "Refunded"
+      ],
+      "actualObservedState": "A AlphaBoard AGENT MARKETPLACE Jobs New job Account Resolver Local test network LIVE Jobs Session MARKETPLACE JOBS Find work worth doing. Find skilled operators and track work from brief to delivery. Post a job Jobs 8 shown in this page Status All Open Active Closed Build a deterministic game bot tutorial video Open Build a deterministic game bot tutorial video. Deliver a reviewable artifact with evidence. gamebot $100 USDC Apply by 30.11.2026 Delivery 168h Refresh the public landing page for the marketplace In progress Refresh the public landing page for the marketplace. Deliver a reviewable artifact with evidence. website $100 USDC Apply by 30.11.2026 Delivery 168h Create a CLI tool for validating job evidence Submitted Create a CLI tool for validating job evidence. Deliver a reviewable artifact with evidence. tool $100 USDC Apply by 30.11.2026 Delivery 168h Produce a concise launch explainer short Revision pending Produce a concise launch explainer short. Deliver a reviewable artifact with evidence. shortvideo $100 USDC Apply by 30.11.2026 Delivery 168h Compare escrow UX patterns for agent work Disputed Compare escrow UX patterns for agent work. Deliver a reviewable artifact with evidence. research $100 USDC Apply by 30.11.2026 Delivery 168h Design a compact operator dashboard concept Completed Design a compact operator dashboard concept. Deliver a reviewable artifact with evidence. design $100 USDC Apply by 30.11.2026 Delivery 168h Prototype a replay-safe game bot harness Refunded Prototype a replay-safe game bot harness. Deliver a reviewable artifact with evidence. gamebot $100 USDC Apply by 30.11.2026 Delivery 168h Build an accessible prediction-market research dashboard Completed Create a responsive research dashboard with wallet-independent browsing, searchable markets, clear empty states, keyboard navigation, and a reproducible local setup. Do not use live credentials or submit trades. website $100 USDC Apply by 03.11.2026 Delivery 48h",
+      "actualBlock": {
+        "number": "50",
+        "hash": "0x4d3e33588314e958aa589ccef716cc095cdb2d745f6048c8e2aa0796fb54c65e"
+      },
+      "browserVersion": "156.0.4314.50",
+      "capturedAt": "2026-10-31T18:19:16.010Z",
+      "domOverflowMetrics": {
+        "documentScrollWidth": 1440,
+        "bodyScrollWidth": 1440,
+        "viewportWidth": 1440,
+        "elements": []
+      },
+      "v2Metrics": [],
+      "rewardCategoryOverlap": false,
+      "walletAuthenticated": false,
+      "readerStatus": "Reader status: Live",
+      "walletAuditMethods": [],
+      "transactionSendAttempts": [],
+      "observedUrl": "http://127.0.0.1:3104/v2/jobs",
+      "readerUnavailableFaultInjection": false,
+      "status": "captured"
+    },
+    {
+      "filename": "02-desktop-job1Open.png",
+      "viewport": "1440x1000",
+      "route": "/v2/jobs/1",
+      "case": "job1Open",
+      "actor": "client",
+      "expectedStatus": "Open",
+      "actualObservedState": "A AlphaBoard AGENT MARKETPLACE Jobs New job Account Resolver Local test network LIVE Jobs Session JOB DETAILS Build a deterministic game bot tutorial video Build a deterministic game bot tutorial video. Deliver a reviewable artifact with evidence. Open Job overview $100 USDC REWARD gamebot CATEGORY Apply by 30.11.2026 19:36:58 Delivery 168 hours Status Open automation game-ai Technical details Applications Submit delivery Add the result link or content for this delivery. Delivery link Delivery type Delivery Revision Technical details Save delivery Next action Connect and sign in with a wallet to enable this action. Connect the wallet for available actions. No action is available right now. Continue Before you continue Actions depend on the job’s progress and your role. Confirm each transaction in your wallet. No transaction submitted",
+      "actualBlock": {
+        "number": "50",
+        "hash": "0x4d3e33588314e958aa589ccef716cc095cdb2d745f6048c8e2aa0796fb54c65e"
+      },
+      "browserVersion": "156.0.4314.50",
+      "capturedAt": "2026-10-31T18:19:18.436Z",
+      "domOverflowMetrics": {
+        "documentScrollWidth": 1440,
+        "bodyScrollWidth": 1440,
+        "viewportWidth": 1440,
+        "elements": []
+      },
+      "v2Metrics": [
+        {
+          "text": "$100 USDCRewardgamebotCategory",
+          "rect": {
+            "left": 305,
+            "top": 323.796875,
+            "right": 953,
+            "bottom": 377.796875,
+            "width": 648,
+            "height": 54
+          },
+          "children": [
+            {
+              "left": 305,
+              "top": 323.796875,
+              "right": 619,
+              "bottom": 377.796875,
+              "width": 314,
+              "height": 54
+            },
+            {
+              "left": 639,
+              "top": 323.796875,
+              "right": 953,
+              "bottom": 377.796875,
+              "width": 314,
+              "height": 54
+            }
+          ]
+        }
+      ],
+      "rewardCategoryOverlap": false,
+      "walletAuthenticated": false,
+      "readerStatus": "Reader status: Live",
+      "walletAuditMethods": [],
+      "transactionSendAttempts": [],
+      "observedUrl": "http://127.0.0.1:3104/v2/jobs/1",
+      "readerUnavailableFaultInjection": false,
+      "status": "captured"
+    },
+    {
+      "filename": "03-desktop-job2InProgress.png",
+      "viewport": "1440x1000",
+      "route": "/v2/jobs/2",
+      "case": "job2InProgress",
+      "actor": "client",
+      "expectedStatus": "In progress",
+      "actualObservedState": "A AlphaBoard AGENT MARKETPLACE Jobs New job Account Resolver Local test network LIVE Jobs Session JOB DETAILS Refresh the public landing page for the marketplace Refresh the public landing page for the marketplace. Deliver a reviewable artifact with evidence. In progress Job overview $100 USDC REWARD website CATEGORY Apply by 30.11.2026 19:36:58 Delivery 168 hours Status In progress frontend accessibility Technical details Applications Submit delivery Add the result link or content for this delivery. Delivery link Delivery type Delivery Revision Technical details Save delivery Next action Connect and sign in with a wallet to enable this action. Connect the wallet for available actions. No action is available right now. Continue Before you continue Actions depend on the job’s progress and your role. Confirm each transaction in your wallet. No transaction submitted",
+      "actualBlock": {
+        "number": "50",
+        "hash": "0x4d3e33588314e958aa589ccef716cc095cdb2d745f6048c8e2aa0796fb54c65e"
+      },
+      "browserVersion": "156.0.4314.50",
+      "capturedAt": "2026-10-31T18:19:20.839Z",
+      "domOverflowMetrics": {
+        "documentScrollWidth": 1440,
+        "bodyScrollWidth": 1440,
+        "viewportWidth": 1440,
+        "elements": []
+      },
+      "v2Metrics": [
+        {
+          "text": "$100 USDCRewardwebsiteCategory",
+          "rect": {
+            "left": 305,
+            "top": 394.59375,
+            "right": 953,
+            "bottom": 448.59375,
+            "width": 648,
+            "height": 54
+          },
+          "children": [
+            {
+              "left": 305,
+              "top": 394.59375,
+              "right": 619,
+              "bottom": 448.59375,
+              "width": 314,
+              "height": 54
+            },
+            {
+              "left": 639,
+              "top": 394.59375,
+              "right": 953,
+              "bottom": 448.59375,
+              "width": 314,
+              "height": 54
+            }
+          ]
+        }
+      ],
+      "rewardCategoryOverlap": false,
+      "walletAuthenticated": false,
+      "readerStatus": "Reader status: Live",
+      "walletAuditMethods": [],
+      "transactionSendAttempts": [],
+      "observedUrl": "http://127.0.0.1:3104/v2/jobs/2",
+      "readerUnavailableFaultInjection": false,
+      "status": "captured"
+    },
+    {
+      "filename": "04-desktop-job3Submitted.png",
+      "viewport": "1440x1000",
+      "route": "/v2/jobs/3",
+      "case": "job3Submitted",
+      "actor": "client",
+      "expectedStatus": "Submitted",
+      "actualObservedState": "A AlphaBoard AGENT MARKETPLACE Jobs New job Account Resolver Local test network LIVE Jobs Session JOB DETAILS Create a CLI tool for validating job evidence Create a CLI tool for validating job evidence. Deliver a reviewable artifact with evidence. Submitted Job overview $100 USDC REWARD tool CATEGORY Apply by 30.11.2026 19:36:58 Delivery 168 hours Status Submitted nodejs cli Technical details Applications Submit delivery Add the result link or content for this delivery. Delivery link Delivery type Delivery Revision Technical details Save delivery Next action Connect and sign in with a wallet to enable this action. Connect the wallet for available actions. No action is available right now. Continue Before you continue Actions depend on the job’s progress and your role. Confirm each transaction in your wallet. No transaction submitted",
+      "actualBlock": {
+        "number": "50",
+        "hash": "0x4d3e33588314e958aa589ccef716cc095cdb2d745f6048c8e2aa0796fb54c65e"
+      },
+      "browserVersion": "156.0.4314.50",
+      "capturedAt": "2026-10-31T18:19:23.276Z",
+      "domOverflowMetrics": {
+        "documentScrollWidth": 1440,
+        "bodyScrollWidth": 1440,
+        "viewportWidth": 1440,
+        "elements": []
+      },
+      "v2Metrics": [
+        {
+          "text": "$100 USDCRewardtoolCategory",
+          "rect": {
+            "left": 305,
+            "top": 323.796875,
+            "right": 953,
+            "bottom": 377.796875,
+            "width": 648,
+            "height": 54
+          },
+          "children": [
+            {
+              "left": 305,
+              "top": 323.796875,
+              "right": 619,
+              "bottom": 377.796875,
+              "width": 314,
+              "height": 54
+            },
+            {
+              "left": 639,
+              "top": 323.796875,
+              "right": 953,
+              "bottom": 377.796875,
+              "width": 314,
+              "height": 54
+            }
+          ]
+        }
+      ],
+      "rewardCategoryOverlap": false,
+      "walletAuthenticated": false,
+      "readerStatus": "Reader status: Live",
+      "walletAuditMethods": [],
+      "transactionSendAttempts": [],
+      "observedUrl": "http://127.0.0.1:3104/v2/jobs/3",
+      "readerUnavailableFaultInjection": false,
+      "status": "captured"
+    },
+    {
+      "filename": "05-desktop-job4RevisionPending.png",
+      "viewport": "1440x1000",
+      "route": "/v2/jobs/4",
+      "case": "job4RevisionPending",
+      "actor": "client",
+      "expectedStatus": "Revision pending",
+      "actualObservedState": "A AlphaBoard AGENT MARKETPLACE Jobs New job Account Resolver Local test network LIVE Jobs Session JOB DETAILS Produce a concise launch explainer short Produce a concise launch explainer short. Deliver a reviewable artifact with evidence. Revision pending Job overview $100 USDC REWARD shortvideo CATEGORY Apply by 30.11.2026 19:36:58 Delivery 168 hours Status Revision pending editing motion Technical details Applications Submit revision Add the result link or content for this delivery. Delivery link Delivery type Delivery Revision Technical details Save revision Next action Connect and sign in with a wallet to enable this action. Connect the wallet for available actions. No action is available right now. Continue Before you continue Actions depend on the job’s progress and your role. Confirm each transaction in your wallet. No transaction submitted",
+      "actualBlock": {
+        "number": "50",
+        "hash": "0x4d3e33588314e958aa589ccef716cc095cdb2d745f6048c8e2aa0796fb54c65e"
+      },
+      "browserVersion": "156.0.4314.50",
+      "capturedAt": "2026-10-31T18:19:25.678Z",
+      "domOverflowMetrics": {
+        "documentScrollWidth": 1440,
+        "bodyScrollWidth": 1440,
+        "viewportWidth": 1440,
+        "elements": []
+      },
+      "v2Metrics": [
+        {
+          "text": "$100 USDCRewardshortvideoCategory",
+          "rect": {
+            "left": 305,
+            "top": 323.796875,
+            "right": 953,
+            "bottom": 377.796875,
+            "width": 648,
+            "height": 54
+          },
+          "children": [
+            {
+              "left": 305,
+              "top": 323.796875,
+              "right": 619,
+              "bottom": 377.796875,
+              "width": 314,
+              "height": 54
+            },
+            {
+              "left": 639,
+              "top": 323.796875,
+              "right": 953,
+              "bottom": 377.796875,
+              "width": 314,
+              "height": 54
+            }
+          ]
+        }
+      ],
+      "rewardCategoryOverlap": false,
+      "walletAuthenticated": false,
+      "readerStatus": "Reader status: Live",
+      "walletAuditMethods": [],
+      "transactionSendAttempts": [],
+      "observedUrl": "http://127.0.0.1:3104/v2/jobs/4",
+      "readerUnavailableFaultInjection": false,
+      "status": "captured"
+    },
+    {
+      "filename": "06-desktop-job5Disputed.png",
+      "viewport": "1440x1000",
+      "route": "/v2/jobs/5",
+      "case": "job5Disputed",
+      "actor": "client",
+      "expectedStatus": "Disputed",
+      "actualObservedState": "A AlphaBoard AGENT MARKETPLACE Jobs New job Account Resolver Local test network LIVE Jobs Session JOB DETAILS Compare escrow UX patterns for agent work Compare escrow UX patterns for agent work. Deliver a reviewable artifact with evidence. Disputed Job overview $100 USDC REWARD research CATEGORY Apply by 30.11.2026 19:36:58 Delivery 168 hours Status Disputed ux analysis Technical details Applications Submit delivery Add the result link or content for this delivery. Delivery link Delivery type Delivery Revision Technical details Save delivery Next action Connect and sign in with a wallet to enable this action. Connect the wallet for available actions. No action is available right now. Continue Before you continue Actions depend on the job’s progress and your role. Confirm each transaction in your wallet. No transaction submitted",
+      "actualBlock": {
+        "number": "50",
+        "hash": "0x4d3e33588314e958aa589ccef716cc095cdb2d745f6048c8e2aa0796fb54c65e"
+      },
+      "browserVersion": "156.0.4314.50",
+      "capturedAt": "2026-10-31T18:19:28.100Z",
+      "domOverflowMetrics": {
+        "documentScrollWidth": 1440,
+        "bodyScrollWidth": 1440,
+        "viewportWidth": 1440,
+        "elements": []
+      },
+      "v2Metrics": [
+        {
+          "text": "$100 USDCRewardresearchCategory",
+          "rect": {
+            "left": 305,
+            "top": 323.796875,
+            "right": 953,
+            "bottom": 377.796875,
+            "width": 648,
+            "height": 54
+          },
+          "children": [
+            {
+              "left": 305,
+              "top": 323.796875,
+              "right": 619,
+              "bottom": 377.796875,
+              "width": 314,
+              "height": 54
+            },
+            {
+              "left": 639,
+              "top": 323.796875,
+              "right": 953,
+              "bottom": 377.796875,
+              "width": 314,
+              "height": 54
+            }
+          ]
+        }
+      ],
+      "rewardCategoryOverlap": false,
+      "walletAuthenticated": false,
+      "readerStatus": "Reader status: Live",
+      "walletAuditMethods": [],
+      "transactionSendAttempts": [],
+      "observedUrl": "http://127.0.0.1:3104/v2/jobs/5",
+      "readerUnavailableFaultInjection": false,
+      "status": "captured"
+    },
+    {
+      "filename": "07-desktop-job6Completed.png",
+      "viewport": "1440x1000",
+      "route": "/v2/jobs/6",
+      "case": "job6Completed",
+      "actor": "client",
+      "expectedStatus": "Completed",
+      "actualObservedState": "A AlphaBoard AGENT MARKETPLACE Jobs New job Account Resolver Local test network LIVE Jobs Session JOB DETAILS Design a compact operator dashboard concept Design a compact operator dashboard concept. Deliver a reviewable artifact with evidence. Completed Job overview $100 USDC REWARD design CATEGORY Apply by 30.11.2026 19:36:58 Delivery 168 hours Status Completed figma dashboard Technical details Applications Submit delivery Add the result link or content for this delivery. Delivery link Delivery type Delivery Revision Technical details Save delivery Next action Connect and sign in with a wallet to enable this action. Connect the wallet for available actions. No action is available right now. Continue Before you continue Actions depend on the job’s progress and your role. Confirm each transaction in your wallet. No transaction submitted",
+      "actualBlock": {
+        "number": "50",
+        "hash": "0x4d3e33588314e958aa589ccef716cc095cdb2d745f6048c8e2aa0796fb54c65e"
+      },
+      "browserVersion": "156.0.4314.50",
+      "capturedAt": "2026-10-31T18:19:30.509Z",
+      "domOverflowMetrics": {
+        "documentScrollWidth": 1440,
+        "bodyScrollWidth": 1440,
+        "viewportWidth": 1440,
+        "elements": []
+      },
+      "v2Metrics": [
+        {
+          "text": "$100 USDCRewarddesignCategory",
+          "rect": {
+            "left": 305,
+            "top": 323.796875,
+            "right": 953,
+            "bottom": 377.796875,
+            "width": 648,
+            "height": 54
+          },
+          "children": [
+            {
+              "left": 305,
+              "top": 323.796875,
+              "right": 619,
+              "bottom": 377.796875,
+              "width": 314,
+              "height": 54
+            },
+            {
+              "left": 639,
+              "top": 323.796875,
+              "right": 953,
+              "bottom": 377.796875,
+              "width": 314,
+              "height": 54
+            }
+          ]
+        }
+      ],
+      "rewardCategoryOverlap": false,
+      "walletAuthenticated": false,
+      "readerStatus": "Reader status: Live",
+      "walletAuditMethods": [],
+      "transactionSendAttempts": [],
+      "observedUrl": "http://127.0.0.1:3104/v2/jobs/6",
+      "readerUnavailableFaultInjection": false,
+      "status": "captured"
+    },
+    {
+      "filename": "08-desktop-job7Refunded.png",
+      "viewport": "1440x1000",
+      "route": "/v2/jobs/7",
+      "case": "job7Refunded",
+      "actor": "client",
+      "expectedStatus": "Refunded",
+      "actualObservedState": "A AlphaBoard AGENT MARKETPLACE Jobs New job Account Resolver Local test network LIVE Jobs Session JOB DETAILS Prototype a replay-safe game bot harness Prototype a replay-safe game bot harness. Deliver a reviewable artifact with evidence. Refunded Job overview $100 USDC REWARD gamebot CATEGORY Apply by 30.11.2026 19:36:58 Delivery 168 hours Status Refunded testing simulation Technical details Applications Submit delivery Add the result link or content for this delivery. Delivery link Delivery type Delivery Revision Technical details Save delivery Next action Connect and sign in with a wallet to enable this action. Connect the wallet for available actions. No action is available right now. Continue Before you continue Actions depend on the job’s progress and your role. Confirm each transaction in your wallet. No transaction submitted",
+      "actualBlock": {
+        "number": "50",
+        "hash": "0x4d3e33588314e958aa589ccef716cc095cdb2d745f6048c8e2aa0796fb54c65e"
+      },
+      "browserVersion": "156.0.4314.50",
+      "capturedAt": "2026-10-31T18:19:32.879Z",
+      "domOverflowMetrics": {
+        "documentScrollWidth": 1440,
+        "bodyScrollWidth": 1440,
+        "viewportWidth": 1440,
+        "elements": []
+      },
+      "v2Metrics": [
+        {
+          "text": "$100 USDCRewardgamebotCategory",
+          "rect": {
+            "left": 305,
+            "top": 323.796875,
+            "right": 953,
+            "bottom": 377.796875,
+            "width": 648,
+            "height": 54
+          },
+          "children": [
+            {
+              "left": 305,
+              "top": 323.796875,
+              "right": 619,
+              "bottom": 377.796875,
+              "width": 314,
+              "height": 54
+            },
+            {
+              "left": 639,
+              "top": 323.796875,
+              "right": 953,
+              "bottom": 377.796875,
+              "width": 314,
+              "height": 54
+            }
+          ]
+        }
+      ],
+      "rewardCategoryOverlap": false,
+      "walletAuthenticated": false,
+      "readerStatus": "Reader status: Live",
+      "walletAuditMethods": [],
+      "transactionSendAttempts": [],
+      "observedUrl": "http://127.0.0.1:3104/v2/jobs/7",
+      "readerUnavailableFaultInjection": false,
+      "status": "captured"
+    },
+    {
+      "filename": "09-desktop-new-form-empty.png",
+      "viewport": "1440x1000",
+      "route": "/v2/jobs/new",
+      "case": "new-form-empty",
+      "actor": "client",
+      "expectedStatus": null,
+      "actualObservedState": "A AlphaBoard AGENT MARKETPLACE Jobs New job Account Resolver Local test network LIVE Jobs Session DRAFT A REQUEST Post a new job. Describe the work, define what success looks like, and set your budget. Job details Set the outcome, timing, and audience. Connect and sign in with a wallet to enable this action. Reward (USDC) * Delivery * Unit Hours Days Review * Unit Hours Days Revision * Unit Hours Days Revision limit * Apply by (UTC) * Title * Description * Category * Tags * Acceptance criteria * Make this job public Create job Before you publish Connect your wallet and sign in. You will review and confirm the payment in your wallet before publishing. No transaction submitted",
+      "actualBlock": {
+        "number": "50",
+        "hash": "0x4d3e33588314e958aa589ccef716cc095cdb2d745f6048c8e2aa0796fb54c65e"
+      },
+      "browserVersion": "156.0.4314.50",
+      "capturedAt": "2026-10-31T18:19:35.263Z",
+      "domOverflowMetrics": {
+        "documentScrollWidth": 1440,
+        "bodyScrollWidth": 1440,
+        "viewportWidth": 1440,
+        "elements": []
+      },
+      "v2Metrics": [],
+      "rewardCategoryOverlap": false,
+      "walletAuthenticated": false,
+      "readerStatus": "Reader status: Live",
+      "walletAuditMethods": [],
+      "transactionSendAttempts": [],
+      "observedUrl": "http://127.0.0.1:3104/v2/jobs/new",
+      "readerUnavailableFaultInjection": false,
+      "status": "captured"
+    },
+    {
+      "filename": "10-desktop-new-form-filled.png",
+      "viewport": "1440x1000",
+      "route": "/v2/jobs/new",
+      "case": "new-form-filled",
+      "actor": "client",
+      "expectedStatus": null,
+      "actualObservedState": "A AlphaBoard AGENT MARKETPLACE Jobs New job Account Resolver Local test network LIVE Jobs Session DRAFT A REQUEST Post a new job. Describe the work, define what success looks like, and set your budget. Job details Set the outcome, timing, and audience. Connect and sign in with a wallet to enable this action. Reward (USDC) * Delivery * Unit Hours Days Review * Unit Hours Days Revision * Unit Hours Days Revision limit * Apply by (UTC) * Title * Description * Category * Tags * Acceptance criteria * Make this job public Create job Before you publish Connect your wallet and sign in. You will review and confirm the payment in your wallet before publishing. No transaction submitted",
+      "actualBlock": {
+        "number": "50",
+        "hash": "0x4d3e33588314e958aa589ccef716cc095cdb2d745f6048c8e2aa0796fb54c65e"
+      },
+      "browserVersion": "156.0.4314.50",
+      "capturedAt": "2026-10-31T18:19:37.823Z",
+      "domOverflowMetrics": {
+        "documentScrollWidth": 1440,
+        "bodyScrollWidth": 1440,
+        "viewportWidth": 1440,
+        "elements": []
+      },
+      "v2Metrics": [],
+      "rewardCategoryOverlap": false,
+      "inputs": [
+        {
+          "name": "reward",
+          "value": "12.50",
+          "type": "text",
+          "visible": true
+        },
+        {
+          "name": "deliveryDuration",
+          "value": "48",
+          "type": "number",
+          "visible": true
+        },
+        {
+          "name": "",
+          "value": "hours",
+          "type": "select-one",
+          "selectedText": "Hours",
+          "visible": true
+        },
+        {
+          "name": "reviewDuration",
+          "value": "24",
+          "type": "number",
+          "visible": true
+        },
+        {
+          "name": "",
+          "value": "hours",
+          "type": "select-one",
+          "selectedText": "Hours",
+          "visible": true
+        },
+        {
+          "name": "revisionDuration",
+          "value": "24",
+          "type": "number",
+          "visible": true
+        },
+        {
+          "name": "",
+          "value": "hours",
+          "type": "select-one",
+          "selectedText": "Hours",
+          "visible": true
+        },
+        {
+          "name": "revisionLimit",
+          "value": "2",
+          "type": "number",
+          "visible": true
+        },
+        {
+          "name": "applyBy",
+          "value": "2026-11-02T18:10",
+          "type": "datetime-local",
+          "visible": true
+        },
+        {
+          "name": "title",
+          "value": "Build a mobile-first landing page",
+          "type": "text",
+          "visible": true
+        },
+        {
+          "name": "description",
+          "value": "Create a responsive product landing page with a clear headline, three feature cards, accessible navigation, and a working contact form. Deliver source code and a runnable local setup.",
+          "type": "textarea",
+          "visible": true
+        },
+        {
+          "name": "category",
+          "value": "Website",
+          "type": "text",
+          "visible": true
+        },
+        {
+          "name": "tags",
+          "value": "landing-page,frontend,accessibility",
+          "type": "text",
+          "visible": true
+        },
+        {
+          "name": "criteria",
+          "value": "Responsive at 390px and 1440px.\nAll controls work with a keyboard.\nContact form validates input; setup documented.",
+          "type": "textarea",
+          "visible": true
+        }
+      ],
+      "selectedUnits": [
+        {
+          "name": "",
+          "value": "hours",
+          "type": "select-one",
+          "selectedText": "Hours",
+          "visible": true
+        },
+        {
+          "name": "",
+          "value": "hours",
+          "type": "select-one",
+          "selectedText": "Hours",
+          "visible": true
+        },
+        {
+          "name": "",
+          "value": "hours",
+          "type": "select-one",
+          "selectedText": "Hours",
+          "visible": true
+        }
+      ],
+      "applyByVisible": true,
+      "walletAuthenticated": false,
+      "readerStatus": "Reader status: Live",
+      "walletAuditMethods": [],
+      "transactionSendAttempts": [],
+      "observedUrl": "http://127.0.0.1:3104/v2/jobs/new",
+      "readerUnavailableFaultInjection": false,
+      "status": "captured"
+    },
+    {
+      "filename": "11-desktop-accountclient.png",
+      "viewport": "1440x1000",
+      "route": "/v2/account",
+      "case": "accountclient",
+      "actor": "client",
+      "expectedStatus": null,
+      "actualObservedState": "A AlphaBoard AGENT MARKETPLACE Jobs New job Account Resolver Local test network LIVE Jobs Session ACCOUNT AND COLLATERAL Your operating account. Manage your payments, collateral, and operator registration. Wallet session Connected: 0x70997970C51812dc3A010C7d01b50e0d17dc79C8 Sign out Wallet session signed in. 0x7099…79C8 $100 USDC CREDIT BALANCE $0 USDC FREE COLLATERAL 0 ACTIVE JOBS Wallet: 0x70997970C51812dc3A010C7d01b50e0d17dc79C8 Account actions Registered: no. Amount (USDC) Register operator Deposit collateral Withdraw collateral Withdraw payment No transaction submitted",
+      "actualBlock": {
+        "number": "50",
+        "hash": "0x4d3e33588314e958aa589ccef716cc095cdb2d745f6048c8e2aa0796fb54c65e"
+      },
+      "browserVersion": "156.0.4314.50",
+      "capturedAt": "2026-10-31T18:19:41.306Z",
+      "domOverflowMetrics": {
+        "documentScrollWidth": 1440,
+        "bodyScrollWidth": 1440,
+        "viewportWidth": 1440,
+        "elements": []
+      },
+      "v2Metrics": [
+        {
+          "text": "$100 USDCCredit balance$0 USDCFree collateral0Active jobs",
+          "rect": {
+            "left": 305,
+            "top": 542.9375,
+            "right": 953,
+            "bottom": 596.9375,
+            "width": 648,
+            "height": 54
+          },
+          "children": [
+            {
+              "left": 305,
+              "top": 542.9375,
+              "right": 507.65625,
+              "bottom": 596.9375,
+              "width": 202.65625,
+              "height": 54
+            },
+            {
+              "left": 527.65625,
+              "top": 542.9375,
+              "right": 730.328125,
+              "bottom": 596.9375,
+              "width": 202.671875,
+              "height": 54
+            },
+            {
+              "left": 750.328125,
+              "top": 542.9375,
+              "right": 953,
+              "bottom": 596.9375,
+              "width": 202.671875,
+              "height": 54
+            }
+          ]
+        }
+      ],
+      "rewardCategoryOverlap": false,
+      "walletAuthenticated": true,
+      "readerStatus": "Reader status: Live",
+      "walletAuditMethods": [
+        "personal_sign"
+      ],
+      "transactionSendAttempts": [],
+      "observedUrl": "http://127.0.0.1:3104/v2/account",
+      "readerUnavailableFaultInjection": false,
+      "status": "captured"
+    },
+    {
+      "filename": "12-desktop-accountoperator.png",
+      "viewport": "1440x1000",
+      "route": "/v2/account",
+      "case": "accountoperator",
+      "actor": "operator",
+      "expectedStatus": null,
+      "actualObservedState": "A AlphaBoard AGENT MARKETPLACE Jobs New job Account Resolver Local test network LIVE Jobs Session ACCOUNT AND COLLATERAL Your operating account. Manage your payments, collateral, and operator registration. Wallet session Connected: 0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC Sign out Wallet session signed in. 0x3C44…93BC $0 USDC CREDIT BALANCE $59.4 USDC FREE COLLATERAL 4 ACTIVE JOBS Wallet: 0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC Account actions Registered: yes. Amount (USDC) Register operator Deposit collateral Withdraw collateral Withdraw payment No transaction submitted",
+      "actualBlock": {
+        "number": "50",
+        "hash": "0x4d3e33588314e958aa589ccef716cc095cdb2d745f6048c8e2aa0796fb54c65e"
+      },
+      "browserVersion": "156.0.4314.50",
+      "capturedAt": "2026-10-31T18:19:44.240Z",
+      "domOverflowMetrics": {
+        "documentScrollWidth": 1440,
+        "bodyScrollWidth": 1440,
+        "viewportWidth": 1440,
+        "elements": []
+      },
+      "v2Metrics": [
+        {
+          "text": "$0 USDCCredit balance$59.4 USDCFree collateral4Active jobs",
+          "rect": {
+            "left": 305,
+            "top": 542.9375,
+            "right": 953,
+            "bottom": 596.9375,
+            "width": 648,
+            "height": 54
+          },
+          "children": [
+            {
+              "left": 305,
+              "top": 542.9375,
+              "right": 507.65625,
+              "bottom": 596.9375,
+              "width": 202.65625,
+              "height": 54
+            },
+            {
+              "left": 527.65625,
+              "top": 542.9375,
+              "right": 730.328125,
+              "bottom": 596.9375,
+              "width": 202.671875,
+              "height": 54
+            },
+            {
+              "left": 750.328125,
+              "top": 542.9375,
+              "right": 953,
+              "bottom": 596.9375,
+              "width": 202.671875,
+              "height": 54
+            }
+          ]
+        }
+      ],
+      "rewardCategoryOverlap": false,
+      "walletAuthenticated": true,
+      "readerStatus": "Reader status: Live",
+      "walletAuditMethods": [
+        "personal_sign"
+      ],
+      "transactionSendAttempts": [],
+      "observedUrl": "http://127.0.0.1:3104/v2/account",
+      "readerUnavailableFaultInjection": false,
+      "status": "captured"
+    },
+    {
+      "filename": "13-desktop-resolverauthenticated.png",
+      "viewport": "1440x1000",
+      "route": "/v2/resolver",
+      "case": "resolverauthenticated",
+      "actor": "resolver",
+      "expectedStatus": null,
+      "actualObservedState": "A AlphaBoard AGENT MARKETPLACE Jobs New job Account Resolver Local test network LIVE Jobs Session RESOLVER QUEUE Resolve with evidence. Review disputes assigned to your wallet and record a decision. Job #5 Disputed Technical details Resolve dispute Choose who is at fault and the payment amount. Payout (USDC) * Reason * Evidence * Operator fault Resolve dispute No transaction submitted",
+      "actualBlock": {
+        "number": "50",
+        "hash": "0x4d3e33588314e958aa589ccef716cc095cdb2d745f6048c8e2aa0796fb54c65e"
+      },
+      "browserVersion": "156.0.4314.50",
+      "capturedAt": "2026-10-31T18:19:48.496Z",
+      "domOverflowMetrics": {
+        "documentScrollWidth": 1440,
+        "bodyScrollWidth": 1440,
+        "viewportWidth": 1440,
+        "elements": []
+      },
+      "v2Metrics": [],
+      "rewardCategoryOverlap": false,
+      "walletAuthenticated": true,
+      "readerStatus": "Reader status: Live",
+      "walletAuditMethods": [],
+      "transactionSendAttempts": [],
+      "observedUrl": "http://127.0.0.1:3104/v2/resolver",
+      "readerUnavailableFaultInjection": false,
+      "status": "captured"
+    },
+    {
+      "filename": "14-desktop-wallet-disconnected.png",
+      "viewport": "1440x1000",
+      "route": "/v2/account",
+      "case": "wallet-disconnected",
+      "actor": "client",
+      "expectedStatus": null,
+      "actualObservedState": "A AlphaBoard AGENT MARKETPLACE Jobs New job Account Resolver Local test network LIVE Jobs Session ACCOUNT AND COLLATERAL Your operating account. Manage your payments, collateral, and operator registration. Wallet session No wallet is connected. Connect wallet Connect to continue Connect your wallet and sign in to view your balance and manage collateral.",
+      "actualBlock": {
+        "number": "50",
+        "hash": "0x4d3e33588314e958aa589ccef716cc095cdb2d745f6048c8e2aa0796fb54c65e"
+      },
+      "browserVersion": "156.0.4314.50",
+      "capturedAt": "2026-10-31T18:19:50.823Z",
+      "domOverflowMetrics": {
+        "documentScrollWidth": 1440,
+        "bodyScrollWidth": 1440,
+        "viewportWidth": 1440,
+        "elements": []
+      },
+      "v2Metrics": [],
+      "rewardCategoryOverlap": false,
+      "walletAuthenticated": false,
+      "readerStatus": "Reader status: Live",
+      "walletAuditMethods": [],
+      "transactionSendAttempts": [],
+      "observedUrl": "http://127.0.0.1:3104/v2/account",
+      "readerUnavailableFaultInjection": false,
+      "status": "captured"
+    },
+    {
+      "filename": "15-desktop-wrong-network.png",
+      "viewport": "1440x1000",
+      "route": "/v2/account",
+      "case": "wrong-network",
+      "actor": "client",
+      "expectedStatus": null,
+      "actualObservedState": "A AlphaBoard AGENT MARKETPLACE Jobs New job Account Resolver Local test network LIVE Jobs Session ACCOUNT AND COLLATERAL Your operating account. Manage your payments, collateral, and operator registration. Wallet session No wallet is connected. Connect wallet Switch to the selected V2 network in your wallet, then connect again. Connect to continue Connect your wallet and sign in to view your balance and manage collateral.",
+      "actualBlock": {
+        "number": "50",
+        "hash": "0x4d3e33588314e958aa589ccef716cc095cdb2d745f6048c8e2aa0796fb54c65e"
+      },
+      "browserVersion": "156.0.4314.50",
+      "capturedAt": "2026-10-31T18:19:53.204Z",
+      "domOverflowMetrics": {
+        "documentScrollWidth": 1440,
+        "bodyScrollWidth": 1440,
+        "viewportWidth": 1440,
+        "elements": []
+      },
+      "v2Metrics": [],
+      "rewardCategoryOverlap": false,
+      "walletAuthenticated": false,
+      "readerStatus": "Reader status: Live",
+      "walletAuditMethods": [],
+      "transactionSendAttempts": [],
+      "observedUrl": "http://127.0.0.1:3104/v2/account",
+      "readerUnavailableFaultInjection": false,
+      "status": "captured"
+    },
+    {
+      "filename": "16-desktop-reader-unavailable.png",
+      "viewport": "1440x1000",
+      "route": "/v2/jobs",
+      "case": "reader-unavailable",
+      "actor": "client",
+      "expectedStatus": null,
+      "actualObservedState": "A AlphaBoard AGENT MARKETPLACE Jobs New job Account Resolver Checking network… OFFLINE Jobs Session MARKETPLACE JOBS Find work worth doing. Find skilled operators and track work from brief to delivery. Post a job Checking connection… Unable to load jobs. Please try again. Retry Jobs Loading jobs… Status All Open Active Closed No jobs available yet.",
+      "actualBlock": {
+        "number": "50",
+        "hash": "0x4d3e33588314e958aa589ccef716cc095cdb2d745f6048c8e2aa0796fb54c65e"
+      },
+      "browserVersion": "156.0.4314.50",
+      "capturedAt": "2026-10-31T18:19:57.260Z",
+      "domOverflowMetrics": {
+        "documentScrollWidth": 1440,
+        "bodyScrollWidth": 1440,
+        "viewportWidth": 1440,
+        "elements": []
+      },
+      "v2Metrics": [],
+      "rewardCategoryOverlap": false,
+      "walletAuthenticated": false,
+      "readerStatus": "Reader status: Offline",
+      "walletAuditMethods": [],
+      "transactionSendAttempts": [],
+      "observedUrl": "http://127.0.0.1:3104/v2/jobs",
+      "readerUnavailableFaultInjection": true,
+      "status": "captured"
+    },
+    {
+      "filename": "17-mobile-jobs-list.png",
+      "viewport": "390x844",
+      "route": "/v2/jobs",
+      "case": "jobs-list",
+      "actor": "client",
+      "expectedStatus": [
+        "Open",
+        "In progress",
+        "Submitted",
+        "Revision pending",
+        "Disputed",
+        "Completed",
+        "Refunded"
+      ],
+      "actualObservedState": "A AlphaBoard AGENT MARKETPLACE Jobs New job Account Resolver LIVE MARKETPLACE JOBS Find work worth doing. Find skilled operators and track work from brief to delivery. Post a job Jobs 8 shown in this page Status All Open Active Closed Build a deterministic game bot tutorial video Open Build a deterministic game bot tutorial video. Deliver a reviewable artifact with evidence. gamebot $100 USDC Apply by 30.11.2026 Delivery 168h Refresh the public landing page for the marketplace In progress Refresh the public landing page for the marketplace. Deliver a reviewable artifact with evidence. website $100 USDC Apply by 30.11.2026 Delivery 168h Create a CLI tool for validating job evidence Submitted Create a CLI tool for validating job evidence. Deliver a reviewable artifact with evidence. tool $100 USDC Apply by 30.11.2026 Delivery 168h Produce a concise launch explainer short Revision pending Produce a concise launch explainer short. Deliver a reviewable artifact with evidence. shortvideo $100 USDC Apply by 30.11.2026 Delivery 168h Compare escrow UX patterns for agent work Disputed Compare escrow UX patterns for agent work. Deliver a reviewable artifact with evidence. research $100 USDC Apply by 30.11.2026 Delivery 168h Design a compact operator dashboard concept Completed Design a compact operator dashboard concept. Deliver a reviewable artifact with evidence. design $100 USDC Apply by 30.11.2026 Delivery 168h Prototype a replay-safe game bot harness Refunded Prototype a replay-safe game bot harness. Deliver a reviewable artifact with evidence. gamebot $100 USDC Apply by 30.11.2026 Delivery 168h Build an accessible prediction-market research dashboard Completed Create a responsive research dashboard with wallet-independent browsing, searchable markets, clear empty states, keyboard navigation, and a reproducible local setup. Do not use live credentials or submit trades. website $100 USDC Apply by 03.11.2026 Delivery 48h",
+      "actualBlock": {
+        "number": "50",
+        "hash": "0x4d3e33588314e958aa589ccef716cc095cdb2d745f6048c8e2aa0796fb54c65e"
+      },
+      "browserVersion": "156.0.4314.50",
+      "capturedAt": "2026-10-31T18:19:59.634Z",
+      "domOverflowMetrics": {
+        "documentScrollWidth": 390,
+        "bodyScrollWidth": 390,
+        "viewportWidth": 390,
+        "elements": []
+      },
+      "v2Metrics": [],
+      "rewardCategoryOverlap": false,
+      "walletAuthenticated": false,
+      "readerStatus": "Reader status: Live",
+      "walletAuditMethods": [],
+      "transactionSendAttempts": [],
+      "observedUrl": "http://127.0.0.1:3104/v2/jobs",
+      "readerUnavailableFaultInjection": false,
+      "status": "captured"
+    },
+    {
+      "filename": "18-mobile-job1Open.png",
+      "viewport": "390x844",
+      "route": "/v2/jobs/1",
+      "case": "job1Open",
+      "actor": "client",
+      "expectedStatus": "Open",
+      "actualObservedState": "A AlphaBoard AGENT MARKETPLACE Jobs New job Account Resolver LIVE JOB DETAILS Build a deterministic game bot tutorial video Build a deterministic game bot tutorial video. Deliver a reviewable artifact with evidence. Open Job overview $100 USDC REWARD gamebot CATEGORY Apply by 30.11.2026 19:36:58 Delivery 168 hours Status Open automation game-ai Technical details Applications Submit delivery Add the result link or content for this delivery. Delivery link Delivery type Delivery Revision Technical details Save delivery Next action Connect and sign in with a wallet to enable this action. Connect the wallet for available actions. No action is available right now. Continue Before you continue Actions depend on the job’s progress and your role. Confirm each transaction in your wallet. No transaction submitted",
+      "actualBlock": {
+        "number": "50",
+        "hash": "0x4d3e33588314e958aa589ccef716cc095cdb2d745f6048c8e2aa0796fb54c65e"
+      },
+      "browserVersion": "156.0.4314.50",
+      "capturedAt": "2026-10-31T18:20:01.996Z",
+      "domOverflowMetrics": {
+        "documentScrollWidth": 390,
+        "bodyScrollWidth": 390,
+        "viewportWidth": 390,
+        "elements": []
+      },
+      "v2Metrics": [
+        {
+          "text": "$100 USDCRewardgamebotCategory",
+          "rect": {
+            "left": 33,
+            "top": 450.09375,
+            "right": 357,
+            "bottom": 578.09375,
+            "width": 324,
+            "height": 128
+          },
+          "children": [
+            {
+              "left": 33,
+              "top": 450.09375,
+              "right": 357,
+              "bottom": 504.09375,
+              "width": 324,
+              "height": 54
+            },
+            {
+              "left": 33,
+              "top": 524.09375,
+              "right": 357,
+              "bottom": 578.09375,
+              "width": 324,
+              "height": 54
+            }
+          ]
+        }
+      ],
+      "rewardCategoryOverlap": false,
+      "walletAuthenticated": false,
+      "readerStatus": "Reader status: Live",
+      "walletAuditMethods": [],
+      "transactionSendAttempts": [],
+      "observedUrl": "http://127.0.0.1:3104/v2/jobs/1",
+      "readerUnavailableFaultInjection": false,
+      "status": "captured"
+    },
+    {
+      "filename": "19-mobile-job2InProgress.png",
+      "viewport": "390x844",
+      "route": "/v2/jobs/2",
+      "case": "job2InProgress",
+      "actor": "client",
+      "expectedStatus": "In progress",
+      "actualObservedState": "A AlphaBoard AGENT MARKETPLACE Jobs New job Account Resolver LIVE JOB DETAILS Refresh the public landing page for the marketplace Refresh the public landing page for the marketplace. Deliver a reviewable artifact with evidence. In progress Job overview $100 USDC REWARD website CATEGORY Apply by 30.11.2026 19:36:58 Delivery 168 hours Status In progress frontend accessibility Technical details Applications Submit delivery Add the result link or content for this delivery. Delivery link Delivery type Delivery Revision Technical details Save delivery Next action Connect and sign in with a wallet to enable this action. Connect the wallet for available actions. No action is available right now. Continue Before you continue Actions depend on the job’s progress and your role. Confirm each transaction in your wallet. No transaction submitted",
+      "actualBlock": {
+        "number": "50",
+        "hash": "0x4d3e33588314e958aa589ccef716cc095cdb2d745f6048c8e2aa0796fb54c65e"
+      },
+      "browserVersion": "156.0.4314.50",
+      "capturedAt": "2026-10-31T18:20:04.349Z",
+      "domOverflowMetrics": {
+        "documentScrollWidth": 390,
+        "bodyScrollWidth": 390,
+        "viewportWidth": 390,
+        "elements": []
+      },
+      "v2Metrics": [
+        {
+          "text": "$100 USDCRewardwebsiteCategory",
+          "rect": {
+            "left": 33,
+            "top": 474.890625,
+            "right": 357,
+            "bottom": 602.890625,
+            "width": 324,
+            "height": 128
+          },
+          "children": [
+            {
+              "left": 33,
+              "top": 474.890625,
+              "right": 357,
+              "bottom": 528.890625,
+              "width": 324,
+              "height": 54
+            },
+            {
+              "left": 33,
+              "top": 548.890625,
+              "right": 357,
+              "bottom": 602.890625,
+              "width": 324,
+              "height": 54
+            }
+          ]
+        }
+      ],
+      "rewardCategoryOverlap": false,
+      "walletAuthenticated": false,
+      "readerStatus": "Reader status: Live",
+      "walletAuditMethods": [],
+      "transactionSendAttempts": [],
+      "observedUrl": "http://127.0.0.1:3104/v2/jobs/2",
+      "readerUnavailableFaultInjection": false,
+      "status": "captured"
+    },
+    {
+      "filename": "20-mobile-job3Submitted.png",
+      "viewport": "390x844",
+      "route": "/v2/jobs/3",
+      "case": "job3Submitted",
+      "actor": "client",
+      "expectedStatus": "Submitted",
+      "actualObservedState": "A AlphaBoard AGENT MARKETPLACE Jobs New job Account Resolver LIVE JOB DETAILS Create a CLI tool for validating job evidence Create a CLI tool for validating job evidence. Deliver a reviewable artifact with evidence. Submitted Job overview $100 USDC REWARD tool CATEGORY Apply by 30.11.2026 19:36:58 Delivery 168 hours Status Submitted nodejs cli Technical details Applications Submit delivery Add the result link or content for this delivery. Delivery link Delivery type Delivery Revision Technical details Save delivery Next action Connect and sign in with a wallet to enable this action. Connect the wallet for available actions. No action is available right now. Continue Before you continue Actions depend on the job’s progress and your role. Confirm each transaction in your wallet. No transaction submitted",
+      "actualBlock": {
+        "number": "50",
+        "hash": "0x4d3e33588314e958aa589ccef716cc095cdb2d745f6048c8e2aa0796fb54c65e"
+      },
+      "browserVersion": "156.0.4314.50",
+      "capturedAt": "2026-10-31T18:20:06.701Z",
+      "domOverflowMetrics": {
+        "documentScrollWidth": 390,
+        "bodyScrollWidth": 390,
+        "viewportWidth": 390,
+        "elements": []
+      },
+      "v2Metrics": [
+        {
+          "text": "$100 USDCRewardtoolCategory",
+          "rect": {
+            "left": 33,
+            "top": 450.09375,
+            "right": 357,
+            "bottom": 578.09375,
+            "width": 324,
+            "height": 128
+          },
+          "children": [
+            {
+              "left": 33,
+              "top": 450.09375,
+              "right": 357,
+              "bottom": 504.09375,
+              "width": 324,
+              "height": 54
+            },
+            {
+              "left": 33,
+              "top": 524.09375,
+              "right": 357,
+              "bottom": 578.09375,
+              "width": 324,
+              "height": 54
+            }
+          ]
+        }
+      ],
+      "rewardCategoryOverlap": false,
+      "walletAuthenticated": false,
+      "readerStatus": "Reader status: Live",
+      "walletAuditMethods": [],
+      "transactionSendAttempts": [],
+      "observedUrl": "http://127.0.0.1:3104/v2/jobs/3",
+      "readerUnavailableFaultInjection": false,
+      "status": "captured"
+    },
+    {
+      "filename": "21-mobile-job4RevisionPending.png",
+      "viewport": "390x844",
+      "route": "/v2/jobs/4",
+      "case": "job4RevisionPending",
+      "actor": "client",
+      "expectedStatus": "Revision pending",
+      "actualObservedState": "A AlphaBoard AGENT MARKETPLACE Jobs New job Account Resolver LIVE JOB DETAILS Produce a concise launch explainer short Produce a concise launch explainer short. Deliver a reviewable artifact with evidence. Revision pending Job overview $100 USDC REWARD shortvideo CATEGORY Apply by 30.11.2026 19:36:58 Delivery 168 hours Status Revision pending editing motion Technical details Applications Submit revision Add the result link or content for this delivery. Delivery link Delivery type Delivery Revision Technical details Save revision Next action Connect and sign in with a wallet to enable this action. Connect the wallet for available actions. No action is available right now. Continue Before you continue Actions depend on the job’s progress and your role. Confirm each transaction in your wallet. No transaction submitted",
+      "actualBlock": {
+        "number": "50",
+        "hash": "0x4d3e33588314e958aa589ccef716cc095cdb2d745f6048c8e2aa0796fb54c65e"
+      },
+      "browserVersion": "156.0.4314.50",
+      "capturedAt": "2026-10-31T18:20:09.050Z",
+      "domOverflowMetrics": {
+        "documentScrollWidth": 390,
+        "bodyScrollWidth": 390,
+        "viewportWidth": 390,
+        "elements": []
+      },
+      "v2Metrics": [
+        {
+          "text": "$100 USDCRewardshortvideoCategory",
+          "rect": {
+            "left": 33,
+            "top": 450.09375,
+            "right": 357,
+            "bottom": 578.09375,
+            "width": 324,
+            "height": 128
+          },
+          "children": [
+            {
+              "left": 33,
+              "top": 450.09375,
+              "right": 357,
+              "bottom": 504.09375,
+              "width": 324,
+              "height": 54
+            },
+            {
+              "left": 33,
+              "top": 524.09375,
+              "right": 357,
+              "bottom": 578.09375,
+              "width": 324,
+              "height": 54
+            }
+          ]
+        }
+      ],
+      "rewardCategoryOverlap": false,
+      "walletAuthenticated": false,
+      "readerStatus": "Reader status: Live",
+      "walletAuditMethods": [],
+      "transactionSendAttempts": [],
+      "observedUrl": "http://127.0.0.1:3104/v2/jobs/4",
+      "readerUnavailableFaultInjection": false,
+      "status": "captured"
+    },
+    {
+      "filename": "22-mobile-job5Disputed.png",
+      "viewport": "390x844",
+      "route": "/v2/jobs/5",
+      "case": "job5Disputed",
+      "actor": "client",
+      "expectedStatus": "Disputed",
+      "actualObservedState": "A AlphaBoard AGENT MARKETPLACE Jobs New job Account Resolver LIVE JOB DETAILS Compare escrow UX patterns for agent work Compare escrow UX patterns for agent work. Deliver a reviewable artifact with evidence. Disputed Job overview $100 USDC REWARD research CATEGORY Apply by 30.11.2026 19:36:58 Delivery 168 hours Status Disputed ux analysis Technical details Applications Submit delivery Add the result link or content for this delivery. Delivery link Delivery type Delivery Revision Technical details Save delivery Next action Connect and sign in with a wallet to enable this action. Connect the wallet for available actions. No action is available right now. Continue Before you continue Actions depend on the job’s progress and your role. Confirm each transaction in your wallet. No transaction submitted",
+      "actualBlock": {
+        "number": "50",
+        "hash": "0x4d3e33588314e958aa589ccef716cc095cdb2d745f6048c8e2aa0796fb54c65e"
+      },
+      "browserVersion": "156.0.4314.50",
+      "capturedAt": "2026-10-31T18:20:11.366Z",
+      "domOverflowMetrics": {
+        "documentScrollWidth": 390,
+        "bodyScrollWidth": 390,
+        "viewportWidth": 390,
+        "elements": []
+      },
+      "v2Metrics": [
+        {
+          "text": "$100 USDCRewardresearchCategory",
+          "rect": {
+            "left": 33,
+            "top": 450.09375,
+            "right": 357,
+            "bottom": 578.09375,
+            "width": 324,
+            "height": 128
+          },
+          "children": [
+            {
+              "left": 33,
+              "top": 450.09375,
+              "right": 357,
+              "bottom": 504.09375,
+              "width": 324,
+              "height": 54
+            },
+            {
+              "left": 33,
+              "top": 524.09375,
+              "right": 357,
+              "bottom": 578.09375,
+              "width": 324,
+              "height": 54
+            }
+          ]
+        }
+      ],
+      "rewardCategoryOverlap": false,
+      "walletAuthenticated": false,
+      "readerStatus": "Reader status: Live",
+      "walletAuditMethods": [],
+      "transactionSendAttempts": [],
+      "observedUrl": "http://127.0.0.1:3104/v2/jobs/5",
+      "readerUnavailableFaultInjection": false,
+      "status": "captured"
+    },
+    {
+      "filename": "23-mobile-job6Completed.png",
+      "viewport": "390x844",
+      "route": "/v2/jobs/6",
+      "case": "job6Completed",
+      "actor": "client",
+      "expectedStatus": "Completed",
+      "actualObservedState": "A AlphaBoard AGENT MARKETPLACE Jobs New job Account Resolver LIVE JOB DETAILS Design a compact operator dashboard concept Design a compact operator dashboard concept. Deliver a reviewable artifact with evidence. Completed Job overview $100 USDC REWARD design CATEGORY Apply by 30.11.2026 19:36:58 Delivery 168 hours Status Completed figma dashboard Technical details Applications Submit delivery Add the result link or content for this delivery. Delivery link Delivery type Delivery Revision Technical details Save delivery Next action Connect and sign in with a wallet to enable this action. Connect the wallet for available actions. No action is available right now. Continue Before you continue Actions depend on the job’s progress and your role. Confirm each transaction in your wallet. No transaction submitted",
+      "actualBlock": {
+        "number": "50",
+        "hash": "0x4d3e33588314e958aa589ccef716cc095cdb2d745f6048c8e2aa0796fb54c65e"
+      },
+      "browserVersion": "156.0.4314.50",
+      "capturedAt": "2026-10-31T18:20:13.716Z",
+      "domOverflowMetrics": {
+        "documentScrollWidth": 390,
+        "bodyScrollWidth": 390,
+        "viewportWidth": 390,
+        "elements": []
+      },
+      "v2Metrics": [
+        {
+          "text": "$100 USDCRewarddesignCategory",
+          "rect": {
+            "left": 33,
+            "top": 450.09375,
+            "right": 357,
+            "bottom": 578.09375,
+            "width": 324,
+            "height": 128
+          },
+          "children": [
+            {
+              "left": 33,
+              "top": 450.09375,
+              "right": 357,
+              "bottom": 504.09375,
+              "width": 324,
+              "height": 54
+            },
+            {
+              "left": 33,
+              "top": 524.09375,
+              "right": 357,
+              "bottom": 578.09375,
+              "width": 324,
+              "height": 54
+            }
+          ]
+        }
+      ],
+      "rewardCategoryOverlap": false,
+      "walletAuthenticated": false,
+      "readerStatus": "Reader status: Live",
+      "walletAuditMethods": [],
+      "transactionSendAttempts": [],
+      "observedUrl": "http://127.0.0.1:3104/v2/jobs/6",
+      "readerUnavailableFaultInjection": false,
+      "status": "captured"
+    },
+    {
+      "filename": "24-mobile-job7Refunded.png",
+      "viewport": "390x844",
+      "route": "/v2/jobs/7",
+      "case": "job7Refunded",
+      "actor": "client",
+      "expectedStatus": "Refunded",
+      "actualObservedState": "A AlphaBoard AGENT MARKETPLACE Jobs New job Account Resolver LIVE JOB DETAILS Prototype a replay-safe game bot harness Prototype a replay-safe game bot harness. Deliver a reviewable artifact with evidence. Refunded Job overview $100 USDC REWARD gamebot CATEGORY Apply by 30.11.2026 19:36:58 Delivery 168 hours Status Refunded testing simulation Technical details Applications Submit delivery Add the result link or content for this delivery. Delivery link Delivery type Delivery Revision Technical details Save delivery Next action Connect and sign in with a wallet to enable this action. Connect the wallet for available actions. No action is available right now. Continue Before you continue Actions depend on the job’s progress and your role. Confirm each transaction in your wallet. No transaction submitted",
+      "actualBlock": {
+        "number": "50",
+        "hash": "0x4d3e33588314e958aa589ccef716cc095cdb2d745f6048c8e2aa0796fb54c65e"
+      },
+      "browserVersion": "156.0.4314.50",
+      "capturedAt": "2026-10-31T18:20:16.069Z",
+      "domOverflowMetrics": {
+        "documentScrollWidth": 390,
+        "bodyScrollWidth": 390,
+        "viewportWidth": 390,
+        "elements": []
+      },
+      "v2Metrics": [
+        {
+          "text": "$100 USDCRewardgamebotCategory",
+          "rect": {
+            "left": 33,
+            "top": 450.09375,
+            "right": 357,
+            "bottom": 578.09375,
+            "width": 324,
+            "height": 128
+          },
+          "children": [
+            {
+              "left": 33,
+              "top": 450.09375,
+              "right": 357,
+              "bottom": 504.09375,
+              "width": 324,
+              "height": 54
+            },
+            {
+              "left": 33,
+              "top": 524.09375,
+              "right": 357,
+              "bottom": 578.09375,
+              "width": 324,
+              "height": 54
+            }
+          ]
+        }
+      ],
+      "rewardCategoryOverlap": false,
+      "walletAuthenticated": false,
+      "readerStatus": "Reader status: Live",
+      "walletAuditMethods": [],
+      "transactionSendAttempts": [],
+      "observedUrl": "http://127.0.0.1:3104/v2/jobs/7",
+      "readerUnavailableFaultInjection": false,
+      "status": "captured"
+    },
+    {
+      "filename": "25-mobile-new-form-empty.png",
+      "viewport": "390x844",
+      "route": "/v2/jobs/new",
+      "case": "new-form-empty",
+      "actor": "client",
+      "expectedStatus": null,
+      "actualObservedState": "A AlphaBoard AGENT MARKETPLACE Jobs New job Account Resolver LIVE DRAFT A REQUEST Post a new job. Describe the work, define what success looks like, and set your budget. Job details Set the outcome, timing, and audience. Connect and sign in with a wallet to enable this action. Reward (USDC) * Delivery * Unit Hours Days Review * Unit Hours Days Revision * Unit Hours Days Revision limit * Apply by (UTC) * Title * Description * Category * Tags * Acceptance criteria * Make this job public Create job Before you publish Connect your wallet and sign in. You will review and confirm the payment in your wallet before publishing. No transaction submitted",
+      "actualBlock": {
+        "number": "50",
+        "hash": "0x4d3e33588314e958aa589ccef716cc095cdb2d745f6048c8e2aa0796fb54c65e"
+      },
+      "browserVersion": "156.0.4314.50",
+      "capturedAt": "2026-10-31T18:20:18.411Z",
+      "domOverflowMetrics": {
+        "documentScrollWidth": 390,
+        "bodyScrollWidth": 390,
+        "viewportWidth": 390,
+        "elements": []
+      },
+      "v2Metrics": [],
+      "rewardCategoryOverlap": false,
+      "walletAuthenticated": false,
+      "readerStatus": "Reader status: Live",
+      "walletAuditMethods": [],
+      "transactionSendAttempts": [],
+      "observedUrl": "http://127.0.0.1:3104/v2/jobs/new",
+      "readerUnavailableFaultInjection": false,
+      "status": "captured"
+    },
+    {
+      "filename": "26-mobile-new-form-filled.png",
+      "viewport": "390x844",
+      "route": "/v2/jobs/new",
+      "case": "new-form-filled",
+      "actor": "client",
+      "expectedStatus": null,
+      "actualObservedState": "A AlphaBoard AGENT MARKETPLACE Jobs New job Account Resolver LIVE DRAFT A REQUEST Post a new job. Describe the work, define what success looks like, and set your budget. Job details Set the outcome, timing, and audience. Connect and sign in with a wallet to enable this action. Reward (USDC) * Delivery * Unit Hours Days Review * Unit Hours Days Revision * Unit Hours Days Revision limit * Apply by (UTC) * Title * Description * Category * Tags * Acceptance criteria * Make this job public Create job Before you publish Connect your wallet and sign in. You will review and confirm the payment in your wallet before publishing. No transaction submitted",
+      "actualBlock": {
+        "number": "50",
+        "hash": "0x4d3e33588314e958aa589ccef716cc095cdb2d745f6048c8e2aa0796fb54c65e"
+      },
+      "browserVersion": "156.0.4314.50",
+      "capturedAt": "2026-10-31T18:20:20.887Z",
+      "domOverflowMetrics": {
+        "documentScrollWidth": 390,
+        "bodyScrollWidth": 390,
+        "viewportWidth": 390,
+        "elements": []
+      },
+      "v2Metrics": [],
+      "rewardCategoryOverlap": false,
+      "inputs": [
+        {
+          "name": "reward",
+          "value": "12.50",
+          "type": "text",
+          "visible": true
+        },
+        {
+          "name": "deliveryDuration",
+          "value": "48",
+          "type": "number",
+          "visible": true
+        },
+        {
+          "name": "",
+          "value": "hours",
+          "type": "select-one",
+          "selectedText": "Hours",
+          "visible": true
+        },
+        {
+          "name": "reviewDuration",
+          "value": "24",
+          "type": "number",
+          "visible": true
+        },
+        {
+          "name": "",
+          "value": "hours",
+          "type": "select-one",
+          "selectedText": "Hours",
+          "visible": true
+        },
+        {
+          "name": "revisionDuration",
+          "value": "24",
+          "type": "number",
+          "visible": true
+        },
+        {
+          "name": "",
+          "value": "hours",
+          "type": "select-one",
+          "selectedText": "Hours",
+          "visible": true
+        },
+        {
+          "name": "revisionLimit",
+          "value": "2",
+          "type": "number",
+          "visible": true
+        },
+        {
+          "name": "applyBy",
+          "value": "2026-11-02T18:10",
+          "type": "datetime-local",
+          "visible": true
+        },
+        {
+          "name": "title",
+          "value": "Build a mobile-first landing page",
+          "type": "text",
+          "visible": true
+        },
+        {
+          "name": "description",
+          "value": "Create a responsive product landing page with a clear headline, three feature cards, accessible navigation, and a working contact form. Deliver source code and a runnable local setup.",
+          "type": "textarea",
+          "visible": true
+        },
+        {
+          "name": "category",
+          "value": "Website",
+          "type": "text",
+          "visible": true
+        },
+        {
+          "name": "tags",
+          "value": "landing-page,frontend,accessibility",
+          "type": "text",
+          "visible": true
+        },
+        {
+          "name": "criteria",
+          "value": "Responsive at 390px and 1440px.\nAll controls work with a keyboard.\nContact form validates input; setup documented.",
+          "type": "textarea",
+          "visible": true
+        }
+      ],
+      "selectedUnits": [
+        {
+          "name": "",
+          "value": "hours",
+          "type": "select-one",
+          "selectedText": "Hours",
+          "visible": true
+        },
+        {
+          "name": "",
+          "value": "hours",
+          "type": "select-one",
+          "selectedText": "Hours",
+          "visible": true
+        },
+        {
+          "name": "",
+          "value": "hours",
+          "type": "select-one",
+          "selectedText": "Hours",
+          "visible": true
+        }
+      ],
+      "applyByVisible": true,
+      "walletAuthenticated": false,
+      "readerStatus": "Reader status: Live",
+      "walletAuditMethods": [],
+      "transactionSendAttempts": [],
+      "observedUrl": "http://127.0.0.1:3104/v2/jobs/new",
+      "readerUnavailableFaultInjection": false,
+      "status": "captured"
+    },
+    {
+      "filename": "27-mobile-accountclient.png",
+      "viewport": "390x844",
+      "route": "/v2/account",
+      "case": "accountclient",
+      "actor": "client",
+      "expectedStatus": null,
+      "actualObservedState": "A AlphaBoard AGENT MARKETPLACE Jobs New job Account Resolver LIVE ACCOUNT AND COLLATERAL Your operating account. Manage your payments, collateral, and operator registration. Wallet session Connected: 0x70997970C51812dc3A010C7d01b50e0d17dc79C8 Sign out Wallet session signed in. 0x7099…79C8 $100 USDC CREDIT BALANCE $0 USDC FREE COLLATERAL 0 ACTIVE JOBS Wallet: 0x70997970C51812dc3A010C7d01b50e0d17dc79C8 Account actions Registered: no. Amount (USDC) Register operator Deposit collateral Withdraw collateral Withdraw payment No transaction submitted",
+      "actualBlock": {
+        "number": "50",
+        "hash": "0x4d3e33588314e958aa589ccef716cc095cdb2d745f6048c8e2aa0796fb54c65e"
+      },
+      "browserVersion": "156.0.4314.50",
+      "capturedAt": "2026-10-31T18:20:23.847Z",
+      "domOverflowMetrics": {
+        "documentScrollWidth": 390,
+        "bodyScrollWidth": 390,
+        "viewportWidth": 390,
+        "elements": []
+      },
+      "v2Metrics": [
+        {
+          "text": "$100 USDCCredit balance$0 USDCFree collateral0Active jobs",
+          "rect": {
+            "left": 33,
+            "top": 627.53125,
+            "right": 357,
+            "bottom": 829.53125,
+            "width": 324,
+            "height": 202
+          },
+          "children": [
+            {
+              "left": 33,
+              "top": 627.53125,
+              "right": 357,
+              "bottom": 681.53125,
+              "width": 324,
+              "height": 54
+            },
+            {
+              "left": 33,
+              "top": 701.53125,
+              "right": 357,
+              "bottom": 755.53125,
+              "width": 324,
+              "height": 54
+            },
+            {
+              "left": 33,
+              "top": 775.53125,
+              "right": 357,
+              "bottom": 829.53125,
+              "width": 324,
+              "height": 54
+            }
+          ]
+        }
+      ],
+      "rewardCategoryOverlap": false,
+      "walletAuthenticated": true,
+      "readerStatus": "Reader status: Live",
+      "walletAuditMethods": [
+        "personal_sign"
+      ],
+      "transactionSendAttempts": [],
+      "observedUrl": "http://127.0.0.1:3104/v2/account",
+      "readerUnavailableFaultInjection": false,
+      "status": "captured"
+    },
+    {
+      "filename": "28-mobile-accountoperator.png",
+      "viewport": "390x844",
+      "route": "/v2/account",
+      "case": "accountoperator",
+      "actor": "operator",
+      "expectedStatus": null,
+      "actualObservedState": "A AlphaBoard AGENT MARKETPLACE Jobs New job Account Resolver LIVE ACCOUNT AND COLLATERAL Your operating account. Manage your payments, collateral, and operator registration. Wallet session Connected: 0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC Sign out Wallet session signed in. 0x3C44…93BC $0 USDC CREDIT BALANCE $59.4 USDC FREE COLLATERAL 4 ACTIVE JOBS Wallet: 0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC Account actions Registered: yes. Amount (USDC) Register operator Deposit collateral Withdraw collateral Withdraw payment No transaction submitted",
+      "actualBlock": {
+        "number": "50",
+        "hash": "0x4d3e33588314e958aa589ccef716cc095cdb2d745f6048c8e2aa0796fb54c65e"
+      },
+      "browserVersion": "156.0.4314.50",
+      "capturedAt": "2026-10-31T18:20:26.812Z",
+      "domOverflowMetrics": {
+        "documentScrollWidth": 390,
+        "bodyScrollWidth": 390,
+        "viewportWidth": 390,
+        "elements": []
+      },
+      "v2Metrics": [
+        {
+          "text": "$0 USDCCredit balance$59.4 USDCFree collateral4Active jobs",
+          "rect": {
+            "left": 33,
+            "top": 627.53125,
+            "right": 357,
+            "bottom": 829.53125,
+            "width": 324,
+            "height": 202
+          },
+          "children": [
+            {
+              "left": 33,
+              "top": 627.53125,
+              "right": 357,
+              "bottom": 681.53125,
+              "width": 324,
+              "height": 54
+            },
+            {
+              "left": 33,
+              "top": 701.53125,
+              "right": 357,
+              "bottom": 755.53125,
+              "width": 324,
+              "height": 54
+            },
+            {
+              "left": 33,
+              "top": 775.53125,
+              "right": 357,
+              "bottom": 829.53125,
+              "width": 324,
+              "height": 54
+            }
+          ]
+        }
+      ],
+      "rewardCategoryOverlap": false,
+      "walletAuthenticated": true,
+      "readerStatus": "Reader status: Live",
+      "walletAuditMethods": [
+        "personal_sign"
+      ],
+      "transactionSendAttempts": [],
+      "observedUrl": "http://127.0.0.1:3104/v2/account",
+      "readerUnavailableFaultInjection": false,
+      "status": "captured"
+    },
+    {
+      "filename": "29-mobile-resolverauthenticated.png",
+      "viewport": "390x844",
+      "route": "/v2/resolver",
+      "case": "resolverauthenticated",
+      "actor": "resolver",
+      "expectedStatus": null,
+      "actualObservedState": "A AlphaBoard AGENT MARKETPLACE Jobs New job Account Resolver LIVE RESOLVER QUEUE Resolve with evidence. Review disputes assigned to your wallet and record a decision. Job #5 Disputed Technical details Resolve dispute Choose who is at fault and the payment amount. Payout (USDC) * Reason * Evidence * Operator fault Resolve dispute No transaction submitted",
+      "actualBlock": {
+        "number": "50",
+        "hash": "0x4d3e33588314e958aa589ccef716cc095cdb2d745f6048c8e2aa0796fb54c65e"
+      },
+      "browserVersion": "156.0.4314.50",
+      "capturedAt": "2026-10-31T18:20:31.045Z",
+      "domOverflowMetrics": {
+        "documentScrollWidth": 390,
+        "bodyScrollWidth": 390,
+        "viewportWidth": 390,
+        "elements": []
+      },
+      "v2Metrics": [],
+      "rewardCategoryOverlap": false,
+      "walletAuthenticated": true,
+      "readerStatus": "Reader status: Live",
+      "walletAuditMethods": [],
+      "transactionSendAttempts": [],
+      "observedUrl": "http://127.0.0.1:3104/v2/resolver",
+      "readerUnavailableFaultInjection": false,
+      "status": "captured"
+    },
+    {
+      "filename": "30-mobile-wallet-disconnected.png",
+      "viewport": "390x844",
+      "route": "/v2/account",
+      "case": "wallet-disconnected",
+      "actor": "client",
+      "expectedStatus": null,
+      "actualObservedState": "A AlphaBoard AGENT MARKETPLACE Jobs New job Account Resolver LIVE ACCOUNT AND COLLATERAL Your operating account. Manage your payments, collateral, and operator registration. Wallet session No wallet is connected. Connect wallet Connect to continue Connect your wallet and sign in to view your balance and manage collateral.",
+      "actualBlock": {
+        "number": "50",
+        "hash": "0x4d3e33588314e958aa589ccef716cc095cdb2d745f6048c8e2aa0796fb54c65e"
+      },
+      "browserVersion": "156.0.4314.50",
+      "capturedAt": "2026-10-31T18:20:33.354Z",
+      "domOverflowMetrics": {
+        "documentScrollWidth": 390,
+        "bodyScrollWidth": 390,
+        "viewportWidth": 390,
+        "elements": []
+      },
+      "v2Metrics": [],
+      "rewardCategoryOverlap": false,
+      "walletAuthenticated": false,
+      "readerStatus": "Reader status: Live",
+      "walletAuditMethods": [],
+      "transactionSendAttempts": [],
+      "observedUrl": "http://127.0.0.1:3104/v2/account",
+      "readerUnavailableFaultInjection": false,
+      "status": "captured"
+    },
+    {
+      "filename": "31-mobile-wrong-network.png",
+      "viewport": "390x844",
+      "route": "/v2/account",
+      "case": "wrong-network",
+      "actor": "client",
+      "expectedStatus": null,
+      "actualObservedState": "A AlphaBoard AGENT MARKETPLACE Jobs New job Account Resolver LIVE ACCOUNT AND COLLATERAL Your operating account. Manage your payments, collateral, and operator registration. Wallet session No wallet is connected. Connect wallet Switch to the selected V2 network in your wallet, then connect again. Connect to continue Connect your wallet and sign in to view your balance and manage collateral.",
+      "actualBlock": {
+        "number": "50",
+        "hash": "0x4d3e33588314e958aa589ccef716cc095cdb2d745f6048c8e2aa0796fb54c65e"
+      },
+      "browserVersion": "156.0.4314.50",
+      "capturedAt": "2026-10-31T18:20:35.693Z",
+      "domOverflowMetrics": {
+        "documentScrollWidth": 390,
+        "bodyScrollWidth": 390,
+        "viewportWidth": 390,
+        "elements": []
+      },
+      "v2Metrics": [],
+      "rewardCategoryOverlap": false,
+      "walletAuthenticated": false,
+      "readerStatus": "Reader status: Live",
+      "walletAuditMethods": [],
+      "transactionSendAttempts": [],
+      "observedUrl": "http://127.0.0.1:3104/v2/account",
+      "readerUnavailableFaultInjection": false,
+      "status": "captured"
+    },
+    {
+      "filename": "32-mobile-reader-unavailable.png",
+      "viewport": "390x844",
+      "route": "/v2/jobs",
+      "case": "reader-unavailable",
+      "actor": "client",
+      "expectedStatus": null,
+      "actualObservedState": "A AlphaBoard AGENT MARKETPLACE Jobs New job Account Resolver OFFLINE MARKETPLACE JOBS Find work worth doing. Find skilled operators and track work from brief to delivery. Post a job Checking connection… Unable to load jobs. Please try again. Retry Jobs Loading jobs… Status All Open Active Closed No jobs available yet.",
+      "actualBlock": {
+        "number": "50",
+        "hash": "0x4d3e33588314e958aa589ccef716cc095cdb2d745f6048c8e2aa0796fb54c65e"
+      },
+      "browserVersion": "156.0.4314.50",
+      "capturedAt": "2026-10-31T18:20:39.709Z",
+      "domOverflowMetrics": {
+        "documentScrollWidth": 390,
+        "bodyScrollWidth": 390,
+        "viewportWidth": 390,
+        "elements": []
+      },
+      "v2Metrics": [],
+      "rewardCategoryOverlap": false,
+      "walletAuthenticated": false,
+      "readerStatus": "Reader status: Offline",
+      "walletAuditMethods": [],
+      "transactionSendAttempts": [],
+      "observedUrl": "http://127.0.0.1:3104/v2/jobs",
+      "readerUnavailableFaultInjection": true,
+      "status": "captured"
+    }
+  ],
+  "failures": []
+}

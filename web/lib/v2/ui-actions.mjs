@@ -60,10 +60,27 @@ export function canonicalize(value) {
 }
 export function documentHash(value) { return keccak256(stringToHex(canonicalize(value))); }
 export function normalizeCriteria(value) { return String(value ?? '').split('\n').map((line) => line.trim()).filter(Boolean); }
+export function normalizeTags(value) { return String(value ?? '').split(',').map((tag) => tag.trim()).filter(Boolean); }
+export function durationToSeconds(value, unit = 'hours') {
+  const text = String(value ?? '').trim();
+  if (!/^(?:0|[1-9]\d*)(?:\.\d+)?$/.test(text) || Number(text) <= 0) throw new Error('Enter a positive duration.');
+  const multiplier = unit === 'days' ? 86400 : unit === 'hours' ? 3600 : null;
+  if (!multiplier) throw new Error('Choose hours or days.');
+  const seconds = Number(text) * multiplier;
+  if (!Number.isSafeInteger(seconds)) throw new Error('Duration must resolve to whole seconds.');
+  return String(seconds);
+}
 export function usdcToUnits(value) {
   const text = String(value ?? '').trim();
   if (!/^(?:0|[1-9]\d*)(?:\.\d{1,6})?$/.test(text)) throw new Error('Enter a USDC amount with up to 6 decimal places.');
   const [whole, fraction = ''] = text.split('.'); return (BigInt(whole) * 1000000n + BigInt(fraction.padEnd(6, '0') || '0')).toString();
+}
+export function unitsToUsdc(value) {
+  const text = String(value ?? '');
+  if (!/^(?:0|[1-9]\d*)$/.test(text)) throw new Error('Invalid USDC base units.');
+  const n = BigInt(text);
+  const fraction = String(n % 1000000n).padStart(6, '0').replace(/0+$/, '');
+  return String(n / 1000000n) + (fraction ? '.' + fraction : '');
 }
 export function utcDateToSeconds(value) {
   if (typeof value !== 'string' || !value) throw new Error('Choose an apply-by date and time.');

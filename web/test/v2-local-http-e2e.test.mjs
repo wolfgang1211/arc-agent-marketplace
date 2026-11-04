@@ -145,13 +145,24 @@ test('offline fixture: real loopback HTTP auth and JobCreationForm create an ide
     const session = await f.login(client);
     const restore = installBrowserFetch(f.origin, session.cookie);
     try {
-      const renderer = TestRenderer.create(React.createElement(JobCreationForm, { session: { authenticated: true, wallet: client.address, csrf: session.csrf }, health: { data: { status: 'healthy', stale: false, gap: null } } }));
+      let createdDraft;
+      const renderer = TestRenderer.create(React.createElement(JobCreationForm, { onCreated: draft => { createdDraft = draft; }, session: { authenticated: true, wallet: client.address, csrf: session.csrf }, health: { data: { status: 'healthy', stale: false, gap: null } } }));
       await act(async () => { await settle(); });
-      assert.match(JSON.stringify(renderer.toJSON()), /Canonical policy/);
-      setInput(renderer, 'Reward', '0.001'); setInput(renderer, 'Delivery duration', '60'); setInput(renderer, 'Review duration', '60'); setInput(renderer, 'Revision duration', '60'); setInput(renderer, 'Revision limit', '2'); setInput(renderer, 'Apply by', '2027-01-15T00:00'); setInput(renderer, 'Title', 'loopback draft'); setTextarea(renderer, 'Description', 'bounded work'); setTextarea(renderer, 'Criteria', 'criterion one');
+      assert.match(JSON.stringify(renderer.toJSON()), /Policy limits/);
+      assert.match(JSON.stringify(renderer.toJSON()), /Minimum reward: 0\.0001 USDC · fee: 2\.5%/);
+      setInput(renderer, 'Reward', '0.001'); setInput(renderer, 'Delivery', '1'); setInput(renderer, 'Review', '1'); setInput(renderer, 'Revision', '1'); setInput(renderer, 'Revision limit', '2'); setInput(renderer, 'Apply by', new Date(1_800_000_060_000).toISOString().slice(0, 16)); setInput(renderer, 'Title', 'loopback draft'); setTextarea(renderer, 'Description', 'bounded work'); setTextarea(renderer, 'Acceptance criteria', 'criterion one');
       await act(async () => renderer.root.findByType('form').props.onSubmit({ preventDefault() {} }));
       const created = renderer.root.findByProps({ role: 'status' });
-      assert.match(JSON.stringify(renderer.toJSON()), /Prepared only/);
+      assert.match(JSON.stringify(renderer.toJSON()), /Action ready for wallet confirmation/);
+      assertNoChainSideEffect(createdDraft);
+      const createdCall = decodeFunctionData({ abi: manifest.contracts.marketplace.abi, data: createdDraft.transaction.data });
+      assert.equal(createdCall.functionName, 'postJob');
+      assert.equal(createdCall.args[0], 1000n);
+      assert.equal(createdCall.args[1], 1800000060n);
+      assert.equal(createdCall.args[2], 3600n);
+      assert.equal(createdCall.args[3], 3600n);
+      assert.equal(createdCall.args[4], 3600n);
+      assert.deepEqual(createdDraft.document.criteria, ['criterion one']);
       const response = await f.raw('/api/v2/jobs', jsonInit(await draftTerms(), { origin: f.origin, 'x-v2-csrf': session.csrf, 'idempotency-key': 'draft-replay' }), session.cookie);
       const replay = await f.raw('/api/v2/jobs', jsonInit(await draftTerms(), { origin: f.origin, 'x-v2-csrf': session.csrf, 'idempotency-key': 'draft-replay' }), session.cookie);
       assert.equal(response.status, 201); assert.equal(replay.status, 200);
@@ -205,8 +216,8 @@ test('offline fixture: ApplicationPanel loads private applications and prepares 
       const renderer = TestRenderer.create(React.createElement(ApplicationPanel, { job: { jobId: '7', status: '0', stateVersion: '3', client: client.address, operator: ZERO, resolver: ADDR(6), termsHash }, session: { authenticated: true, wallet: client.address, csrf: session.csrf }, health: { data: { status: 'healthy', stale: false, gap: null } } }));
       await act(async () => { await button(renderer, 'Load applications').props.onClick(); await settle(); });
       await act(async () => renderer.root.findAllByType('button').find((x) => text(x).startsWith('Operator ')).props.onClick());
-      await act(async () => button(renderer, 'Prepare award').props.onClick());
-      const result = JSON.parse(JSON.stringify(renderer.toJSON())); assert.match(JSON.stringify(result), /Prepared only/);
+      await act(async () => button(renderer, 'Award job').props.onClick());
+      const result = JSON.parse(JSON.stringify(renderer.toJSON())); assert.match(JSON.stringify(result), /Action ready for wallet confirmation/);
       const response = await f.raw('/api/v2/jobs/7/preflight', jsonInit({ action: 'awardJob', params: { expected: '3' }, application, signature }, { origin: f.origin, 'x-v2-csrf': session.csrf, 'idempotency-key': 'award-7' }), session.cookie);
       assert.equal(response.status, 200); const body = await response.json(); assertNoChainSideEffect(body);
       assert.equal(decodeFunctionData({ abi: manifest.contracts.marketplace.abi, data: body.transaction.data }).functionName, 'awardJob');
@@ -222,7 +233,7 @@ test('offline fixture: AccountActionPanel reads nested operator state and prepar
     const restore = installBrowserFetch(f.origin, session.cookie);
     try {
       const renderer = TestRenderer.create(React.createElement(AccountActionPanel, { account: accountPayload.data, session: { authenticated: true, wallet: client.address, csrf: session.csrf }, health: { data: { status: 'healthy', stale: false, gap: null } } }));
-      await act(async () => button(renderer, 'registerOperator').props.onClick());
+      await act(async () => button(renderer, 'Register operator').props.onClick());
       const response = await f.raw('/api/v2/accounts/preflight', jsonInit({ action: 'registerOperator', params: {} }, { origin: f.origin, 'x-v2-csrf': session.csrf, 'idempotency-key': 'register-1' }), session.cookie);
       assert.equal(response.status, 200); const body = await response.json(); assertNoChainSideEffect(body);
       assert.equal(decodeFunctionData({ abi: manifest.contracts.marketplace.abi, data: body.transaction.data }).functionName, 'registerOperator');
@@ -246,7 +257,9 @@ test('offline fixture: DeliveryPanel reads version one, posts revision version t
     try {
       const renderer = TestRenderer.create(React.createElement(DeliveryPanel, { job: { jobId: '8', status: '3', stateVersion: '4', reward: '1000', client: client.address, operator: operator.address, resolver: ADDR(6), termsHash: HASH('d') }, session: { authenticated: true, wallet: operator.address, csrf: session.csrf }, health: { data: { status: 'healthy', stale: false, gap: null } } }));
       await act(async () => { await settle(); });
-      assert.equal(inputFor(renderer, 'Version').props.value, '2');
+      const version = renderer.root.findByProps({ name: 'version' });
+      assert.equal(version.props.value, '2');
+      assert.equal(version.props.type, 'hidden');
       setTextarea(renderer, 'Content JSON', '{"result":"two"}');
       await act(async () => renderer.root.findByType('form').props.onSubmit({ preventDefault() {} }));
       const stored = (await f.db.query('SELECT version,content FROM v2_deliveries WHERE job_id=$1 AND version=$2', ['8', '2'])).rows[0];

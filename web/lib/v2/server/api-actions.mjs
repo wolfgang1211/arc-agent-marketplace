@@ -56,6 +56,25 @@ function address(v) { if (typeof v !== 'string' || !ADDRESS.test(v)) fail('BAD_B
 function hash(v, code = 'BAD_BODY') { if (typeof v !== 'string' || !HASH.test(v)) fail(code); return v.toLowerCase(); }
 function uint(v, code = 'BAD_BODY') { if (typeof v !== 'string' || v.length > 78 || !DECIMAL.test(v)) fail(code); try { const n = BigInt(v); if (n < 0n || n >= (1n << 256n)) fail(code); return n; } catch { fail(code); } }
 function exact(value, keys, required = keys) { if (!value || typeof value !== 'object' || Array.isArray(value)) return false; const actual = Object.keys(value); return actual.every((k) => keys.includes(k)) && required.every((k) => Object.prototype.hasOwnProperty.call(value, k)); }
+const MAX_CATEGORY_LENGTH = 64;
+const MAX_TAGS = 16;
+const MAX_TAG_LENGTH = 48;
+function boundedDocumentMetadata(document) {
+  if (!document || typeof document !== 'object' || Array.isArray(document)) fail('INVALID_DOCUMENT');
+  const category = Object.prototype.hasOwnProperty.call(document, 'category') ? document.category : undefined;
+  if (category !== undefined && (typeof category !== 'string' || category.length === 0 || category.length > MAX_CATEGORY_LENGTH)) fail('INVALID_DOCUMENT');
+  const tags = Object.prototype.hasOwnProperty.call(document, 'tags') ? document.tags : undefined;
+  if (tags !== undefined) {
+    if (!Array.isArray(tags) || tags.length > MAX_TAGS) fail('INVALID_DOCUMENT');
+    const keys = Reflect.ownKeys(tags).filter(key => key !== 'length');
+    if (keys.length !== tags.length || keys.some((key, index) => key !== String(index))) fail('INVALID_DOCUMENT');
+    for (let index = 0; index < tags.length; index += 1) {
+      const descriptor = Object.getOwnPropertyDescriptor(tags, String(index));
+      if (!descriptor || !('value' in descriptor) || typeof descriptor.value !== 'string' || descriptor.value.length === 0 || descriptor.value.length > MAX_TAG_LENGTH) fail('INVALID_DOCUMENT');
+    }
+  }
+  return { ...(category === undefined ? {} : { category }), ...(tags === undefined ? {} : { tags: tags.slice() }) };
+}
 async function readBody(request) { const ct = request.headers.get('content-type'); const len = request.headers.get('content-length'); if (ct !== 'application/json') fail('BAD_BODY'); if (len !== null && (!/^\d+$/.test(len) || Number(len) > MAX_BODY)) fail('BODY_TOO_LARGE', 413); if (!request.body) fail('BAD_BODY'); const reader = request.body.getReader(); const chunks = []; let size = 0; try { while (true) { const part = await reader.read(); if (part.done) break; size += part.value.byteLength; if (size > MAX_BODY) fail('BODY_TOO_LARGE', 413); chunks.push(part.value); } } finally { try { reader.releaseLock(); } catch {} } try { const value = JSON.parse(new TextDecoder().decode(Buffer.concat(chunks))); if (!value || typeof value !== 'object' || Array.isArray(value)) fail('BAD_BODY'); return value; } catch (e) { if (e instanceof ActionError) throw e; fail('BAD_JSON'); } }
 function originGuard(request, configured, mutation = true) { const url = new URL(request.url); if (url.origin !== configured || (mutation && request.headers.get('origin') !== configured) || (!mutation && request.headers.get('origin') !== null && request.headers.get('origin') !== configured)) fail('ORIGIN_MISMATCH', 403); if (url.search) fail('NOT_FOUND', 404); return url; }
 async function authMutation(auth, request) { if (!auth || typeof auth.authorizeMutation !== 'function') fail('INVALID_SESSION', 401); try { const result = await auth.authorizeMutation(request); return address(result?.wallet); } catch (e) { if (e?.code === 'CSRF_INVALID') fail('CSRF_INVALID', 403); fail('INVALID_SESSION', 401); } }
@@ -132,7 +151,7 @@ export function createV2ActionsApi({ db, auth, readerFactory, getHealth, origin,
       for (const field of ['maxExtensionTotal', 'stakeFloor', 'stakeRound', 'collateralBps']) if (BigInt(normalizedTerms[field]) !== BigInt(policy[field])) fail('INVALID_TERMS');
       termsHash = canonicalTermsHash(Object.fromEntries(Object.entries(normalizedTerms).map(([k, v]) => ['reward','feeBps','minReward','deliveryDuration','reviewDuration','revisionDuration','maxExtensionTotal','stakeFloor','stakeRound','collateralBps','revisionLimit','applyBy'].includes(k) ? [k, BigInt(v)] : [k, v])));
     } catch (e) { if (e instanceof ActionError) throw e; fail('INVALID_TERMS'); }
-    let document; try { if (!exact(value.document, ['title','description','criteria'], ['description','criteria'])) fail('INVALID_DOCUMENT'); canonical(value.document); document = JSON.parse(canonical(value.document)); const criteriaHash = hashContent(document.criteria); const descriptionHash = hashContent(document.description); if (normalizedTerms.criteriaHash.toLowerCase() !== criteriaHash.toLowerCase() || normalizedTerms.descriptionHash.toLowerCase() !== descriptionHash.toLowerCase()) fail('INVALID_DOCUMENT'); } catch (e) { if (e instanceof ActionError) throw e; fail('INVALID_DOCUMENT'); }
+    let document; try { if (!exact(value.document, ['title','description','criteria','category','tags'], ['description','criteria'])) fail('INVALID_DOCUMENT'); const metadata = boundedDocumentMetadata(value.document); canonical(value.document); document = JSON.parse(canonical({ ...value.document, ...metadata })); const criteriaHash = hashContent(document.criteria); const descriptionHash = hashContent(document.description); if (normalizedTerms.criteriaHash.toLowerCase() !== criteriaHash.toLowerCase() || normalizedTerms.descriptionHash.toLowerCase() !== descriptionHash.toLowerCase()) fail('INVALID_DOCUMENT'); } catch (e) { if (e instanceof ActionError) throw e; fail('INVALID_DOCUMENT'); }
     const publicValue = value.public === true; const draftHash = hashContent({ owner: wallet, terms: normalizedTerms, document, public: publicValue }); const reqHash = requestHash('job-draft', { owner: wallet, terms: normalizedTerms, document, public: publicValue });
     const data = encode('postJob', [BigInt(normalizedTerms.reward), BigInt(normalizedTerms.applyBy), BigInt(normalizedTerms.deliveryDuration), BigInt(normalizedTerms.reviewDuration), BigInt(normalizedTerms.revisionDuration), Number(normalizedTerms.revisionLimit), normalizedTerms.unlimitedRevisions, normalizedTerms.criteriaHash, normalizedTerms.descriptionHash, normalizedTerms.testJob]);
     const expected = { action: 'postJob', client: wallet, criteriaHash: normalizedTerms.criteriaHash.toLowerCase(), descriptionHash: normalizedTerms.descriptionHash.toLowerCase(), termsHash: termsHash.toLowerCase() };
@@ -150,7 +169,29 @@ export function createV2ActionsApi({ db, auth, readerFactory, getHealth, origin,
     });
     return json(result.response.body, result.replay ? 200 : 201);
   }
-  async function loadJob(jobId) { const row = (await db.query('SELECT chain_id,marketplace,job_id,status,state_version,terms_hash,client,operator,resolver,source_block,source_hash,data FROM v2_jobs WHERE chain_id=$1 AND LOWER(marketplace)=LOWER($2) AND job_id=$3', [CHAIN_ID.toString(), MARKETPLACE.toLowerCase(), jobId.toString()])).rows[0]; if (!row) fail('NOT_FOUND', 404); if (String(row.chain_id) !== CHAIN_ID.toString() || String(row.marketplace).toLowerCase() !== MARKETPLACE.toLowerCase()) fail('STALE_DATA', 503); if (row.source_block == null || row.source_hash == null) fail('STALE_DATA', 503); let snap; try { snap = await readerFactory({ toBlockTag: `0x${BigInt(row.source_block).toString(16)}` }).read(); } catch { fail('READER_UNAVAILABLE', 503); } if (BigInt(snap.chainId) !== CHAIN_ID || BigInt(snap.blockTag) !== BigInt(row.source_block) || String(snap.blockHash).toLowerCase() !== String(row.source_hash).toLowerCase()) fail('STALE_DATA', 503); let chainJob; try { chainJob = await snap.readJob(jobId); } catch { fail('READER_UNAVAILABLE', 503); } const dbStatus = ({ open: 0, inprogress: 1, submitted: 2, revisionpending: 3, accessrecovery: 4, disputed: 5, completed: 6, refunded: 7, cancelled: 8 })[String(row.status).toLowerCase()] ?? Number(row.status); if (String(chainJob.stateVersion) !== String(row.state_version) || String(chainJob.canonicalTermsHash).toLowerCase() !== String(row.terms_hash).toLowerCase() || Number(chainJob.status) !== dbStatus) fail('STALE_DATA', 503); return { row, snap, chainJob }; }
+  async function loadJob(jobId) {
+    const row = (await db.query('SELECT chain_id,marketplace,job_id,status,state_version,terms_hash,client,operator,resolver,source_block,source_hash,data FROM v2_jobs WHERE chain_id=$1 AND LOWER(marketplace)=LOWER($2) AND job_id=$3', [CHAIN_ID.toString(), MARKETPLACE.toLowerCase(), jobId.toString()])).rows[0];
+    if (!row) fail('NOT_FOUND', 404);
+    if (String(row.chain_id) !== CHAIN_ID.toString() || String(row.marketplace).toLowerCase() !== MARKETPLACE.toLowerCase() || row.source_block == null || row.source_hash == null) fail('STALE_DATA', 503);
+    let indexed;
+    try { indexed = await readerFactory({ toBlockTag: `0x${BigInt(row.source_block).toString(16)}` }).read(); } catch { fail('READER_UNAVAILABLE', 503); }
+    if (BigInt(indexed.chainId) !== CHAIN_ID || BigInt(indexed.blockTag) !== BigInt(row.source_block) || String(indexed.blockHash).toLowerCase() !== String(row.source_hash).toLowerCase()) fail('STALE_DATA', 503);
+    const dbStatus = ({ open: 0, inprogress: 1, submitted: 2, revisionpending: 3, accessrecovery: 4, disputed: 5, completed: 6, refunded: 7, cancelled: 8 })[String(row.status).toLowerCase()] ?? Number(row.status);
+    const matchedJob = async snapshot => {
+      let value;
+      try { value = await snapshot.readJob(jobId); } catch { fail('READER_UNAVAILABLE', 503); }
+      if (String(value.stateVersion) !== String(row.state_version) || String(value.canonicalTermsHash).toLowerCase() !== String(row.terms_hash).toLowerCase() || Number(value.status) !== dbStatus) fail('STALE_DATA', 503);
+      return value;
+    };
+    await matchedJob(indexed);
+    // A job's last event block is not the current chain clock. Verify its
+    // indexed witness, then bind deadline-sensitive intents to a fresh head.
+    let snap;
+    try { snap = await readerFactory().read(); } catch { fail('READER_UNAVAILABLE', 503); }
+    if (BigInt(snap.chainId) !== CHAIN_ID || BigInt(snap.blockTag) < BigInt(row.source_block) || (BigInt(snap.blockTag) === BigInt(row.source_block) && String(snap.blockHash).toLowerCase() !== String(row.source_hash).toLowerCase())) fail('STALE_DATA', 503);
+    const chainJob = await matchedJob(snap);
+    return { row, snap, chainJob };
+  }
   function role(wallet, job) { const same = (x) => x && String(x).toLowerCase() === wallet.toLowerCase(); if (same(job.client)) return 'client'; if (same(job.operator)) return 'operator'; if (same(job.resolver)) return 'resolver'; return null; }
   function accountFields(account) {
     if (!account || typeof account !== 'object' || typeof account.registered !== 'boolean') fail('READER_UNAVAILABLE', 503);

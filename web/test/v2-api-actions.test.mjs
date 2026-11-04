@@ -65,6 +65,21 @@ function normalizedRuntimeBytecode(bytecode, immutableReferences) {
 }
 function jsonInit(body, headers = {}) { return { method: 'POST', headers: { 'content-type': 'application/json', ...headers }, body: JSON.stringify(body) }; }
 
+test('dense category and tag metadata is accepted at empty, ordinary and maximum boundaries', async () => {
+  const f = await fixture();
+  try {
+    const session = await login(f);
+    for (const [index, tags] of [[], ['nextjs', 'accessibility'], Array.from({ length: 16 }, (_, i) => `tag-${i}`)].entries()) {
+      const document = { title: 'Metadata boundary', description: 'Build a searchable dashboard', criteria: ['Search works'], category: 'website', tags };
+      const result = await call(f, '/api/v2/jobs', jsonInit({ terms: terms(f, document), document, public: true }, { 'idempotency-key': `dense-metadata-${index}`, cookie: session.cookie, 'x-v2-csrf': session.csrf }));
+      assert.equal(result.response.status, 201, `dense tags length ${tags.length} must not reject the array's built-in length property`);
+      assert.deepEqual(result.body.document.tags, tags);
+      assert.equal(result.body.document.category, 'website');
+    }
+    assert.equal((await f.db.query("SELECT count(*)::int AS n FROM v2_audit_events WHERE entity_type='job-draft'")).rows[0].n, 3);
+  } finally { await f.db.close(); await rm(f.dir, { recursive: true, force: true }); }
+});
+
 test('PGlite draft HTTP flow encodes canonical postJob ABI and replays idempotently', async () => {
   const f = await fixture();
   try {
@@ -201,6 +216,48 @@ test('authenticated draft-context returns exact pinned reader-owned policy and r
     const crossSite = await get({ 'sec-fetch-site': 'cross-site' }); assert.equal(crossSite.status, 403);
     f.api = createV2ActionsApi({ db: f.db, auth: f.auth, readerFactory: () => ({ read: async () => { throw new Error('must not read'); } }), origin: ORIGIN, getHealth: async () => ({ status: 'stale', stale: true, gap: null }) });
     const stale = await f.api(request(f, '/api/v2/draft-context', { method: 'GET', headers: { cookie: session.cookie } })); assert.equal(stale.status, 503);
+  } finally { await f.db.close(); await rm(f.dir, { recursive: true, force: true }); }
+});
+
+test('unassigned canonical operator remains null in timeout readback and an assigned operator is rejected', () => {
+  const client = address('1'), resolver = address('2');
+  const expected = { action: 'claimOpenJobTimeout', jobId: '1', stateVersion: '2', status: 7, client, operator: null, resolver };
+  const actual = { jobId: 1n, stateVersion: 2n, status: 7, client, operator: '0x0000000000000000000000000000000000000000', resolver };
+  const state = expectedState({ expected }, actual);
+  assert.equal(state.operator, null);
+  assert.equal(sameExpected(state, expected), true);
+  assert.equal(expectedState({ expected }, { ...actual, operator: address('3') }), null);
+});
+
+test('timeout preflight uses current canonical time after empty blocks while verifying the older indexed job', async () => {
+  const f = await fixture();
+  try {
+    const session = await login(f);
+    const indexedHash = `0x${'aa'.repeat(32)}`; const headHash = `0x${'bb'.repeat(32)}`; const termsHash = `0x${'11'.repeat(32)}`;
+    const deadline = 1_800_000_010n;
+    await f.db.query('INSERT INTO v2_jobs(chain_id,marketplace,job_id,reward,status,state_version,terms_hash,client,operator,resolver,source_block,source_hash,data) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)', ['5042002', MARKETPLACE, '1', '1000', 'inprogress', 7, termsHash, f.client.address, address('7'), f.resolver, '100', indexedHash, {}]);
+    const canonical = { status: 1, stateVersion: 7n, canonicalTermsHash: termsHash, client: f.client.address, operator: address('7'), resolver: f.resolver, reward: 1000n, deliveryDeadline: deadline, deadlineFailureClaimed: false, faultReviewPending: false };
+    let headVersion = 7n;
+    const calls = [];
+    const readerFactory = options => ({ read: async () => {
+      const historical = options?.toBlockTag !== undefined;
+      calls.push(historical ? 'indexed' : 'head');
+      return { chainId: 5042002n, blockTag: historical ? '0x64' : '0x65', blockHash: historical ? indexedHash : headHash, blockTimestamp: historical ? deadline - 1n : deadline + 1n, readJob: async () => ({ ...canonical, stateVersion: historical ? 7n : headVersion }) };
+    }});
+    f.api = createV2ActionsApi({ db: f.db, auth: f.auth, readerFactory, origin: ORIGIN, now: f.now, getHealth: async () => ({ status: 'healthy', stale: false, gap: null }) });
+    const send = () => call(f, '/api/v2/jobs/1/preflight', jsonInit({ action: 'claimDeliveryTimeout', params: { expected: '7' } }, { cookie: session.cookie, 'x-v2-csrf': session.csrf }));
+    const eligible = await send();
+    assert.equal(eligible.response.status, 200, JSON.stringify(eligible.body));
+    assert.deepEqual(calls, ['indexed', 'head']);
+    assert.equal(eligible.body.expected.status, 7);
+    assert.equal(eligible.body.expected.deadlineFailureClaimed, true);
+    const decoded = decodeFunctionData({ abi: manifest.contracts.marketplace.abi, data: eligible.body.transaction.data });
+    assert.equal(decoded.functionName, 'claimDeliveryTimeout');
+    assert.deepEqual(decoded.args, [1n, 7n]);
+    headVersion = 8n;
+    const stale = await send();
+    assert.equal(stale.response.status, 503);
+    assert.equal(stale.body.error, 'STALE_DATA');
   } finally { await f.db.close(); await rm(f.dir, { recursive: true, force: true }); }
 });
 

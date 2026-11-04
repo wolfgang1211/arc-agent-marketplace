@@ -47,6 +47,23 @@ function typedApplication(f, account) { return { jobId: 1n, operator: account.ad
 async function appPostApplication(f, account, application, auth, key = 'app-1', pitch = 'real pitch', signatureOverride = null) { const signature = signatureOverride ?? await account.signTypedData({ domain: applicationDomain(5042002n, MARKETPLACE), types: APPLICATION_TYPES, primaryType: 'Application', message: application }); return call(f, '/api/v2/jobs/1/applications', jsonInit({ application: Object.fromEntries(Object.entries(application).map(([k,v]) => [k, typeof v === 'bigint' ? v.toString() : v])), signature, pitch }, { cookie: auth.cookie, 'x-v2-csrf': auth.csrf, 'idempotency-key': key })); }
 async function appPost(f, account, key = 'app-1', pitch = 'real pitch', signatureOverride = null) { const auth = await login(f, account); return appPostApplication(f, account, typedApplication(f, account), auth, key, pitch, signatureOverride); }
 
+test('canonical zero-address operator is unassigned for context, freshness and application writes', async () => {
+  const f = await fixture();
+  try {
+    const zero = '0x' + '0'.repeat(40);
+    f.job.operator = zero;
+    await f.db.query('UPDATE v2_jobs SET operator=$1 WHERE job_id=1', [zero]);
+    const auth = await login(f, f.operator);
+    const context = await call(f, '/api/v2/jobs/1/application-context', { headers: { cookie: auth.cookie } });
+    assert.equal(context.response.status, 200);
+    assert.equal(context.body.message.operator, f.operator.address.toLowerCase());
+    assert.equal(context.body.message.jobId, '1');
+    const posted = await appPostApplication(f, f.operator, typedApplication(f, f.operator), auth, 'zero-operator-application');
+    assert.equal(posted.response.status, 201);
+    assert.equal((await f.db.query('SELECT count(*)::int AS n FROM v2_applications')).rows[0].n, 1);
+  } finally { await close(f); }
+});
+
 test('real PGlite application write verifies the exact EIP-712 domain and stores wire decimal strings', async () => {
   const f = await fixture(); try { const out = await appPost(f, f.operator); assert.equal(out.response.status, 201); assert.equal(out.body.application.payload.jobId, '1'); assert.equal(typeof out.body.application.payload.operatorNonce, 'string'); const row = (await f.db.query('SELECT payload,epoch,op_nonce FROM v2_applications')).rows[0]; assert.equal(row.payload.jobId, '1'); assert.equal(row.epoch, '0'); assert.equal(row.op_nonce, '0'); } finally { await close(f); }
 });
