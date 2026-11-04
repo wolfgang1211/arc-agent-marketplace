@@ -69,6 +69,7 @@ function readExpiry(value) { const n = typeof value === 'number' ? value : /^\d+
 export async function loadV2Profile() { const response = await fetch('/api/v2/profile', { credentials: 'same-origin', cache: 'no-store', headers: { accept: 'application/json' } }); if (!response.ok) fail('profile-unavailable', 'The selected chain profile is unavailable.'); const body = await response.json(); const profile = body?.profile; if (!profile || (!profile.id && !profile.name) || !/^\d+$/.test(String(profile.chainId ?? profile.canonicalChainId)) || !profile.rpcUrl || !ADDRESS.test(profile.marketplace) || !ADDRESS.test(profile.vault) || !ADDRESS.test(profile.usdc)) fail('profile-unavailable', 'The selected chain profile is invalid.'); return { ...profile, id: profile.id || profile.name, chainId: String(profile.chainId ?? profile.canonicalChainId) }; }
 
 async function readWallet(provider) { const [accounts, chainId] = await Promise.all([provider.request({ method: 'eth_accounts' }), provider.request({ method: 'eth_chainId' })]); return { account: accounts?.[0], chainId: BigInt(chainId) }; }
+async function assertWalletContext(provider, profile, account) { const current = await readWallet(provider); if (current.chainId !== BigInt(profile.chainId)) fail('wrong-chain', 'The wallet network changed while the action was pending.'); if (!current.account || normalize(current.account) !== normalize(account)) fail('wrong-account', 'The connected wallet changed while the action was pending.'); return current; }
 async function pollReceipt(publicClient, hash, timeout = 120000) { const started = Date.now(); for (;;) { try { return await publicClient.getTransactionReceipt({ hash }); } catch { if (Date.now() - started >= timeout) fail('timeout', 'Timed out waiting for the wallet receipt.'); } await new Promise((resolve) => setTimeout(resolve, 250)); } }
 function clientsFor(profile, provider, account) { const chain = chainDefinition(profile); const transport = custom(provider, { retryCount: 0 }); return { publicClient: createPublicClient({ chain, transport }), walletClient: createWalletClient({ account, chain, transport }) }; }
 async function finishBroadcast({ publicClient, stored, hash, profile, readback, receiptTimeoutMs, onPhase }) {
@@ -91,21 +92,56 @@ async function finishBroadcast({ publicClient, stored, hash, profile, readback, 
 function assertReadbackIdentity(response, intent, hash) { if (!response || response.ok !== true || response.confirmed !== true || response.intentId !== intent.intentId || response.profileId == null || String(response.profileId) !== String(intent.profileId) || response.chainId == null || String(response.chainId) !== String(intent.chainId) || !response.wallet || normalize(response.wallet) !== normalize(intent.wallet) || response.action !== intent.action || !response.hash || normalize(response.hash) !== normalize(hash)) fail('readback-mismatch', 'The canonical reader did not confirm this wallet intent.'); if (!response.state || typeof response.state !== 'object' || Array.isArray(response.state)) fail('readback-mismatch', 'The canonical reader did not return chain state.'); if (intent.expected && !sameExpected(response.state, intent.expected)) fail('readback-mismatch', 'The canonical reader did not confirm the expected state.'); return response; }
 async function waitReadback({ hash, intent, readback }) { const response = await readback(hash, intent.intentId); return assertReadbackIdentity(response, intent, hash); }
 
-export async function resumeWalletIntent({ stored, profile, provider = globalThis.ethereum, readback = defaultReadback, receiptTimeoutMs = 120000 } = {}) { if (!stored?.intentId || !profile || stored.autoResume === false || stored.status === 'terminal' || stored.status === 'reconciled') return null; if ((stored.resumeAttempts || 0) >= 3) return null; const nextAttempts = Number(stored.resumeAttempts || 0) + 1; persist({ ...stored, resumeAttempts: nextAttempts, autoResume: stored.status === 'broadcast-unknown' ? false : stored.autoResume }); if (!stored.hash || stored.status === 'broadcast-unknown') fail('reconciliation-required', 'A previous wallet broadcast is unconfirmed. Reconcile it before sending another transaction.'); const walletProvider = providerOf(provider); const wallet = await readWallet(walletProvider); const chainId = BigInt(profile.chainId); if (String(stored.profileId) !== String(profile.id || profile.name) || String(stored.chainId) !== String(chainId) || normalize(wallet.account) !== normalize(stored.wallet) || wallet.chainId !== chainId) return null; const { publicClient } = clientsFor(profile, walletProvider, wallet.account); let receipt; try { receipt = await pollReceipt(publicClient, stored.hash, receiptTimeoutMs); } catch (error) { persist({ ...stored, status: 'awaiting-receipt', hash: stored.hash, resumeAttempts: nextAttempts }); throw error; } if (receipt.status !== 'success') { persist({ ...stored, status: 'terminal', hash: stored.hash, autoResume: false, resumeAttempts: nextAttempts }); fail('receipt-reverted', 'The pending wallet transaction reverted.'); } if (stored.kind === 'approval') { const allowance = await publicClient.readContract({ address: ensureAddress(profile.usdc, 'USDC'), abi: ERC20_ABI, functionName: 'allowance', args: [getAddress(wallet.account), getAddress(stored.spender)] }); if (BigInt(allowance) < BigInt(stored.requiredAmount)) fail('readback-mismatch', 'The allowance approval was not confirmed.'); clear(stored); return { phase: 'approval-confirmed', hash: stored.hash }; } const read = await waitReadback({ hash: stored.hash, intent: stored, readback }); clear(stored); return { phase: 'success', hash: stored.hash, readback: read }; }
+export async function resumeWalletIntent({ stored, profile, provider = globalThis.ethereum, readback = defaultReadback, receiptTimeoutMs = 120000 } = {}) { if (!stored?.intentId || !profile || stored.autoResume === false || stored.status === 'terminal' || stored.status === 'reconciled') return null; if ((stored.resumeAttempts || 0) >= 3) return null; const nextAttempts = Number(stored.resumeAttempts || 0) + 1; persist({ ...stored, resumeAttempts: nextAttempts, autoResume: stored.status === 'broadcast-unknown' ? false : stored.autoResume }); if (!stored.hash || stored.status === 'broadcast-unknown') fail('reconciliation-required', 'A previous wallet broadcast is unconfirmed. Reconcile it before sending another transaction.'); const walletProvider = providerOf(provider); const wallet = await readWallet(walletProvider); const chainId = BigInt(profile.chainId); if (String(stored.profileId) !== String(profile.id || profile.name) || String(stored.chainId) !== String(chainId) || normalize(wallet.account) !== normalize(stored.wallet) || wallet.chainId !== chainId) return null; const { publicClient } = clientsFor(profile, walletProvider, wallet.account); await readAndValidateCanonicalTransaction({ publicClient, stored, hash: stored.hash, profile }); let receipt; try { receipt = await pollReceipt(publicClient, stored.hash, receiptTimeoutMs); } catch (error) { persist({ ...stored, status: 'awaiting-receipt', hash: stored.hash, resumeAttempts: nextAttempts }); throw error; } if (receipt.status !== 'success') { persist({ ...stored, status: 'terminal', hash: stored.hash, autoResume: false, resumeAttempts: nextAttempts }); fail('receipt-reverted', 'The pending wallet transaction reverted.'); } if (stored.kind === 'approval') { const allowance = await publicClient.readContract({ address: ensureAddress(profile.usdc, 'USDC'), abi: ERC20_ABI, functionName: 'allowance', args: [getAddress(wallet.account), getAddress(stored.spender)] }); if (BigInt(allowance) < BigInt(stored.requiredAmount)) fail('readback-mismatch', 'The allowance approval was not confirmed.'); clear(stored); return { phase: 'approval-confirmed', hash: stored.hash }; } const read = await waitReadback({ hash: stored.hash, intent: stored, readback }); clear(stored); return { phase: 'success', hash: stored.hash, readback: read }; }
+
+async function readAndValidateCanonicalTransaction({ publicClient, stored, hash, profile }) {
+  const canonicalTarget = TARGET_BY_ACTION[stored.action] && profile[TARGET_BY_ACTION[stored.action]];
+  const expectedTarget = stored.kind === 'approval' ? profile.usdc : canonicalTarget;
+  if (!canonicalTarget || !ADDRESS.test(String(expectedTarget)) || (stored.kind != null && !['main', 'approval'].includes(stored.kind)) || !ADDRESS.test(String(stored.to)) || normalize(stored.to) !== normalize(expectedTarget) || !HASH.test(String(stored.calldataHash))) fail('reconciliation-required', 'The stored transaction binding is incomplete or does not match the canonical action target.');
+  if (stored.kind === 'approval') {
+    try {
+      const required = BigInt(stored.requiredAmount);
+      if (!ADDRESS.test(String(stored.spender)) || normalize(stored.spender) !== normalize(canonicalTarget) || required <= 0n || required >= (1n << 256n) - 1n) throw new Error();
+      const approvalData = encodeFunctionData({ abi: ERC20_ABI, functionName: 'approve', args: [getAddress(canonicalTarget), required] });
+      if (keccak256(approvalData) !== normalize(stored.calldataHash)) throw new Error();
+    } catch { fail('reconciliation-required', 'The stored approval does not match its canonical spender and amount.'); }
+  }
+  let transaction;
+  try { transaction = await publicClient.getTransaction({ hash }); } catch { fail('reconciliation-required', 'The observed transaction could not be read. The stored intent was left unchanged.'); }
+  const input = transaction?.input ?? transaction?.data;
+  let valid = false;
+  try {
+    valid = String(stored.profileId) === String(profile.id || profile.name) && String(stored.chainId) === String(profile.chainId) && ADDRESS.test(String(stored.wallet)) && Boolean(transaction?.from) && normalize(transaction.from) === normalize(stored.wallet) && Boolean(transaction?.to) && normalize(transaction.to) === normalize(expectedTarget) && typeof input === 'string' && /^0x[0-9a-fA-F]*$/.test(input) && Boolean(stored.calldataHash) && keccak256(input) === stored.calldataHash.toLowerCase() && transaction.value != null && BigInt(transaction.value) === 0n && transaction.chainId != null && BigInt(transaction.chainId) === BigInt(profile.chainId);
+  } catch {}
+  if (!valid) fail('reconciliation-required', 'The observed transaction does not match the stored wallet intent.');
+  return transaction;
+}
 
 export async function reconcileWalletBroadcast({ stored, observedHash, profile, provider = globalThis.ethereum, readback = defaultReadback, receiptTimeoutMs = 120000 } = {}) {
   if (!stored?.intentId || !profile || stored.status === 'terminal' || stored.status === 'reconciled') fail('reconciliation-required', 'This wallet intent cannot be reconciled.');
   if (typeof observedHash !== 'string' || !HASH.test(observedHash)) fail('reconciliation-required', 'The broadcast hash is unknown. Provide the observed transaction hash to reconcile it. It will not be deleted or resent automatically.');
   const walletProvider = providerOf(provider);
   const { publicClient } = clientsFor(profile, walletProvider, stored.wallet);
-  let transaction;
-  try { transaction = await publicClient.getTransaction({ hash: observedHash }); } catch { fail('reconciliation-required', 'The observed transaction could not be read. The stored intent was left unchanged.'); }
-  const input = transaction?.input ?? transaction?.data;
-  if (!transaction || normalize(transaction.from) !== normalize(stored.wallet) || (stored.to && normalize(transaction.to) !== normalize(stored.to)) || (stored.calldataHash && keccak256(input) !== stored.calldataHash.toLowerCase()) || (transaction.chainId != null && BigInt(transaction.chainId) !== BigInt(profile.chainId))) fail('reconciliation-required', 'The observed transaction does not match the stored wallet intent.');
+  await readAndValidateCanonicalTransaction({ publicClient, stored, hash: observedHash, profile });
   return finishBroadcast({ publicClient, stored, hash: observedHash, profile, readback, receiptTimeoutMs });
 }
 
-export async function executeWalletAction(result, { profile, provider = globalThis.ethereum, readback = defaultReadback, onPhase, receiptTimeoutMs = 120000 } = {}) {
+const EXECUTION_IN_FLIGHT = new Set();
+
+function executionKey(result, profile, wallet = '') {
+  return `${profile.id || profile.name}:${profile.chainId}:${normalize(wallet || result?.transaction?.from || '')}`;
+}
+
+export async function executeWalletAction(result, options = {}) {
+  const profile = options.profile;
+  const key = executionKey(result, profile || {}, result?.transaction?.from);
+  if (EXECUTION_IN_FLIGHT.has(key)) fail('busy', 'A wallet action is already pending.');
+  EXECUTION_IN_FLIGHT.add(key);
+  try { return await executeWalletActionUnlocked(result, options); }
+  finally { EXECUTION_IN_FLIGHT.delete(key); }
+}
+
+async function executeWalletActionUnlocked(result, { profile, provider = globalThis.ethereum, readback = defaultReadback, onPhase, receiptTimeoutMs = 120000 } = {}) {
   if (!result?.transaction) return result;
   if (!profile) fail('profile-unavailable', 'The chain profile is unavailable; wallet actions are disabled.');
   const intentId = result.intentId; if (typeof intentId !== 'string' || !intentId) fail('profile-unavailable', 'The prepared intent is missing its identifier.'); readExpiry(result.expiry);
@@ -113,12 +149,12 @@ export async function executeWalletAction(result, { profile, provider = globalTh
   const wallet = await readWallet(walletProvider); const profileChain = BigInt(profile.chainId); if (wallet.chainId !== profileChain) fail('wrong-chain', 'Switch to the selected V2 network before continuing.'); if (!wallet.account) fail('wrong-account', 'Connect the wallet before continuing.');
   const tx = txFrom(result, wallet.account, profile); const { publicClient, walletClient } = clientsFor(profile, walletProvider, wallet.account); const decoded = decodedAction(result, tx);
   if (unresolvedIntent(profile, wallet.account, result.action)) fail('reconciliation-required', 'Reconcile the pending wallet transaction before sending another one.');
-  if (result.action === 'depositStake' && !result.allowance) fail('simulation-reverted', 'depositStake requires exact allowance metadata.');
+    if (['depositStake', 'postJob'].includes(result.action) && !result.allowance) fail('simulation-reverted', `${result.action} requires exact allowance metadata.`);
   const rejectOrUncertain = (error, intent, message) => { if (isDefiniteUserRejection(error)) { clear(intent); fail('wallet-rejected', message); } persist({ ...intent, status: 'broadcast-unknown', hash: null, autoResume: false }); fail('broadcast-uncertain', 'The wallet broadcast result is unknown. Reconcile it before retrying.'); };
   if (result.allowance) {
-    const allowance = result.allowance; const token = ensureAddress(allowance.token, 'USDC'); const spender = ensureAddress(allowance.spender, 'spender'); const required = BigInt(String(allowance.requiredAmount)); if (normalize(token) !== normalize(profile.usdc) || normalize(spender) !== normalize(tx.to) || required <= 0n || required === (1n << 256n) - 1n) fail('simulation-reverted', 'The allowance request is invalid.'); if (result.action === 'depositStake' && BigInt(decoded.args?.[0]) !== required) fail('simulation-reverted', 'The allowance amount does not match calldata.');
+    const allowance = result.allowance; const token = ensureAddress(allowance.token, 'USDC'); const spender = ensureAddress(allowance.spender, 'spender'); let required; try { required = BigInt(String(allowance.requiredAmount)); } catch { fail('simulation-reverted', 'The allowance request is invalid.'); } if (normalize(token) !== normalize(profile.usdc) || normalize(spender) !== normalize(tx.to) || required <= 0n || required === (1n << 256n) - 1n) fail('simulation-reverted', 'The allowance request is invalid.'); if (['depositStake', 'postJob'].includes(result.action) && BigInt(decoded.args?.[0]) !== required) fail('simulation-reverted', 'The allowance amount does not match calldata.');
     const current = await publicClient.readContract({ address: token, abi: ERC20_ABI, functionName: 'allowance', args: [getAddress(wallet.account), spender] });
-    if (BigInt(current) < required) { onPhase?.('simulating'); await publicClient.simulateContract({ address: token, abi: ERC20_ABI, functionName: 'approve', args: [spender, required], account: wallet.account }); const approvalData = encodeFunctionData({ abi: ERC20_ABI, functionName: 'approve', args: [spender, required] }); const approvalIntent = { status: 'broadcast-unknown', hash: null, intentId: `${intentId}:approval`, profileId: profile.id || profile.name, chainId: String(profileChain), wallet: wallet.account, action: result.action, kind: 'approval', to: token, calldataHash: keccak256(approvalData), spender, requiredAmount: required.toString(), autoResume: true, resumeAttempts: 0 }; persist(approvalIntent); onPhase?.('awaiting-wallet'); let approvalHash; try { approvalHash = await walletClient.writeContract({ address: token, abi: ERC20_ABI, functionName: 'approve', args: [spender, required], account: wallet.account }); } catch (error) { rejectOrUncertain(error, approvalIntent, 'The wallet rejected the allowance approval.'); } const approvalDone = await finishBroadcast({ publicClient, stored: approvalIntent, hash: approvalHash, profile, readback, receiptTimeoutMs, onPhase }); if (approvalDone.phase !== 'approval-confirmed') fail('readback-mismatch', 'The allowance approval was not confirmed.'); }
+    if (BigInt(current) < required) { onPhase?.('simulating'); await publicClient.simulateContract({ address: token, abi: ERC20_ABI, functionName: 'approve', args: [spender, required], account: wallet.account }); const approvalData = encodeFunctionData({ abi: ERC20_ABI, functionName: 'approve', args: [spender, required] }); const approvalIntent = { status: 'broadcast-unknown', hash: null, intentId: `${intentId}:approval`, profileId: profile.id || profile.name, chainId: String(profileChain), wallet: wallet.account, action: result.action, kind: 'approval', to: token, calldataHash: keccak256(approvalData), spender, requiredAmount: required.toString(), autoResume: true, resumeAttempts: 0 }; persist(approvalIntent); onPhase?.('awaiting-wallet'); let approvalHash; try { approvalHash = await walletClient.writeContract({ address: token, abi: ERC20_ABI, functionName: 'approve', args: [spender, required], account: wallet.account }); } catch (error) { rejectOrUncertain(error, approvalIntent, 'The wallet rejected the allowance approval.'); } const approvalDone = await finishBroadcast({ publicClient, stored: approvalIntent, hash: approvalHash, profile, readback, receiptTimeoutMs, onPhase }); if (approvalDone.phase !== 'approval-confirmed') fail('readback-mismatch', 'The allowance approval was not confirmed.'); await assertWalletContext(walletProvider, profile, wallet.account); readExpiry(result.expiry); }
   }
   const abiItem = actionAbi(result.action);
   onPhase?.('simulating');
@@ -126,6 +162,7 @@ export async function executeWalletAction(result, { profile, provider = globalTh
   catch (error) { const name = safeCustomError(error); const e = new Error(name || 'Simulation reverted.'); e.code = 'simulation-reverted'; e.customErrorName = name; throw e; }
   const intent = { status: 'broadcast-unknown', hash: null, intentId, profileId: profile.id || profile.name, chainId: String(profile.chainId), wallet: wallet.account, action: result.action, expected: result.expected, to: tx.to, calldataHash: keccak256(tx.data), autoResume: true, resumeAttempts: 0 };
   persist(intent);
+  await assertWalletContext(walletProvider, profile, wallet.account); readExpiry(result.expiry);
   onPhase?.('awaiting-wallet'); let hash; try { hash = await walletClient.writeContract({ address: tx.to, abi: [abiItem], functionName: decoded.functionName, args: decoded.args, account: wallet.account, value: tx.value }); } catch (error) { rejectOrUncertain(error, intent, 'The wallet rejected this transaction.'); }
   const verified = await finishBroadcast({ publicClient, stored: intent, hash, profile, readback, receiptTimeoutMs, onPhase });
   return { ...result, ...verified };
@@ -133,16 +170,18 @@ export async function executeWalletAction(result, { profile, provider = globalTh
 
 async function defaultReadback(hash, intentId) { const response = await fetch(`/api/v2/transactions/${hash}?intent=${encodeURIComponent(intentId)}`, { credentials: 'same-origin', cache: 'no-store', headers: { accept: 'application/json' } }); if (!response.ok) return null; return response.json(); }
 
-const RESUME_IN_FLIGHT = new Set();
+const RESUME_IN_FLIGHT = new Map();
 
 export function useWalletExecution({ profile, readback = defaultReadback, onRefresh } = {}) {
   const [phase, setPhase] = useState('prepared');
   const [error, setError] = useState(null);
   const [value, setValue] = useState(null);
   const busy = useRef(false);
+  const refreshRef = useRef(onRefresh);
+  refreshRef.current = onRefresh;
   const run = useCallback(async (result) => {
     if (busy.current) { const e = new Error('Wallet action is already pending.'); e.code = 'busy'; throw e; }
-    busy.current = true; setError(null); setPhase('prepared');
+    busy.current = true; setError(null); setValue(null); setPhase('prepared');
     try { const effectiveProfile = profile || await loadV2Profile(); const next = await executeWalletAction(result, { profile: effectiveProfile, readback, onPhase: setPhase }); setValue(next); onRefresh?.(); return next; }
     catch (cause) { setPhase(cause?.code || 'error'); setError(cause); throw cause; }
     finally { busy.current = false; }
@@ -150,10 +189,10 @@ export function useWalletExecution({ profile, readback = defaultReadback, onRefr
   useEffect(() => {
     let cancelled = false;
     if (typeof globalThis.localStorage === 'undefined' || globalThis.localStorage.length === 0) return undefined;
-    const start = async () => { const effectiveProfile = profile || await loadV2Profile(); const pending = []; try { for (let i = 0; i < localStorage.length; i += 1) { const key = localStorage.key(i); if (!key?.startsWith('v2-wallet-intent:')) continue; try { const stored = JSON.parse(localStorage.getItem(key)); if (stored?.profileId === (effectiveProfile.id || effectiveProfile.name) && stored?.chainId === String(effectiveProfile.chainId)) pending.push(stored); } catch {} } } catch {} if (pending[0]) { const resumeKey = storageKey(pending[0]); if (RESUME_IN_FLIGHT.has(resumeKey)) return; RESUME_IN_FLIGHT.add(resumeKey); try { const next = await resumeWalletIntent({ stored: pending[0], profile: effectiveProfile, readback }); if (!cancelled && next) { setValue(next); setPhase(next.phase); onRefresh?.(); } } finally { RESUME_IN_FLIGHT.delete(resumeKey); } } };
+    const start = async () => { const effectiveProfile = profile || await loadV2Profile(); const pending = []; try { for (let i = 0; i < localStorage.length; i += 1) { const key = localStorage.key(i); if (!key?.startsWith('v2-wallet-intent:')) continue; try { const stored = JSON.parse(localStorage.getItem(key)); if (stored?.profileId === (effectiveProfile.id || effectiveProfile.name) && stored?.chainId === String(effectiveProfile.chainId) && stored?.status !== 'terminal' && stored?.status !== 'reconciled' && stored?.autoResume !== false) pending.push(stored); } catch {} } } catch {} if (pending[0]) { const resumeKey = storageKey(pending[0]); let operation = RESUME_IN_FLIGHT.get(resumeKey); if (!operation) { operation = resumeWalletIntent({ stored: pending[0], profile: effectiveProfile, readback }); RESUME_IN_FLIGHT.set(resumeKey, operation); void operation.finally(() => { if (RESUME_IN_FLIGHT.get(resumeKey) === operation) RESUME_IN_FLIGHT.delete(resumeKey); }).catch(() => {}); } const next = await operation; if (!cancelled && next) { setValue(next); setPhase(next.phase); refreshRef.current?.(); } } };
     start().catch((cause) => { if (!cancelled) { setPhase(cause?.code || 'error'); setError(cause); } });
     return () => { cancelled = true; };
-  }, [onRefresh, profile, readback]);
+  }, [profile, readback]);
   return { phase, pending: ['checking-wallet', 'simulating', 'awaiting-wallet', 'awaiting-receipt', 'awaiting-readback'].includes(phase), error, value, run };
 }
 

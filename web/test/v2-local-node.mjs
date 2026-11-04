@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import net from 'node:net';
 import path from 'node:path';
 
@@ -26,9 +26,12 @@ export async function startIsolatedNode() {
   const port = await freeLoopbackPort();
   if (port === 8545) throw new Error('refusing to reuse port 8545');
   const rpcUrl = `http://127.0.0.1:${port}`;
-  const node = spawn('npx', ['hardhat', 'node', '--hostname', '127.0.0.1', '--port', String(port)], { cwd: CONTRACT_DIR, detached: true, stdio: 'ignore' });
+  const node = spawn(process.execPath, ['node_modules/hardhat/internal/cli/cli.js', 'node', '--config', 'hardhat.v2-ui-local.config.cjs', '--hostname', '127.0.0.1', '--port', String(port)], { cwd: CONTRACT_DIR, detached: true, stdio: 'ignore' });
+  let spawnError = null;
+  node.once('error', error => { spawnError = error; });
   const started = Date.now();
   while (Date.now() - started < 30000) {
+    if (spawnError) throw new Error('hardhat node spawn failed', { cause: spawnError });
     if (node.exitCode != null) throw new Error('hardhat node exited');
     try { if (await rpc(rpcUrl, 'eth_chainId') === '0x7a69') return { rpcUrl, node, port }; } catch {}
     await new Promise((resolve) => setTimeout(resolve, 250));
@@ -38,12 +41,16 @@ export async function startIsolatedNode() {
 }
 
 export function stopIsolatedNode(node) {
-  if (!node?.pid) return;
+  if (!node?.pid || node.exitCode !== null) return;
+  if (process.platform === 'win32') {
+    spawnSync('taskkill', ['/PID', String(node.pid), '/T', '/F'], { stdio: 'ignore' });
+    return;
+  }
   try { process.kill(-node.pid, 'SIGTERM'); } catch { try { node.kill('SIGTERM'); } catch {} }
 }
 
 export function deployFixture(rpcUrl, manifestPath) {
-  const deploy = spawn('npx', ['hardhat', 'run', 'scripts/v2-local-deploy-fixture.cjs', '--config', 'hardhat.v2.config.js', '--network', 'hardhat'], {
+  const deploy = spawn(process.execPath, ['node_modules/hardhat/internal/cli/cli.js', 'run', 'scripts/v2-local-deploy-fixture.cjs', '--no-compile', '--config', 'hardhat.v2.config.js', '--network', 'hardhat'], {
     cwd: CONTRACT_DIR,
     env: { ...process.env, V2_LOCAL_MANIFEST_OUT: manifestPath, V2_LOCAL_RPC_URL: rpcUrl },
     stdio: ['ignore', 'pipe', 'pipe'],
