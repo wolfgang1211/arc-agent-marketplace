@@ -1,10 +1,31 @@
 import { keccak256, stringToHex } from 'viem';
 
 export const JOB_ACTIONS = Object.freeze([
-  'awardJob', 'submitDelivery', 'submitRevision', 'approve', 'requestRevision', 'openDispute', 'resolveDispute', 'postJob',
+  'awardJob', 'cancelOpenJob', 'submitDelivery', 'submitRevision', 'approve', 'requestRevision', 'openDispute', 'resolveDispute', 'postJob',
   'proposeMutual', 'acceptMutual', 'rejectMutual', 'revokeMutual', 'withdrawStake', 'timeoutClaim',
 ]);
 export const STATUS = Object.freeze({ open: 0, inprogress: 1, submitted: 2, revisionpending: 3, accessrecovery: 4, disputed: 5, completed: 6, refunded: 7, cancelled: 8 });
+export const JOB_CATEGORIES = Object.freeze([
+  Object.freeze({ label: 'Website', value: 'website' }),
+  Object.freeze({ label: 'Bot', value: 'bot' }),
+  Object.freeze({ label: 'Tool', value: 'tool' }),
+  Object.freeze({ label: 'Video', value: 'video' }),
+  Object.freeze({ label: 'Research', value: 'research' }),
+  Object.freeze({ label: 'Design', value: 'design' }),
+  Object.freeze({ label: 'Other', value: 'other' }),
+]);
+const CATEGORY_VALUES = new Set(JOB_CATEGORIES.map(({ value }) => value));
+export function normalizeCategory(value) {
+  const key = String(value ?? '').trim().toLowerCase();
+  if (key === 'gamebot' || key === 'game bot' || key === 'game') return 'bot';
+  return CATEGORY_VALUES.has(key) ? key : 'other';
+}
+export function categoryLabel(value) {
+  const legacy = String(value ?? '').trim().toLowerCase();
+  if (legacy === 'gamebot' || legacy === 'game bot' || legacy === 'game') return 'Game bot';
+  const canonical = normalizeCategory(value);
+  return JOB_CATEGORIES.find(({ value: candidate }) => candidate === canonical)?.label || 'Other';
+}
 
 export function normalizeStatus(value) {
   if (typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= 8) return value;
@@ -38,7 +59,7 @@ export function availableActions(job, wallet) {
   if (status == null) return [];
   const actions = [];
   if (!role) { pushTimeouts(actions, job, wallet, status); return actions; }
-  if (role === 'client' && status === STATUS.open && !canonicalAddress(job.operator)) actions.push('awardJob');
+  if (role === 'client' && status === STATUS.open && !canonicalAddress(job.operator)) actions.push('awardJob', 'cancelOpenJob');
   if (role === 'operator' && status === STATUS.inprogress) actions.push('submitDelivery');
   if (role === 'operator' && status === STATUS.revisionpending) actions.push('submitRevision');
   if (role === 'client' && [STATUS.submitted, STATUS.revisionpending].includes(status)) actions.push('approve');
@@ -86,4 +107,16 @@ export function utcDateToSeconds(value) {
   if (typeof value !== 'string' || !value) throw new Error('Choose an apply-by date and time.');
   const time = Date.parse(/(?:Z|[+-]\d\d:?\d\d)$/.test(value) ? value : `${value}Z`); if (!Number.isFinite(time)) throw new Error('Enter a valid UTC apply-by date and time.');
   return Math.floor(time / 1000).toString();
+}
+export function formatUtcDate(value) {
+  const date = value instanceof Date ? value : new Date(Number(value) * 1000);
+  if (!Number.isFinite(date.getTime())) return '—';
+  return new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' }).format(date).replace(',', ',');
+}
+export function formatRelativeDate(value, now = Date.now()) {
+  const target = value instanceof Date ? value.getTime() : Number(value) * 1000;
+  if (!Number.isFinite(target)) return '—';
+  const days = Math.round((target - (now instanceof Date ? now.getTime() : now)) / 86400000);
+  if (days === 0) return 'today';
+  return days > 0 ? `in ${days} day${days === 1 ? '' : 's'}` : `${Math.abs(days)} day${Math.abs(days) === 1 ? '' : 's'} ago`;
 }

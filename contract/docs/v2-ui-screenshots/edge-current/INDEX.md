@@ -66,3 +66,22 @@ Real local captures from installed Microsoft Edge via Playwright (version 156.0.
 - [qa001-operator-inprogress-delivery-visible-mobile.png](./qa001-operator-inprogress-delivery-visible-mobile.png) — operator-inprogress-delivery-visible, mobile, statuses=In progress
 - [qa001-operator-revisionpending-delivery-visible-mobile.png](./qa001-operator-revisionpending-delivery-visible-mobile.png) — operator-revisionpending-delivery-visible, mobile, statuses=Revision pending
 - [qa001-client-open-applications-empty-load-mobile.png](./qa001-client-open-applications-empty-load-mobile.png) — client-open-applications-empty-load, mobile, statuses=Open
+
+## ui-final — isolated loopback Edge regression (2026-11-04)
+
+- Chain: 31337 on an explicitly allocated loopback RPC port (never 8545).
+- Origin: http://127.0.0.1:3104; browser: Microsoft Edge headless, existing installation.
+- Captures: 12/12; transaction send attempts: 0.
+- Ledger: [ui-final-ledger.json](./ui-final-ledger.json)
+- [ui-final-filled-chip-form-48-24-24utc-desktop.png](./ui-final-filled-chip-form-48-24-24utc-desktop.png) — filled-chip-form-48-24-24utc, desktop, statuses=
+- [ui-final-filled-chip-form-48-24-24utc-mobile.png](./ui-final-filled-chip-form-48-24-24utc-mobile.png) — filled-chip-form-48-24-24utc, mobile, statuses=
+- [ui-final-disconnected-next-connect-desktop.png](./ui-final-disconnected-next-connect-desktop.png) — disconnected-next-connect, desktop, statuses=Open
+- [ui-final-disconnected-next-connect-mobile.png](./ui-final-disconnected-next-connect-mobile.png) — disconnected-next-connect, mobile, statuses=Open
+- [ui-final-client-open-applications-empty-load-desktop.png](./ui-final-client-open-applications-empty-load-desktop.png) — client-open-applications-empty-load, desktop, statuses=Open
+- [ui-final-operator-inprogress-delivery-visible-desktop.png](./ui-final-operator-inprogress-delivery-visible-desktop.png) — operator-inprogress-delivery-visible, desktop, statuses=In progress
+- [ui-final-operator-revisionpending-delivery-visible-desktop.png](./ui-final-operator-revisionpending-delivery-visible-desktop.png) — operator-revisionpending-delivery-visible, desktop, statuses=Revision pending
+- [ui-final-client-submitted-delivery-hidden-connected-approve-desktop.png](./ui-final-client-submitted-delivery-hidden-connected-approve-desktop.png) — client-submitted-delivery-hidden-connected-approve, desktop, statuses=Submitted
+- [ui-final-client-submitted-delivery-hidden-connected-approve-mobile.png](./ui-final-client-submitted-delivery-hidden-connected-approve-mobile.png) — client-submitted-delivery-hidden-connected-approve, mobile, statuses=Submitted
+- [ui-final-operator-inprogress-delivery-visible-mobile.png](./ui-final-operator-inprogress-delivery-visible-mobile.png) — operator-inprogress-delivery-visible, mobile, statuses=In progress
+- [ui-final-operator-revisionpending-delivery-visible-mobile.png](./ui-final-operator-revisionpending-delivery-visible-mobile.png) — operator-revisionpending-delivery-visible, mobile, statuses=Revision pending
+- [ui-final-client-open-applications-empty-load-mobile.png](./ui-final-client-open-applications-empty-load-mobile.png) — client-open-applications-empty-load, mobile, statuses=Open

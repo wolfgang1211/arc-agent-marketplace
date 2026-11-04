@@ -33,6 +33,9 @@ const repo = path.resolve(webRoot, '..');
 const scratch = process.env.V2_LOCAL_UI_STATE;
 if (!scratch) throw new Error('Explicit fresh V2_LOCAL_UI_STATE is required');
 const outDir = path.join(repo, 'contract/docs/v2-ui-screenshots/edge-current');
+const capturePrefix = process.env.V2_SCREENSHOT_PREFIX || 'qa001';
+assert.match(capturePrefix, /^[a-z0-9-]+$/);
+assert.equal(fsSync.existsSync(path.join(outDir, `${capturePrefix}-ledger.json`)), false, 'Set a unique V2_SCREENSHOT_PREFIX; preserve previous evidence');
 const origin = 'http://127.0.0.1:3104';
 const require = createRequire(import.meta.url);
 const playwrightModule = process.env.V2_PLAYWRIGHT_MODULE || path.join(os.homedir(), 'AppData/Local/hermes/hermes-agent/node_modules/playwright');
@@ -64,9 +67,11 @@ async function fillForm(page) {
   const values = { reward: '12.50', deliveryDuration: '48', reviewDuration: '24', revisionDuration: '24', revisionLimit: '2', applyBy: '2026-12-15T17:00', title: 'Build a mobile-first landing page', description: 'Create a responsive product landing page with accessible navigation and a working contact form.', criteria: 'Responsive at 390px and 1440px.\nKeyboard accessible controls.' };
   for (const [name, value] of Object.entries(values)) await page.getByTestId(name).fill(value);
   while (await page.getByRole('button', { name: /^Remove / }).count()) await page.getByRole('button', { name: /^Remove / }).first().click();
-  const chips = page.locator('input[data-testid="category"], input[data-testid="tags"]');
-  await chips.nth(0).fill('Website'); await chips.nth(0).press('Enter'); await chips.nth(1).fill('landing-page,frontend'); await chips.nth(1).press('Enter');
-  assert.equal(await page.locator('input[name=category]').inputValue(), 'Website');
+  await page.getByTestId('category').selectOption('website');
+  await page.getByTestId('tags').fill('landing-page,frontend'); await page.getByTestId('tags').press('Enter');
+  assert.equal(await page.getByTestId('category').inputValue(), 'website');
+  assert.deepEqual(await page.getByTestId('category').locator('option').allTextContents(), ['Website', 'Bot', 'Tool', 'Video', 'Research', 'Design', 'Other']);
+  assert.equal(await page.getByRole('checkbox').isChecked(), true);
   assert.equal(await page.locator('input[name=tags]').inputValue(), 'landing-page,frontend');
   assert.equal(await page.getByTestId('deliveryDuration').inputValue(), '48');
   assert.equal(await page.getByTestId('reviewDuration').inputValue(), '24');
@@ -104,7 +109,21 @@ async function capture(browser, manifest, row, prepare) {
     await sleep(900);
     if (row.slug.startsWith('operator-')) await page.getByTestId('delivery-form').waitFor();
     else assert.equal(await page.getByTestId('delivery-form').count(), 0);
-    if (row.slug.includes('connected-approve')) await page.getByRole('button', { name: 'Approve', exact: true }).waitFor();
+    if (row.slug.includes('connected-approve')) {
+      const panel = page.getByTestId('job-action-form');
+      await panel.getByRole('button', { name: 'Approve', exact: true }).waitFor();
+      assert.deepEqual((await panel.getByRole('button').allTextContents()).slice(0, 3), ['Approve', 'Request revision', 'Open dispute']);
+      assert.equal(await panel.locator('select').count(), 0);
+      assert.equal(await panel.getByRole('button', { name: 'Approve', exact: true }).evaluate(el => el.classList.contains('secondary')), false);
+      assert.equal(await panel.getByRole('button', { name: 'Request revision', exact: true }).evaluate(el => el.classList.contains('secondary')), true);
+    }
+    if (['/v2/jobs/2', '/v2/jobs/3', '/v2/jobs/4'].includes(row.route)) assert.equal(await page.getByTestId('application-form').count(), 0);
+    if (/^\/v2\/jobs\/\d+$/.test(row.route)) {
+      assert.ok(await page.locator('time').count(), 'Apply-by date is rendered');
+      assert.match(await page.locator('time').first().innerText(), /^\d{1,2} [A-Z][a-z]{2} \d{4}, \d{2}:\d{2}$/);
+      assert.match(await page.locator('time').first().getAttribute('datetime'), /Z$/);
+    }
+    assert.equal(await page.getByRole('button', { name: /^(Save delivery|Save revision|Action)$/ }).count(), 0);
     if (row.disconnected) { assert.equal(await page.getByTestId('job-action-form').locator('p').count(), 1); await page.getByTestId('job-action-connect').waitFor(); }
     const observed = await inspect(page);
     assert.equal(observed.overflow.documentScrollWidth <= observed.overflow.viewportWidth, true, 'document horizontal overflow');
@@ -116,7 +135,8 @@ async function capture(browser, manifest, row, prepare) {
     if (row.auth) { const authenticated = await page.evaluate(async () => (await (await fetch('/api/v2/auth/session')).json()).authenticated === true); assert.equal(authenticated, true); assert.ok(audit.some((entry) => entry.method === 'personal_sign'), 'sign-in personal_sign missing'); }
     if (row.assertText) assert.match(observed.fullText, row.assertText);
     const block = await rpc(manifest.rpcUrl, 'eth_getBlockByNumber', ['latest', false]);
-    const filename = `qa001-${row.slug}-${row.viewport}.png`;
+    const filename = `${capturePrefix}-${row.slug}-${row.viewport}.png`;
+    assert.equal(fsSync.existsSync(path.join(outDir, filename)), false, 'Never overwrite existing screenshot evidence');
     await page.screenshot({ path: path.join(outDir, filename), fullPage: true });
     row.filename = filename; row.actualObservedState = redact(observed.text); row.statusLabels = observed.statusLabels; row.actualBlock = { number: String(BigInt(block.number)), hash: block.hash }; row.walletAuditMethods = audit.map((entry) => entry.method); row.transactionSendAttempts = sendAttempts; row.domOverflowMetrics = observed.overflow; row.status = 'captured';
     return row;
@@ -166,10 +186,11 @@ finally {
 }
 
 const ledger = { evidence: 'real UI + isolated local EVM + PGlite import', chainId: '31337', origin, rpcGuard: 'loopback-only; explicit manifest RPC; never 8545', browser: { channel: 'msedge', headless: true, version: browser?.version?.() || null, viewports }, rows: rows.map(({ prepare, ...row }) => row), failures: primaryError ? [{ error: redact(primaryError.message) }] : [], transactionSendAttempts: rows.flatMap((r) => r.transactionSendAttempts || []) };
-await fs.writeFile(path.join(outDir, 'qa001-ledger.json'), JSON.stringify(ledger, null, 2) + '\n');
+const ledgerName = `${capturePrefix}-ledger.json`;
+await fs.writeFile(path.join(outDir, ledgerName), JSON.stringify(ledger, null, 2) + '\n');
 const indexPath = path.join(outDir, 'INDEX.md');
 const prior = fsSync.existsSync(indexPath) ? await fs.readFile(indexPath, 'utf8') : '# V2 UI screenshots\n';
-const section = `\n## QA001 — isolated loopback Edge regression (2026-11-04)\n\n- Chain: 31337 on an explicitly allocated loopback RPC port (never 8545).\n- Origin: ${origin}; browser: Microsoft Edge headless, existing installation.\n- Captures: ${rows.filter((r) => r.status === 'captured').length}/${rows.length}; transaction send attempts: ${ledger.transactionSendAttempts.length}.\n- Ledger: [qa001-ledger.json](./qa001-ledger.json)\n${rows.filter((r) => r.filename).map((r) => `- [${r.filename}](./${r.filename}) — ${r.slug}, ${r.viewport}, statuses=${(r.statusLabels || []).join('|')}`).join('\n')}\n`;
-await fs.writeFile(indexPath, prior.split('## QA001')[0] + section);
+const section = `\n## ${capturePrefix} — isolated loopback Edge regression (${new Date().toISOString().slice(0, 10)})\n\n- Chain: 31337 on an explicitly allocated loopback RPC port (never 8545).\n- Origin: ${origin}; browser: Microsoft Edge headless, existing installation.\n- Captures: ${rows.filter((r) => r.status === 'captured').length}/${rows.length}; transaction send attempts: ${ledger.transactionSendAttempts.length}.\n- Ledger: [${ledgerName}](./${ledgerName})\n${rows.filter((r) => r.filename).map((r) => `- [${r.filename}](./${r.filename}) — ${r.slug}, ${r.viewport}, statuses=${(r.statusLabels || []).join('|')}`).join('\n')}\n`;
+await fs.writeFile(indexPath, prior + section);
 if (primaryError || rows.some((r) => r.status !== 'captured')) process.exitCode = 1;
-else console.log(JSON.stringify({ captured: rows.length, screenshots: rows.map((r) => r.filename), ledger: path.join(outDir, 'qa001-ledger.json'), rpc: node?.rpcUrl || null }));
+else console.log(JSON.stringify({ captured: rows.length, screenshots: rows.map((r) => r.filename), ledger: path.join(outDir, ledgerName), rpc: node?.rpcUrl || null }));

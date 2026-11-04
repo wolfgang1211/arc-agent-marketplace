@@ -2,8 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import React from 'react';
 import TestRenderer, { act } from 'react-test-renderer';
+import { encodeFunctionData } from 'viem';
+import manifest from '../lib/v2/action-manifest.json' with { type: 'json' };
 import { AccountActionPanel, ApplicationPanel, DeliveryPanel, JobActionPanel, ResolverActionPanel, availableActions, documentHash, jobRole, uintString, hashString, stableIdempotencyKey } from '../app/v2/_components/action-panels.js';
-import { normalizeCriteria, normalizeTags, durationToSeconds, usdcToUnits, unitsToUsdc, utcDateToSeconds } from '../lib/v2/ui-actions.mjs';
+import { categoryLabel, normalizeCriteria, normalizeTags, durationToSeconds, normalizeCategory, JOB_CATEGORIES, formatRelativeDate, formatUtcDate, usdcToUnits, unitsToUsdc, utcDateToSeconds } from '../lib/v2/ui-actions.mjs';
+import { isDefiniteUserRejection } from '../lib/v2/new-wallet-execution.mjs';
 
 const session = { authenticated: true, wallet: '0x1111111111111111111111111111111111111111', csrf: 'csrf' };
 const health = { data: { status: 'healthy', stale: false, gap: null } };
@@ -11,6 +14,22 @@ globalThis.ethereum = { selectedAddress: session.wallet, request: async ({ metho
 const job = { jobId: '7', stateVersion: '3', reward: '1000000', status: '5', client: '0x2222222222222222222222222222222222222222', resolver: session.wallet, termsHash: `0x${'a'.repeat(64)}` };
 
 function findButton(renderer, label) { return renderer.root.findAllByType('button').find((node) => String(node.children.join('')) === label); }
+
+test('unsupported cancel is disabled and never requests preflight even if its handler is invoked', async () => {
+  const originalFetch = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = async () => { calls += 1; throw new Error('UNEXPECTED_REQUEST'); };
+  let renderer;
+  try {
+    await act(async () => { renderer = TestRenderer.create(React.createElement(JobActionPanel, { job: { ...job, status: '0', client: session.wallet, operator: null }, session, health })); });
+    const cancel = findButton(renderer, 'Cancel open job');
+    assert.equal(cancel.props.disabled, true);
+    assert.equal(cancel.props.title, 'Not available in the current V2 API.');
+    await act(async () => cancel.props.onClick());
+    assert.equal(calls, 0);
+    assert.match(JSON.stringify(renderer.toJSON()), /This action is not supported by the current V2 API/);
+  } finally { renderer?.unmount(); globalThis.fetch = originalFetch; }
+});
 
 test('strict uint and hash serializers preserve canonical strings', () => {
   assert.equal(uintString('0'), '0');
@@ -49,8 +68,7 @@ test('openDispute derives the canonical expected version without a user field', 
   let renderer;
   try {
     renderer = TestRenderer.create(React.createElement(JobActionPanel, { job: { ...job, status: '1', operator: session.wallet }, session, health }));
-    await act(async () => renderer.root.findByType('select').props.onChange({ target: { value: 'openDispute' } }));
-    await act(async () => renderer.root.findByType('form').props.onSubmit({ preventDefault() {} }));
+    await act(async () => findButton(renderer, 'Open dispute').props.onClick());
     assert.equal(submitted.action, 'openDispute');
     assert.equal(submitted.params.expected, '3');
     assert.equal(renderer.root.findAllByType('input').some(node => /expected|stateVersion/i.test(node.props.name || '')), false);
@@ -62,7 +80,7 @@ test('role/status matrix exposes only canonical actions', () => {
   const operator = session.wallet;
   const resolver = '0x3333333333333333333333333333333333333333';
   const cases = [
-    ['client open', { client, operator: null, resolver, status: 0 }, client, ['awardJob']],
+    ['client open', { client, operator: null, resolver, status: 0 }, client, ['awardJob', 'cancelOpenJob'] ],
     ['operator delivery', { client, operator, resolver, status: 1 }, operator, ['submitDelivery', 'openDispute']],
     ['client submitted', { client, operator, resolver, status: 2 }, client, ['approve', 'requestRevision', 'openDispute']],
     ['operator revision', { client, operator, resolver, status: 3 }, operator, ['submitRevision', 'openDispute']],
@@ -101,9 +119,9 @@ test('mutual proposal converts human USDC amounts and UTC expiry to canonical pa
   let renderer;
   try {
     renderer = TestRenderer.create(React.createElement(JobActionPanel, { job: { ...job, status: '1', client: session.wallet, operator: '0x3333333333333333333333333333333333333333', resolver: '0x4444444444444444444444444444444444444444', mutual: { proposable: true } }, session, health }));
-    await act(async () => renderer.root.findByType('select').props.onChange({ target: { value: 'proposeMutual' } }));
+
     for (const [name, value] of [['mutualRefund', '0.25'], ['grossPayout', '0.75'], ['mutualExpiry', '2026-12-15T17:00']]) await act(async () => renderer.root.findAllByType('input').find(input => input.props.name === name).props.onChange({ target: { value } }));
-    await act(async () => renderer.root.findByType('form').props.onSubmit({ preventDefault() {} }));
+    await act(async () => findButton(renderer, 'Propose settlement').props.onClick());
     assert.deepEqual({ ...submitted.params, expiry: 'DATE' }, { refund: '250000', grossPayout: '750000', expiry: 'DATE', expected: '3' });
     assert.equal(new Date(Number(submitted.params.expiry) * 1000).toISOString(), '2026-12-15T17:00:00.000Z');
   } finally { renderer?.unmount(); globalThis.fetch = originalFetch; }
@@ -156,7 +174,7 @@ test('zero-address operator is unassigned and award uses the private application
   };
   const openJob = { ...job, status: '0', operator: '0x0000000000000000000000000000000000000000', client: session.wallet };
   try {
-    assert.deepEqual(availableActions(openJob, session.wallet), ['awardJob']);
+    assert.deepEqual(availableActions(openJob, session.wallet), ['awardJob', 'cancelOpenJob']);
     assert.equal(jobRole(openJob, session.wallet), 'client');
     const renderer = TestRenderer.create(React.createElement(ApplicationPanel, { job: openJob, session, health }));
     await act(async () => findButton(renderer, 'Load applications').props.onClick());
@@ -183,7 +201,7 @@ test('approve action supplies the canonical job version without an input', async
   try {
     const clientSession = { ...session, wallet: '0x2222222222222222222222222222222222222222' };
     const renderer = TestRenderer.create(React.createElement(JobActionPanel, { job: { ...job, status: '2', client: clientSession.wallet, operator: session.wallet }, session: clientSession, health }));
-    await act(async () => renderer.root.findByType('form').props.onSubmit({ preventDefault() {} }));
+    await act(async () => findButton(renderer, 'Approve').props.onClick());
     assert.deepEqual(calls[0].params, { expected: '3' });
     assert.equal(renderer.root.findAllByType('input').some((node) => String(node.props.name || '').includes('expected')), false);
   } finally { globalThis.fetch = originalFetch; }
@@ -203,6 +221,20 @@ test('account registration reads nested operator.registered and posts an account
     registered.unmount();
     const malformed = TestRenderer.create(React.createElement(AccountActionPanel, { account: { operator: {} }, session, health }));
     assert.equal(findButton(malformed, 'Register operator').props.disabled, true);
+  } finally { globalThis.fetch = originalFetch; }
+});
+
+test('repeated account action with unchanged params requests a fresh preflight', async () => {
+  const originalFetch = globalThis.fetch;
+  let preflights = 0;
+  globalThis.fetch = async () => { preflights += 1; return new Response(JSON.stringify({ action: 'withdrawCredit', transaction: null, onchainStatus: 'not_submitted' }), { status: 200, headers: { 'content-type': 'application/json' } }); };
+  try {
+    const renderer = TestRenderer.create(React.createElement(AccountActionPanel, { account: { operator: { registered: true } }, session, health }));
+    const button = findButton(renderer, 'Withdraw payment');
+    await act(async () => button.props.onClick());
+    await act(async () => findButton(renderer, 'Withdraw payment').props.onClick());
+    assert.equal(preflights, 2);
+    renderer.unmount();
   } finally { globalThis.fetch = originalFetch; }
 });
 
@@ -245,9 +277,9 @@ test('chip inputs serialize category and tags and keep keyboard edits out of for
     await act(async () => tags.props.onChange({ target: { value: 'mobile,' } }));
     await act(async () => tags.props.onKeyDown({ key: 'Enter', preventDefault() {} }));
     const category = renderer.root.findByProps({ 'data-testid': 'category' });
-    await act(async () => category.props.onKeyDown({ key: 'Enter', preventDefault() {} }));
+    assert.equal(category.props.value, 'bot');
     assert.equal(renderer.root.findAllByProps({ name: 'tags' }).at(-1).props.value, 'browser game,prototype,frontend,mobile');
-    assert.equal(renderer.root.findAllByProps({ name: 'category' }).at(-1).props.value, 'Game');
+    assert.equal(renderer.root.findAllByProps({ name: 'category' }).at(-1).props.value, 'bot');
     assert.equal(renderer.root.findAllByType('button').some((node) => node.props.type !== 'submit' && node.props['aria-label'] === 'Remove mobile'), true);
     await act(async () => tags.props.onChange({ target: { value: 'accessibility' } }));
     await act(async () => tags.props.onBlur());
@@ -329,4 +361,132 @@ test('delivery history failure and uint256 overflow stay disabled without defaul
     assert.equal(overflow.root.findAllByType('input').find((node) => node.props.name === 'version').props.value, '');
     assert.equal(overflow.root.findAllByType('button').at(-1).props.disabled, true);
   } finally { globalThis.fetch = originalFetch; }
+});
+
+
+test('final UI uses canonical category values and deterministic English dates', () => {
+  assert.deepEqual(JOB_CATEGORIES.map((item) => item.label), ['Website', 'Bot', 'Tool', 'Video', 'Research', 'Design', 'Other']);
+  assert.equal(normalizeCategory('GameBot'), 'bot');
+  assert.equal(categoryLabel('GameBot'), 'Game bot');
+  assert.equal(categoryLabel('game bot'), 'Game bot');
+  assert.equal(normalizeCategory('not-a-category'), 'other');
+  const timestamp = Date.parse('2026-12-05T00:09:00Z') / 1000;
+  assert.equal(formatUtcDate(timestamp), '5 Dec 2026, 00:09');
+  assert.equal(formatRelativeDate(timestamp, Date.parse('2026-11-05T00:09:00Z')), 'in 30 days');
+});
+
+test('applications panel is completely hidden outside open status after running hooks', () => {
+  const renderer = TestRenderer.create(React.createElement(ApplicationPanel, { job: { ...job, status: '1', operator: session.wallet }, session, health }));
+  assert.equal(renderer.root.findAllByProps({ 'data-testid': 'application-form' }).length, 0);
+  renderer.unmount();
+});
+
+test('open client action keeps Award primary as applications navigation and Cancel secondary', async () => {
+  const originalDocument = globalThis.document;
+  const originalFetch = globalThis.fetch;
+  let focused = 0;
+  let scrolled = 0;
+  globalThis.document = { getElementById: (id) => id === 'applications-panel' ? { focus: () => { focused += 1; }, scrollIntoView: () => { scrolled += 1; } } : null };
+  globalThis.fetch = async () => { throw new Error('Award navigation must not preflight.'); };
+  try {
+    const renderer = TestRenderer.create(React.createElement(JobActionPanel, { job: { ...job, status: '0', operator: '0x0000000000000000000000000000000000000000', client: session.wallet }, session, health }));
+    const buttons = renderer.root.findAllByType('button');
+    assert.deepEqual(buttons.slice(0, 2).map((button) => button.children.join('')), ['Award', 'Cancel open job']);
+    assert.equal(buttons[0].props.className.includes('secondary'), false);
+    assert.equal(buttons[1].props.className.includes('secondary'), true);
+    await act(async () => buttons[0].props.onClick());
+    assert.equal(focused, 1);
+    assert.equal(scrolled, 1);
+    renderer.unmount();
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalDocument === undefined) delete globalThis.document; else globalThis.document = originalDocument;
+  }
+});
+
+test('delivery retry reuses the persisted manifest and does not repeat the manifest POST', async () => {
+  const originalFetch = globalThis.fetch;
+  const calls = [];
+  globalThis.fetch = async (path, options) => {
+    calls.push({ path, method: options?.method || 'GET', body: options?.body ? JSON.parse(options.body) : null });
+    if (options?.method === 'POST' && path.endsWith('/deliveries')) return new Response(JSON.stringify({ delivery: { blobHash: `0x${'a'.repeat(64)}` } }), { status: 201, headers: { 'content-type': 'application/json' } });
+    if (options?.method === 'POST') return new Response(JSON.stringify({ action: 'submitDelivery', transaction: null, onchainStatus: 'not_submitted' }), { status: 200, headers: { 'content-type': 'application/json' } });
+    return new Response(JSON.stringify({ items: [] }), { status: 200, headers: { 'content-type': 'application/json' } });
+  };
+  const operatorJob = { ...job, status: '1', operator: session.wallet };
+  try {
+    const renderer = TestRenderer.create(React.createElement(DeliveryPanel, { job: operatorJob, session, health }));
+    await act(async () => {});
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 10)); });
+    const link = renderer.root.findAllByProps({ name: 'deliveryLink' }).find((node) => node.type === 'input');
+    await act(async () => link.props.onChange({ target: { value: 'https://example.test/result' } }));
+    await act(async () => { await renderer.root.findByType('form').props.onSubmit({ preventDefault() {} }); });
+    await act(async () => { await renderer.root.findByType('form').props.onSubmit({ preventDefault() {} }); });
+    assert.equal(calls.filter((call) => call.path.endsWith('/deliveries') && call.method === 'POST').length, 1);
+    renderer.unmount();
+  } finally { globalThis.fetch = originalFetch; }
+});
+
+
+test('DeliveryPanel persists one manifest, rejects the first wallet send, and retries with a fresh preflight', async () => {
+  const originalFetch = globalThis.fetch;
+  const originalProvider = globalThis.ethereum;
+  const originalStorage = globalThis.localStorage;
+  const wallet = session.wallet;
+  const profile = { id: 'arc', chainId: '5042002', rpcUrl: 'https://rpc.invalid', marketplace: '0xfa156b7a5205b123c8a22a807ba98405e36130f1', vault: '0xd5b271b7bf4696d662b2bcB1a94b408887c6C423', usdc: '0x2222222222222222222222222222222222222222' };
+  const map = new Map();
+  const events = [];
+  globalThis.localStorage = { get length() { return map.size; }, key: (i) => [...map.keys()][i] ?? null, getItem: (key) => map.get(key) ?? null, setItem: (key, value) => { events.push('persist'); map.set(key, String(value)); }, removeItem: (key) => map.delete(key) };
+  let preflightCount = 0;
+  let sendCount = 0;
+  const hash = `0x${'12'.repeat(32)}`;
+  const data = encodeFunctionData({ abi: manifest.contracts.marketplace.abi, functionName: 'submitDelivery', args: [7n, `0x${'a'.repeat(64)}`, 3n] });
+  globalThis.fetch = async (path, options) => {
+    const method = options?.method || 'GET';
+    if (path === '/api/v2/profile') return new Response(JSON.stringify({ profile }), { status: 200, headers: { 'content-type': 'application/json' } });
+    if (path.endsWith('/deliveries') && method === 'GET') return new Response(JSON.stringify({ items: [] }), { status: 200, headers: { 'content-type': 'application/json' } });
+    if (path.endsWith('/deliveries') && method === 'POST') return new Response(JSON.stringify({ delivery: { blobHash: `0x${'a'.repeat(64)}` } }), { status: 201, headers: { 'content-type': 'application/json' } });
+    if (path.endsWith('/preflight')) {
+      preflightCount += 1;
+      return new Response(JSON.stringify({ action: 'submitDelivery', intentId: `delivery-${preflightCount}`, expiry: Date.now() + 60_000, expected: { stateVersion: '3' }, transaction: { from: wallet, to: profile.marketplace, data, value: '0x0', chainId: profile.chainId } }), { status: 200, headers: { 'content-type': 'application/json' } });
+    }
+    if (path.startsWith('/api/v2/transactions/')) return new Response(JSON.stringify({ ok: true, confirmed: true, intentId: 'delivery-2', profileId: profile.id, chainId: profile.chainId, wallet, action: 'submitDelivery', hash, state: { stateVersion: '3' } }), { status: 200, headers: { 'content-type': 'application/json' } });
+    throw new Error(`unexpected fetch ${method} ${path}`);
+  };
+  globalThis.ethereum = { request: async ({ method }) => {
+    if (method === 'eth_accounts') return [wallet];
+    if (method === 'eth_chainId') return `0x${BigInt(profile.chainId).toString(16)}`;
+    if (method === 'eth_call') return '0x';
+    if (method === 'eth_sendTransaction') { sendCount += 1; events.push(`send-${sendCount}`); if (sendCount === 1) throw Object.assign(new Error('user rejected'), { code: 4001 }); return hash; }
+    if (method === 'eth_getTransactionReceipt') return { status: '0x1', transactionHash: hash, blockNumber: '0x11' };
+    throw new Error(`unexpected provider method ${method}`);
+  } };
+  let renderer;
+  try {
+    const operatorJob = { ...job, status: '1', operator: wallet };
+    renderer = TestRenderer.create(React.createElement(DeliveryPanel, { job: operatorJob, session, health }));
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 10)); });
+    const link = renderer.root.findAllByProps({ name: 'deliveryLink' }).find((node) => node.type === 'input');
+    await act(async () => link.props.onChange({ target: { value: 'https://example.test/result' } }));
+    await act(async () => renderer.root.findByType('form').props.onSubmit({ preventDefault() {} }));
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 10)); });
+    await act(async () => renderer.root.findByType('form').props.onSubmit({ preventDefault() {} }));
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 10)); });
+    assert.equal(preflightCount, 2);
+    assert.equal(sendCount, 2);
+    assert.equal(events.indexOf('persist') >= 0, true);
+    assert.equal(events.indexOf('persist') < events.indexOf('send-1'), true);
+    assert.equal(events.filter((event) => event === 'persist').length >= 2, true);
+    assert.equal(map.size, 0);
+  } finally {
+    renderer?.unmount();
+    globalThis.fetch = originalFetch;
+    if (originalProvider === undefined) delete globalThis.ethereum; else globalThis.ethereum = originalProvider;
+    if (originalStorage === undefined) delete globalThis.localStorage; else globalThis.localStorage = originalStorage;
+  }
+});
+
+test('wallet rejection code 4001 is classified as a definite rejection', () => {
+  assert.equal(isDefiniteUserRejection({ code: 4001 }), true);
+  assert.equal(isDefiniteUserRejection({ cause: { code: 4001 } }), true);
 });
