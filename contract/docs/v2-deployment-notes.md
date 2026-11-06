@@ -80,3 +80,8 @@ financial incentive connected to the payout allocation. This conflict risk
 must be disclosed to users. The deployment checklist must record and verify
 the separate resolver and treasury wallet addresses before funding or use;
 this document does not authorize deployment or wallet transactions.
+
+### Mainnet resolver checklist
+
+- [ ] Ana ağda client policy boşsa owner fallback resolver olur; ana ağda ayrı resolver politikası ayarlanacak.
+- [ ] Fonlama veya kullanım öncesi gerçek client policy, etkin resolver ve ayrı resolver/treasury adresleri salt-okuma canonical sorgularla doğrulanacak. Bu liste mainnet işlemi veya deploy yetkisi değildir.

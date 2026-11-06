@@ -113,6 +113,12 @@ export function formatUtcDate(value) {
   if (!Number.isFinite(date.getTime())) return '—';
   return new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' }).format(date).replace(',', ',');
 }
+export function formatUtcDateTimeInput(value) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (!Number.isFinite(date.getTime())) return '';
+  const pad = (part) => String(part).padStart(2, '0');
+  return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}T${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}`;
+}
 export function formatRelativeDate(value, now = Date.now()) {
   const target = value instanceof Date ? value.getTime() : Number(value) * 1000;
   if (!Number.isFinite(target)) return '—';

@@ -67,10 +67,12 @@ test('expired, stale, or malformed mutual evidence is not exposed as an actionab
 
 test('list maps bounded public document metadata without private document leakage', async () => {
   const document = { title: 'Card title', summary: 'Short', category: 'automation', tags: ['a', 'b'], description: 'bounded' };
-  const canonical = { status: 0n, stateVersion: 7n, client, applyBy: blockTimestamp - 1n };
-  const api = createV2ReadApi({ db: dbFor(row('open'), document), readerFactory: readerFor(canonical, { active: false, version: 0n }) });
+  let readerCalls = 0;
+  const api = createV2ReadApi({ db: dbFor(row('open'), document), readerFactory: () => { readerCalls++; throw new Error('List must not fetch live action context'); } });
   const { body } = await get(api, '/api/v2/jobs');
   assert.deepEqual(body.data.items[0].document, document);
   assert.equal(JSON.stringify(body).includes('private'), false);
-  assert.deepEqual(body.data.items[0].timeout, { openJobClaimable: true, deliveryClaimable: false });
+  assert.equal(readerCalls, 0);
+  assert.equal(Object.hasOwn(body.data.items[0], 'timeout'), false);
+  assert.equal(Object.hasOwn(body.data.items[0], 'mutual'), false);
 });

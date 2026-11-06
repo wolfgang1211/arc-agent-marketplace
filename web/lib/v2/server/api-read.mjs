@@ -341,7 +341,9 @@ export function createV2ReadApi({ db, getHealth, profile = ARC_TESTNET_PROFILE, 
         const hasMore = result.rows.length > limit;
         const rows = hasMore ? result.rows.slice(0, limit) : result.rows;
         const items = [];
-        for (const row of rows) items.push(job(row, await publicDocumentFor(db, text(row.job_id), profile), await canonicalActionContext(readerFactory, text(row.job_id), row)));
+        // Lists use the indexed read model only. Fresh canonical checks remain on
+        // detail/action preflight paths; never multiply RPC snapshots by list length.
+        for (const row of rows) items.push(job(row, await publicDocumentFor(db, text(row.job_id), profile)));
         return json(envelope({ items, nextCursor: hasMore ? text(rows.at(-1)?.job_id) : null, count: items.length }));
       }
       if (parts.length === 4 && parts[2] === 'jobs') {
