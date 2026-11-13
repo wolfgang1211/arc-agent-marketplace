@@ -2,6 +2,8 @@
 
 ## Başlamadan önce
 
+**İkinci hesap ön kontrolü ve M3 onayı, 13 Kasım 18:14 UTC:** `0xD632648b649bD09198047388d150fF408165CC29` adresinde 20 test USDC var; 5 USDC teminat ve mevcut gas fiyatıyla 0,6 USDC tahmini operasyon rezervini karşılıyor. Client/owner/etkin resolver ile çakışmıyor. Reader yeniden fresh doğrulandı; Yusuf'un koşullu onayı uyarınca **M3'e başlayabilirsin**. Kayıt henüz yok, teminat 0/0: M4 başvuru/atama öncesinde ikinci hesabınla kayıt, kapasite ve 5 USDC teminat adımlarını kendin tamamla. Bu, gas fiyatlarının geleceği için garanti değildir; her cüzdan önizlemesini kontrol et. Ayrıntılar: `v2-second-account-preflight-2026-11-13.md`. Aşağıdaki önceki adres/onay bekleme ifadeleri bu tarihli karar ile aşılmıştır; signer kilidi değişmedi.
+
 **13 Kasım güncel karar:** Canlı karşı rol signer köprüsü rafa kaldırıldı; `LIVE_EXECUTION_NOT_ACCEPTED` kalıcı olarak kapalı. Operatörü Brave'deki ikinci hesabınla kendin oynayacaksın. İkinci hesabın adresini Hermes'e ver; yalnız bakiye/kayıt salt-okuma kontrolü yapılır. Faucet/fonlama ve bütün hesap imzaları sende. Aşağıdaki eski testOperator/signer hazırlık notları tarihseldir ve işlem yetkisi vermez. M3 için yeni indexer taraması fresh olmalı ve ikinci hesabın fonlanması doğrulanmalıdır.
 
 **Indexer güven modeli değişti:** Eski finalized aralıklar adres filtreli log batch'leriyle taranır; tüm boş blokların receipt/bloom kontrolü artık bu yerel tarihsel yolun iddiası değildir. Olay blokları ve aralık sınırları doğrulanır, head yakınında 32 blok reorg penceresi tutulur. Fresh, yeni açıkça belirtilmiş bu politika altında gerçek tarama tamamlanınca raporlanabilir; eski tam blok/receipt doğrulamasıyla karıştırılmaz.
@@ -53,7 +55,7 @@ Resmi ağ bilgisi: https://docs.arc.network/arc/references/connect-to-arc
 - Liste yalnız DB projection'ından döner. Son üç HTTP ölçümü **55.773 / 16.346 / 12.751 ms**, her biri 200 ve 5 iş. Build ve smoke exit 0; yazma öncesi canonical tazelik kontrolleri kaldırılmadı.
 - İkinci hesap adresi henüz verilmedi. Güncel native/ERC-20 bakiye, kayıt ve teminat salt-okuma kontrolü adres gelince yapılır; eski hesap bakiyeleri güncel fon yeterliliği kanıtı değildir. Native ve ERC-20 USDC gösterimleri toplanmaz.
 - Faucet, kayıt, teminat, başvuru, teslim ve bütün hesap imzaları Yusuf tarafından yapılır. Hermes fon göndermez. M3 için ikinci hesabın fonlanması ve ayrıca açık başlama onayı gerekir.
-- Signer köprüsü kalıcı olarak rafa kaldırıldı: `LIVE_EXECUTION_NOT_ACCEPTED`; C3/C4/C6/C7 açık. Gate regresyonları geçti, fakat bu canlı signer kabulü değildir. M8 geniş executor ile çalıştırılmaz; güvenli tek-job komutu bulunmadığı için gönderim blokeli.
+- Signer köprüsü kalıcı olarak rafa kaldırıldı: `LIVE_EXECUTION_NOT_ACCEPTED`; C3/C4/C6/C7 açık. Gate regresyonları geçti, fakat bu canlı signer kabulü değildir. M8 geniş executor ile çalıştırılmaz; dar resolve yolu için yerel kabul kanıtı `v2-m8-resolve.md` içindedir. Testnet kararı yalnız yeni önizleme ve o karara özgü sohbet onayıyla ele alınır.
 
 ### Tekrar kontrol komutları
 
@@ -134,7 +136,7 @@ Yeni küçük test işler aç; tarihsel Job 1–5 üzerinde senaryoları tekrar 
 
 **Yusuf'un adımı:** Ayrı uygun işte client olarak Open dispute işlemini kendin yap. Operator tarafı gerekirse ikinci Brave hesabından kendin işlem yap. Resolver kararındaki payout, operatorFault ve olası slash etkisini incele; sonra **Hermes'ten karar iste**.
 
-**Hermes'ten isteyeceğin:** Önce “Job #... Disputed, tx ...; şu payout/operatorFault/reason/evidence için resolver planını göster.” Plan gönderim değildir. Yalnız güvenli, tek-job onaylı executor hazırsa “Job #... gösterdiğin kararı uygula” isteğiyle simülasyon → gönderim → receipt → canonical readback yapılabilir. Fault review ayrı bir resolveFaultReview isteğidir. Şu an incelenen approved-v2-executor deploy/config/all komutları içeriyor; tek-job karar komutu yok. Bu yüzden geniş executor çalıştırılmaz ve **M8 gönderimi bloke** kalır.
+**Hermes'ten isteyeceğin:** Önce “Job #... Disputed, tx ...; şu payout/operatorFault/reason/evidence için resolver planını göster.” Plan gönderim değildir. Yalnız güvenli, tek-job onaylı executor hazırsa “Job #... gösterdiğin kararı uygula” isteğiyle simülasyon → gönderim → receipt → canonical readback yapılabilir. Fault review ayrı bir resolveFaultReview isteğidir. Dar `approved-v2-executor --phase=resolve` yolu yerel zincirde ayrıca test edildi; ayrıntılar `v2-m8-resolve.md`. Geniş deploy/config/all yolu M8 için kullanılmaz. Gerçek testnet kararı ancak bu önizlemeden sonra o işe özgü yeni sohbet onayıyla ele alınır; yerel test veya bu rehber tek başına gönderim yetkisi vermez.
 
 **Ne göreceksin:** Gerçek etkin resolver doğrulanır; simülasyon sonrasında yalnız o job/karar gönderilir. Receipt ve canonical stake/slash/credit readback'i ile tx hash raporlanır. Uygun signer yoksa veya sınır aşılırsa imza/gönderim yapılmadan durulur.
 
