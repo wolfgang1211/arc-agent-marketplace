@@ -1,0 +1,57 @@
+{
+  "captured": 2,
+  "metrics": [
+    {
+      "name": "desktop",
+      "width": 1440,
+      "height": 1000,
+      "file": "C:/Users/wolfgang/arc-agent-marketplace/arc-agent-marketplace/contract/docs/v2-ui-screenshots/edge-current/local-arc-checkbox-desktop.png",
+      "checkboxCount": 1,
+      "showPublicChecked": true,
+      "inputNormal18x18": true,
+      "checkboxBoundingBox": {
+        "x": 305,
+        "y": 770.390625,
+        "width": 18,
+        "height": 18
+      },
+      "labelText": "Make this job public",
+      "labelGapPx": 9,
+      "formVisible": true,
+      "checkboxInViewport": true,
+      "documentScrollWidth": 1440,
+      "bodyScrollWidth": 1440,
+      "viewportWidth": 1440,
+      "overflow": false,
+      "url": "http://127.0.0.1:3102/v2/jobs/new",
+      "browserChannel": "msedge",
+      "headless": true
+    },
+    {
+      "name": "mobile",
+      "width": 390,
+      "height": 844,
+      "file": "C:/Users/wolfgang/arc-agent-marketplace/arc-agent-marketplace/contract/docs/v2-ui-screenshots/edge-current/local-arc-checkbox-mobile.png",
+      "checkboxCount": 1,
+      "showPublicChecked": true,
+      "inputNormal18x18": true,
+      "checkboxBoundingBox": {
+        "x": 33,
+        "y": 413.1875,
+        "width": 18,
+        "height": 18
+      },
+      "labelText": "Make this job public",
+      "labelGapPx": 9,
+      "formVisible": true,
+      "checkboxInViewport": true,
+      "documentScrollWidth": 390,
+      "bodyScrollWidth": 390,
+      "viewportWidth": 390,
+      "overflow": false,
+      "url": "http://127.0.0.1:3102/v2/jobs/new",
+      "browserChannel": "msedge",
+      "headless": true
+    }
+  ]
+}

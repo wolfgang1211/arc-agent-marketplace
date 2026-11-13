@@ -108,6 +108,10 @@ async function loadRuntimeProfile() {
 }
 export function getV2LocalRuntime() {
   if (!runtimePromise) runtimePromise = (async () => {
+    if (process.env.V2_LOCAL_ARC === '1') {
+      const { createLocalArcRuntime } = await import('./local-arc-runtime.mjs');
+      return createLocalArcRuntime();
+    }
     const profile = await loadRuntimeProfile();
     // Separate from prior development databases; never opens a V1 database.
     const dataRoot = path.join(os.homedir(), 'AppData', 'Local', 'hermes', 'state', 'alphaboard-v2');
