@@ -288,9 +288,87 @@ export function createV2IndexerStore({ db, profile = ARC_TESTNET_PROFILE, chainI
       return { cursor: finalCursor, headers: normalizedHeaders.length, events: normalizedEvents.length };
     });
   }
+  // OPT-IN local finalized log-range commit. It never relaxes applyBatch: the
+  // default core path still requires dense contiguous headers. Here headers are
+  // SPARSE (range boundaries, event blocks, optional dense head tail). Parent
+  // continuity is asserted ONLY between adjacent observed heights; nothing is
+  // fabricated for unobserved intermediate heights.
+  function validateSparseHeaders(headers, from, to) {
+    if (!Array.isArray(headers) || headers.length < 1 || headers.length > maxHeaders) fail(`sparse headers must contain 1..${maxHeaders} entries`);
+    const normalized = headers.map((header) => normalizeHeader(header, chainId));
+    if (BigInt(normalized[0].blockNumber) !== from) fail('sparse range must start with its observed start boundary');
+    if (BigInt(normalized.at(-1).blockNumber) !== to) fail('sparse range must end with its observed end boundary');
+    for (let i = 1; i < normalized.length; i += 1) {
+      const previous = BigInt(normalized[i - 1].blockNumber); const current = BigInt(normalized[i].blockNumber);
+      if (current <= previous) fail('sparse headers must be strictly ascending');
+      if (current === previous + 1n && normalized[i].parentHash !== normalized[i - 1].blockHash) fail('header parent continuity mismatch');
+    }
+    return normalized;
+  }
+  async function applyFinalizedLogRange({ range, headers = [], events = [], expectedCursor, reorgAncestor, initialVerifiedAnchor, projector } = {}) {
+    if (profile.name !== 'arc-testnet' || chainId !== 5042002) fail('finalized sparse ranges are local Arc testnet only');
+    if (expectedCursor === undefined) fail('finalized log range requires an explicit expected cursor (null when empty)');
+    const from = BigInt(uint(range?.from, 'range.from')); const to = BigInt(uint(range?.to, 'range.to'));
+    if (to < from || to - from + 1n > BigInt(MAX_EVENTS)) fail(`finalized log range must contain 1..${MAX_EVENTS} blocks`);
+    boundedArrayLength(headers, 'headers', maxHeaders);
+    const normalizedHeaders = validateSparseHeaders(snapshotJson(headers, 'headers'), from, to);
+    boundedArrayLength(events, 'events', MAX_EVENTS);
+    const normalizedEvents = validateEvents(snapshotJson(events, 'events'), normalizedHeaders);
+    const requestedPrevious = normalizeCursor(expectedCursor);
+    return db.transaction(async (tx) => {
+      const actual = await currentCursor(tx);
+      if (!same(actual, requestedPrevious)) fail('stale or competing indexer cursor');
+      const anchor = normalizeCursor(reorgAncestor);
+      const initialAnchor = normalizeCursor(initialVerifiedAnchor);
+      if (anchor) {
+        if (!actual || BigInt(anchor.blockNumber) > BigInt(actual.blockNumber)) fail('reorg ancestor must be at or below cursor');
+        if (BigInt(actual.blockNumber) - BigInt(anchor.blockNumber) > BigInt(MAX_REORG_DEPTH)) fail('reorg exceeds maximum depth; deep replay required');
+        const ancestorRow = await tx.query("SELECT block_hash FROM v2_indexer_blocks_fork WHERE chain_id=$1 AND stream='marketplace' AND block_number=$2 AND block_hash=$3 AND canonical=TRUE", [chainId, anchor.blockNumber, anchor.blockHash]);
+        if (!ancestorRow.rows.length) fail('reorg ancestor is not canonical at its exact height');
+      }
+      if (initialAnchor) {
+        if (actual || anchor) fail('initial anchor is only valid for an empty cursor');
+        const existing = await tx.query("SELECT block_hash FROM v2_indexer_blocks_fork WHERE chain_id=$1 AND stream='marketplace' AND block_number=$2 AND block_hash=$3 AND canonical=TRUE", [chainId, initialAnchor.blockNumber, initialAnchor.blockHash]);
+        if (!existing.rows.length) await tx.query("INSERT INTO v2_indexer_blocks_fork (chain_id,stream,block_number,block_hash,parent_hash,transaction_count,canonical,header) VALUES ($1,'marketplace',$2,$3,$4,0,TRUE,'{}')", [chainId, initialAnchor.blockNumber, initialAnchor.blockHash, ZERO_HASH]);
+      }
+      const base = anchor ?? initialAnchor ?? actual;
+      if (!base) fail('finalized log range requires a verified cursor, anchor, or reorg ancestor');
+      const last = normalizedHeaders.at(-1); const headerCursor = { blockNumber: last.blockNumber, blockHash: last.blockHash };
+      const exactReplay = !anchor && !!actual && same(actual, headerCursor);
+      if (exactReplay) {
+        const existingEvents = await tx.query('SELECT emitter,block_number,block_hash,transaction_hash,transaction_index,log_index,topics,data,event_name FROM v2_indexer_events_fork WHERE chain_id=$1 AND canonical=TRUE AND block_number>=$2 AND block_number<=$3 AND emitter IN ($4,$5) ORDER BY block_number,transaction_index,log_index', [chainId, from.toString(), to.toString(), marketplace, vault]);
+        const stored = existingEvents.rows.map(e => [e.emitter.toLowerCase(), String(e.block_number), e.block_hash, e.transaction_hash, Number(e.transaction_index), Number(e.log_index), e.topics, e.data, e.event_name]);
+        const incoming = normalizedEvents.map(e => [e.emitter.toLowerCase(), e.blockNumber, e.blockHash, e.transactionHash, e.transactionIndex, e.logIndex, e.topics, e.data, e.eventName]);
+        if (!same(stored, incoming)) fail('historical replay has conflicting event set');
+        for (const header of normalizedHeaders) {
+          const replay = await tx.query("SELECT parent_hash,transaction_count,header FROM v2_indexer_blocks_fork WHERE chain_id=$1 AND stream='marketplace' AND block_number=$2 AND block_hash=$3 AND canonical=TRUE", [chainId, header.blockNumber, header.blockHash]);
+          if (!replay.rows.length || !same([replay.rows[0].parent_hash, String(replay.rows[0].transaction_count), replay.rows[0].header], [header.parentHash, String(header.transactionCount), header.header])) fail('historical replay conflicts with canonical history');
+        }
+      } else {
+        const first = normalizedHeaders[0];
+        if (BigInt(first.blockNumber) !== BigInt(base.blockNumber) + 1n || first.parentHash !== base.blockHash) fail('range start does not continue the verified cursor/ancestor');
+      }
+      // Validated exact replay is a pure read: never reapply projection effects.
+      if (exactReplay) return { cursor: headerCursor, headers: normalizedHeaders.length, events: normalizedEvents.length, range: { from: from.toString(), to: to.toString() }, replay: true };
+      if (anchor) {
+        await tx.query("UPDATE v2_indexer_blocks_fork SET canonical=FALSE WHERE chain_id=$1 AND stream='marketplace' AND canonical AND block_number>$2", [chainId, anchor.blockNumber]);
+        await tx.query('UPDATE v2_indexer_events_fork SET canonical=FALSE WHERE chain_id=$1 AND canonical AND block_number>$2', [chainId, anchor.blockNumber]);
+      }
+      for (const header of normalizedHeaders) await insertBlock(tx, header);
+      for (const event of normalizedEvents) await insertEvent(tx, event);
+      if (projector !== undefined && projector !== null) {
+        if (typeof projector !== 'function') fail('projector must be a function');
+        await projector(tx, { events: normalizedEvents, rebuild: !!anchor });
+      }
+      if (actual && !anchor && BigInt(headerCursor.blockNumber) < BigInt(actual.blockNumber)) fail('cursor cannot rewind without a verified reorg');
+      if (!exactReplay) await tx.query('INSERT INTO v2_indexer_cursors (chain_id,marketplace,cursor) VALUES ($1,$2,$3) ON CONFLICT (chain_id,marketplace) DO UPDATE SET cursor=excluded.cursor', [chainId, marketplace, cursorText(headerCursor)]);
+      return { cursor: headerCursor, headers: normalizedHeaders.length, events: normalizedEvents.length, range: { from: from.toString(), to: to.toString() }, replay: exactReplay };
+    });
+  }
   return Object.freeze({
     applyBatch,
     ingestBatch: applyBatch,
+    applyFinalizedLogRange,
     async cursor() { const result = await db.query('SELECT cursor FROM v2_indexer_cursors WHERE chain_id=$1 AND marketplace=$2', [chainId, marketplace]); return result.rows.length ? normalizeCursor(result.rows[0].cursor) : null; },
     async canonicalBlocks() { return (await db.query('SELECT * FROM v2_indexer_blocks_fork WHERE chain_id=$1 AND stream=\'marketplace\' AND canonical ORDER BY block_number', [chainId])).rows; },
     async rawEvents({ stream } = {}) { return (await db.query(`SELECT * FROM v2_indexer_events_fork WHERE chain_id=$1 ${stream ? 'AND stream=$2' : ''} ORDER BY block_number,transaction_index,log_index`, stream ? [chainId, stream] : [chainId])).rows; },

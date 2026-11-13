@@ -2,13 +2,17 @@
 
 ## Başlamadan önce
 
+**13 Kasım güncel karar:** Canlı karşı rol signer köprüsü rafa kaldırıldı; `LIVE_EXECUTION_NOT_ACCEPTED` kalıcı olarak kapalı. Operatörü Brave'deki ikinci hesabınla kendin oynayacaksın. İkinci hesabın adresini Hermes'e ver; yalnız bakiye/kayıt salt-okuma kontrolü yapılır. Faucet/fonlama ve bütün hesap imzaları sende. Aşağıdaki eski testOperator/signer hazırlık notları tarihseldir ve işlem yetkisi vermez. M3 için yeni indexer taraması fresh olmalı ve ikinci hesabın fonlanması doğrulanmalıdır.
+
+**Indexer güven modeli değişti:** Eski finalized aralıklar adres filtreli log batch'leriyle taranır; tüm boş blokların receipt/bloom kontrolü artık bu yerel tarihsel yolun iddiası değildir. Olay blokları ve aralık sınırları doğrulanır, head yakınında 32 blok reorg penceresi tutulur. Fresh, yeni açıkça belirtilmiş bu politika altında gerçek tarama tamamlanınca raporlanabilir; eski tam blok/receipt doğrulamasıyla karıştırılmaz.
+
 Uygulama: http://127.0.0.1:3102/v2
 
 Indexer sağlık: http://127.0.0.1:3103/health
 
 **Bu adreslerin hazırlanmış olması testin hazır olduğu anlamına gelmez.** Indexer deploy bloklarından bütün geçmişi doğrulamadan ve sağlık `fresh` olmadan M3–M8'e başlama. `starting`, `degraded`, `stale` veya geçmiş tarama gecikmesi varsa Hermes'e sağlık sonucunu bildir. Sağlık göstergesini kapatıp zorla işlem yapma. Mevcut UI'da Cancel open job desteklenmediği için devre dışıdır; bu düğme test edilen bir özellik değildir.
 
-Kendi mevcut Brave oturumunu kullan. Hermes senin cüzdanın adına imza veya işlem atmayacak. Şifre, seed phrase, özel anahtar, oturum cookie'si ve ham imza paylaşma. Karşı roller için yalnız atanmış test operator/resolver kullanılabilir; signer hazır değilse karşı adım bloke kalır.
+Kendi mevcut Brave oturumunu kullan. Hermes senin cüzdanın adına imza veya işlem atmayacak. Şifre, seed phrase, özel anahtar, oturum cookie'si ve ham imza paylaşma. Operator rolünü ikinci Brave hesabınla kendin oynarsın; rafa kaldırılmış signer bu akışın ön koşulu değildir.
 
 ### Aç / kapat
 
@@ -45,11 +49,11 @@ Resmi ağ bilgisi: https://docs.arc.network/arc/references/connect-to-arc
 
 - Yerel production build çalıştırıldı; API profili `arc-testnet`, chain ID `5042002` olarak okunuyor. DB, indexer ve web PM2 süreçleridir, cron işi değildir.
 - Migration'lar ayrı uygulandı. Başlat/durdur döngüsü doğrulandı. Bu, bilgisayar yeniden başlatma testi veya gerçek PostgreSQL sunucusu testi değildir.
-- Adaptif indexer yalnız mevcut public RPC'yi kullanıyor. Gözlenen bir tamamlanmamış aralık `68084270–70926941`, neden `pending_verified_range`; daha sonraki başarısız döngüde cursor `68084473`, head `70927229`, gap başlangıcı `68084474`, gap bitişi `null`, hata `INDEXER_RPC_FAILED` idi. Public RPC kontrollerinde aralıklı HTTP 429 görüldü. Geçmiş tamamlanmadı; güncel `/health` okunmadan hazır denmez. **5 iş ve Job 1–5 kimlikleri**, ayrıca **3 migration** DB'den doğrulandı.
-- Liste gecikmesi düzeltildi: önce 5 işte 250 RPC çağrısı ve 35.6 saniye; artık liste yalnız DB projection'ından dönüyor. Production HTTP ölçümleri **36.685 / 29.442 / 12.999 ms**, her biri 200 ve 5 iş. Son smoke exit 0; bu indexer'ın fresh olduğu anlamına gelmez. Yazma öncesi canonical tazelik kontrolleri kaldırılmadı.
-- Canlı, pinned canonical reader ön kontrolünde Yusuf ERC-20 USDC bakiyesi `14.972999`, native gösterimi `14.97299961`; bunlar toplanmaz. Sıfır değerli self-transfer gas tahmini `21000`, ölçülen gas fiyatıyla `0.00042 USDC`; bakiye yalnız bu örneği karşılıyor. Bu, marketplace işlemleri ve M1–M8 ödül/gas toplamına yeterlilik garantisi değildir.
-- `testOperator`: `0x7c3A84C2F23B50Cd7A70A597641776475abb59e7`, kayıtlı; serbest teminat `5 USDC`, ayrılmış teminat `0`. Etkin resolver canonical client policy sıfır olduğu için owner fallback: `0xf5e14962e46F80fAA40570bD86BccE83AA6626fF`.
-- Karşı-rol CLI'si varsayılan olarak yalnız **unsigned-plan** üretir. DPAPI için testOperator ve owner anahtar/parola dosyalarının varlığı salt-okuma `--status` ile doğrulandı; bu gerçek imza veya çalışır gönderim kanıtı değildir. Yeni canlı köprü, bağımsız incelemede nonce/gas hazırlığı, gerçek API payload entegrasyonu ve readback kontrolleri tamamlanmadığı için **anahtar çözülmeden `LIVE_EXECUTION_NOT_ACCEPTED` ile durur**. Şu an karşı roller uçtan uca hazır değildir. `python scripts\v2-local-arc-secure-executor.py --status` sonucu `blocked` olmalıdır. Genel yetki açık olsa da belirli job/işlem isteği olmadan anahtar çözme, imza veya gönderim yapılmaz.
+- 13 Kasım 17:25 UTC kontrolünde indexer cursor/head/safeHead `72210129`, status `healthy`, `stale: false`, `gap: null`, lag `0`. Bu anlık ölçümdür; her işlemden önce güncel sağlık tekrar okunmalıdır. **5 iş ve 3 migration** doğrulandı.
+- Liste yalnız DB projection'ından döner. Son üç HTTP ölçümü **55.773 / 16.346 / 12.751 ms**, her biri 200 ve 5 iş. Build ve smoke exit 0; yazma öncesi canonical tazelik kontrolleri kaldırılmadı.
+- İkinci hesap adresi henüz verilmedi. Güncel native/ERC-20 bakiye, kayıt ve teminat salt-okuma kontrolü adres gelince yapılır; eski hesap bakiyeleri güncel fon yeterliliği kanıtı değildir. Native ve ERC-20 USDC gösterimleri toplanmaz.
+- Faucet, kayıt, teminat, başvuru, teslim ve bütün hesap imzaları Yusuf tarafından yapılır. Hermes fon göndermez. M3 için ikinci hesabın fonlanması ve ayrıca açık başlama onayı gerekir.
+- Signer köprüsü kalıcı olarak rafa kaldırıldı: `LIVE_EXECUTION_NOT_ACCEPTED`; C3/C4/C6/C7 açık. Gate regresyonları geçti, fakat bu canlı signer kabulü değildir. M8 geniş executor ile çalıştırılmaz; güvenli tek-job komutu bulunmadığı için gönderim blokeli.
 
 ### Tekrar kontrol komutları
 
@@ -59,12 +63,12 @@ Repo dizininden CMD:
 cd web
 node scripts\v2-local-arc-control.mjs status
 node scripts\v2-local-arc-smoke.mjs
-node scripts\v2-local-arc-preflight.mjs --operator=0x7c3A84C2F23B50Cd7A70A597641776475abb59e7
+
 ```
 
-`status` çıktısında `testReady: false` varsa M3–M8 başlamaz. Health `healthy`, `stale: false`, `gap: null` olmalı ve tazelik 30 saniyeyi geçmemeli; ayrıca signer hazırlığı ayrı doğrulanmalıdır.
+`readerGatePassed: true` yalnız reader koşulunu kanıtlar. Health `healthy`, `stale: false`, `gap: null` olmalı ve tazelik 30 saniyeyi geçmemeli. `testReady: false` ve `pending_user_address` ikinci hesap/onay kapısının açık kaldığını belirtir; signer köprüsünü açarak aşılmaz.
 
-Karşı-rol plan arayüzü: `node scripts\v2-local-arc-counterparty.mjs --action=... --job-id=... --operator=... --expected-version=...`. Bunlar şablondur, `...` yerine gerçek canonical değerler gerekir. Desteklenen planlar: `apply`, `submit-delivery`, `revision`, `accept-mutual`, `resolve`. Teslimde gerçek kaydedilmiş manifest `--hash` değeri; mutual kabulde gerçek `--expected-request-version`; resolver kararında gerçek `--resolver`, `--reason-hash`, `--evidence-hash`, `--gross-payout` ve açık `--operator-fault=true/false` gerekir. Hiçbir plan doğrudan gönderilmez. Tarihsel başka client'ın işi, yanlış zincir, yanlış party/version ve eksik hash reddedilir.
+Operatör için CLI kullanma; aşağıdaki ikinci Brave hesabı adımlarını izle. M8'de Hermes'ten yalnız belirli job ve karara özgü plan iste. Hazır tek-job executor bulunmadan bu plan gönderim yeteneği anlamına gelmez.
 
 ## Her testte kayıt
 
@@ -96,17 +100,17 @@ Yeni küçük test işler aç; tarihsel Job 1–5 üzerinde senaryoları tekrar 
 
 ## M4 — Operator başvurusu / client ataması
 
-**Yusuf'un adımı:** İş ID'sini doğrula; başvuru geldikten sonra Load applications yapıp doğru testOperator'ı seç. Award işlemini kendi cüzdanınla onayla.
+**Yusuf'un adımı:** Brave cüzdanında ikinci hesaba geç, uygulamada eski oturumu kapat ve yeni adresi kontrol ederek bu hesapla yeniden bağlan/oturum aç. Arc Testnet chain ID `5042002` olmalı. Arayüzden operator kaydı yap; gerekiyorsa faucet ile kendin fonla ve teminatı kendin yatır. Güncel minimumu kontrol et; tek test yatırımı en fazla 5 USDC. İkinci hesapla işin başvuru formunu doldurup EIP-712 başvurusunu kendin imzala. Sonra ilk/client hesabına geçip eski operator oturumunu kapat, client oturumunu doğrula; Load applications ile tam ikinci hesap adresini seç ve Award işlemini kendin onayla.
 
-**Hermes'ten isteyeceğin:** “Job #... için testOperator başvursun.” Bu yalnız o işe ait EIP-712 başvuru ve imzalı API POST isteğidir; başka işlem yetkisi değildir. Teminat gerekiyorsa ayrıca “Job #... için testOperator ... USDC teminat yatırsın” de; tek yatırma en fazla 5 USDC.
+**Hermes'ten isteyeceğin:** “İkinci hesabım 0x...; bakiye/kayıt/teminatı salt-okuma kontrol et.” Ardından job ID ve kendi tx hash'lerini vererek receipt/canonical durumu doğrulat. Hermes başvurmaz, teminat yatırmaz, fon göndermez ve hesap değiştirme/cüzdan otomasyonu yapmaz.
 
-**Ne göreceksin:** Gerçek API'de başvuru; senin Award receipt/readback'inden sonra InProgress ve doğru operator. Applications gizlenir. Hermes işlem sonucu/hash varsa bildirir.
+**Ne göreceksin:** İkinci hesabın gerçek başvurusu; client Award receipt/readback'inden sonra InProgress ve tam ikinci hesap adresi. Hesap değişince önceki hesabın imzalı oturumu diğer hesap için kullanılmamalı.
 
 ## M5 — Teslim / normal onay / ödeme çekimi
 
-**Yusuf'un adımı:** Job Submitted olduktan sonra ayrı Approve / Request revision / Open dispute düğmelerini kontrol et. Approve işlemini kendi cüzdanında onayla.
+**Yusuf'un adımı:** İkinci/operator hesabına ve ona ait oturuma geç. Gerçek teslim içeriğini/linkini arayüzden gir, manifest kaydı ve submitDelivery için kendi cüzdan onayını ver. Submitted olduktan sonra ilk/client hesabına ve oturumuna dön; Approve / Request revision / Open dispute düğmelerini kontrol edip Approve işlemini kendin onayla. Credit çekimi için hak sahibi hesaba tekrar geçip arayüzden kendin işlem yap.
 
-**Hermes'ten isteyeceğin:** Önce “Job #... için şu gerçek teslim linkini ... teslim et.” Hermes gerçek manifest'i API'de kaydeder, yalnız atanmış testOperator ile simülasyon sonrası submitDelivery gönderir. Ödeme çekimi için daha sonra ayrıca “Job #... sonrası testOperator credit'ini kontrol et ve çek” de; çekim ayrı istektir.
+**Hermes'ten isteyeceğin:** “Job #..., teslim/onay/çekim tx ...; receipt ve state/credit/bakiye farkını salt-okuma doğrula.” Hermes manifest POST, operator teslimi veya credit çekimi göndermez.
 
 **Ne göreceksin:** Submitted, sonra onay receipt/readback'i ile Completed; ödeme credit'i ile token çekimi ayrıdır. Belirsiz/pending işlem tekrar gönderilmez.
 
@@ -114,7 +118,7 @@ Yeni küçük test işler aç; tarihsel Job 1–5 üzerinde senaryoları tekrar 
 
 **Yusuf'un adımı:** Ayrı küçük işi Submitted'e getir. Request revision seçip notunu gir; kendi işlemini onayla. Revize teslim geldiğinde kendin onayla.
 
-**Hermes'ten isteyeceğin:** “Job #... RevisionPending, tx ...; şu yeni teslimi ... revizyon olarak teslim et.” Bu yalnız gerçek API manifest kaydı ve submitRevision içindir. Son ödeme çekimini ayrı iste.
+**Hermes'ten isteyeceğin:** “Job #... RevisionPending, tx ...; salt-okuma doğrula.” Revize teslimi ikinci/operator hesabına ve onun oturumuna geçerek arayüzden kendin yap; yeni delivery sürümünü ve tx hash'ini doğrulat. Client onayı ve hak sahibinin çekimi yine kendi hesaplarıyla yapılır.
 
 **Ne göreceksin:** RevisionPending, yeni delivery sürümü, ardından Submitted. Önceki teslim korunur. “Ne oldu?” sorusu veya genel devam komutu yeni işlem yetkisi sayılmaz.
 
@@ -122,21 +126,21 @@ Yeni küçük test işler aç; tarihsel Job 1–5 üzerinde senaryoları tekrar 
 
 **Yusuf'un adımı:** Ayrı uygun işte client olarak tam iade/kısmi ödeme teklifini, miktarları ve expiry'yi kontrol edip kendi cüzdanınla öner. Proposal expires başlangıçta üç gün sonrasıyla dolu gelmeli; değiştirilebilir.
 
-**Hermes'ten isteyeceğin:** “Job #... mutual request version ...; testOperator bu teklifi kabul etsin.” Ret için açıkça “bu teklifi reddetsin” de. Operator'ın teklif oluşturması gerekiyorsa payout/refund/expiry değerlerini açıkça yazarak ayrı istek ver; client kabulünü kendin imzala.
+**Hermes'ten isteyeceğin:** “Job #... mutual request version ...; tarafları, payout/refund/expiry ve işlem sonucunu salt-okuma doğrula.” Operator kabul/ret/teklifini ikinci Brave hesabı ve onun oturumuyla kendin yap; client kabulünü ilk hesapla kendin imzala. Hermes mutual işlem göndermez.
 
 **Ne göreceksin:** Yalnız güncel, süresi geçmemiş ve karşı tarafın teklifi üzerinde işlem. Kabul sonrası receipt/readback ve doğru terminal durum/credit. Çekimler ayrı isteklerdir.
 
 ## M8 — Dispute / resolver
 
-**Yusuf'un adımı:** Ayrı uygun işte client olarak Open dispute işlemini kendin yap. Resolver karar planındaki payout, operatorFault ve olası slash etkisini incele. Operator'ın dispute açması isteniyorsa bunu ayrıca açıkça söyle.
+**Yusuf'un adımı:** Ayrı uygun işte client olarak Open dispute işlemini kendin yap. Operator tarafı gerekirse ikinci Brave hesabından kendin işlem yap. Resolver kararındaki payout, operatorFault ve olası slash etkisini incele; sonra **Hermes'ten karar iste**.
 
-**Hermes'ten isteyeceğin:** Önce “Job #... Disputed, tx ...; şu payout/operatorFault/reason/evidence için resolver planını göster.” Plan göstermek gönderim değildir. Ardından yalnız o karar için “Job #... gösterdiğin resolver kararını uygula” de. Fault-review kararı gerekiyorsa job, slash, reason ve evidence ile resolveFaultReview isteğini ayrıca belirt.
+**Hermes'ten isteyeceğin:** Önce “Job #... Disputed, tx ...; şu payout/operatorFault/reason/evidence için resolver planını göster.” Plan gönderim değildir. Yalnız güvenli, tek-job onaylı executor hazırsa “Job #... gösterdiğin kararı uygula” isteğiyle simülasyon → gönderim → receipt → canonical readback yapılabilir. Fault review ayrı bir resolveFaultReview isteğidir. Şu an incelenen approved-v2-executor deploy/config/all komutları içeriyor; tek-job karar komutu yok. Bu yüzden geniş executor çalıştırılmaz ve **M8 gönderimi bloke** kalır.
 
 **Ne göreceksin:** Gerçek etkin resolver doğrulanır; simülasyon sonrasında yalnız o job/karar gönderilir. Receipt ve canonical stake/slash/credit readback'i ile tx hash raporlanır. Uygun signer yoksa veya sınır aşılırsa imza/gönderim yapılmadan durulur.
 
 ### Bütün karşı-rol isteklerinde sınırlar
 
-Yalnız Arc Testnet `5042002`, canonical client Yusuf, reward en fazla 5 USDC; yalnız doğrulanmış testOperator ve etkin resolver/owner, yalnız onaylı fonksiyonlar. Yusuf adına hiçbir imza yoktur. Otomatik/zamanlanmış gönderim yoktur; her işlem için yeni ve belirli sohbet isteği gerekir. Keystore DPAPI mekanizmasında kalır; anahtar, şifre, ham imza veya cookie paylaşılmaz. Her zincir işlemi önce simülasyon, sonra receipt ve readback ister.
+Operatör işlemleri yalnız Yusuf'un ikinci Brave hesabıyla manuel yapılır; Hermes bunları göndermez. Hermes'in olası hakem yetkisi yalnız Arc Testnet `5042002`, canonical client `0x460EBe282Fb0e42B4d682a7f9EF408302417F780`, reward en fazla 5 USDC, etkin resolver/owner ve ayrıca onaylı tek-job resolveDispute/resolveFaultReview kapsamındadır. Deploy/config/fonlama/toplu senaryo bu kapsamda değildir. Yusuf adına hiçbir imza yoktur; otomatik/zamanlanmış gönderim yoktur. İkinci hesap ve ilk hesap için seed, anahtar, şifre, cookie veya ham imza paylaşma. Her hakem işlemi ayrıca belirli sohbet isteği, simülasyon, receipt ve canonical readback gerektirir. Rafa kaldırılmış signer köprüsü yeniden açılmaz.
 
 ## Durdurma
 
