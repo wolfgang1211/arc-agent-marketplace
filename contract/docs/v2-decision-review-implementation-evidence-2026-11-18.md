@@ -9,7 +9,7 @@ Status: **implementation accepted by Yusuf; commit/push authorized independently
 - Üç karar inceleme düzeltmesi yerel uygulamaya entegre edildi.
 - Entegre test grubu 213/213 geçti; production build exit 0.
 - UI/executor karşılaştırması gerçek dönen delta alanlarını kullanıyor.
-- Masaüstü/mobil görüntüler alınamadı: mevcut Brave'de yeni sekme açma araç onayı zaman aşımına uğradı.
+- Headless Edge ile 8 masaüstü/mobil offline fixture görüntüsü alındı; kullanıcı tarayıcısına bağlanılmadı.
 - Yusuf görüntüleri commit koşulundan çıkardı; M6 açık. Revizyon kartının gerçek kabulü M6 sırasında yapılacak.
 
 ## Implementation and source locations
@@ -78,24 +78,27 @@ This is an offline pure-function witness. It is **not** a signer invocation, exe
 - The served page bundles were read back and contained the new review/confirmation labels.
 - Only the named loopback web service was restarted. DB and indexer were not stopped.
 
-## Visual evidence: separate non-blocking step
+## Visual evidence: headless Edge, separate from manual acceptance
 
-No new screenshot image was captured. Therefore there are **no accepted desktop/mobile screenshot filenames**.
+After Yusuf explicitly authorized headless Edge, eight full-page screenshots were captured using Playwright `chromium.launch(channel="msedge", headless=True)` on installed Edge 157.0.4341.60.
 
-An offline SSR fixture set was generated from the real current component exports and stylesheet, with public-pattern fictional data explicitly labelled OFFLINE FIXTURE. HTML is not screenshot evidence and does not prove native-wallet or real-chain acceptance.
+The source is the actual review-component SSR fixture set and application stylesheet. All screens visibly say OFFLINE FIXTURE, no real job or transaction, with fictional public-pattern wallets. This is visual evidence only, not user-wallet, live-chain or M6/M7/M8 acceptance.
 
-Prepared fixture documents:
+| Screen | Desktop 1280px | Mobile 390px |
+|---|---|---|
+| Incoming mutual | `v2-mutual-desktop-edge.png` | `v2-mutual-mobile-edge.png` |
+| Revision requested | `v2-revision-desktop-edge.png` | `v2-revision-mobile-edge.png` |
+| Dispute economic preview | `v2-dispute-preview-desktop-edge.png` | `v2-dispute-preview-mobile-edge.png` |
+| Resolved dispute | `v2-dispute-desktop-edge.png` | `v2-dispute-mobile-edge.png` |
 
-- `mutual-desktop.html`, `mutual-mobile.html`
-- `revision-desktop.html`, `revision-mobile.html`
-- `dispute-desktop.html`, `dispute-mobile.html`
+All eight captures measured document/body width equal to the viewport, with no horizontal overflow. Screenshot files and their recorded SHA-256 hashes were independently checked. The images are delivered in `v2-decision-screenshots-edge.zip`; screenshot files and machine-local capture metadata are outside the source checkout.
 
-The temporary fixture-only loopback server was stopped; port 3105 was independently verified closed. No isolated browser was launched. A browser action refused for missing consent was not retried or bypassed.
+No user browser was attached or controlled during this step. Only a new headless Edge process was used and then closed. The ephemeral fixture HTTP server was shut down by the capture script. The earlier Brave permission timeout is historical and no longer a commit or M6 gate.
 
 ## Commit, push and release gate
 
 - Yusuf explicitly authorized immediate commit/push of this implementation, tests and evidence without waiting for screenshots.
-- Pre-checkpoint baseline: `bab52c3402e442336a09c4fb86a4f6b0696d488e`. The resulting commit SHA and remote readback are reported after execution.
+- Implementation commit: `f5081ef01e14e95e0dd5dba510d103b1a7a3e371`; remote `feat/marketplace-v2` readback matched this exact SHA after push. The screenshot-result documentation is recorded in a follow-up docs-only commit.
 - Local `main` remains `c7aa27c6ff28676122b94ffeddef6f57d5d3efef`.
 - **M6 is open by explicit Yusuf decision.** The real revision-card acceptance is deferred to Yusuf’s M6 test; mutual-card acceptance to M7; dispute-card acceptance to separately authorized M8.
 - Screenshots may use only headless Playwright Edge with `channel: "msedge"`. Do not attach to Brave or any user browser. Edge failure is report-only, not an M6 blocker.
