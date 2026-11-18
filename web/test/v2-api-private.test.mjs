@@ -18,7 +18,7 @@ const HASH = `0x${'ab'.repeat(32)}`;
 const BLOCK = `0x${'cd'.repeat(32)}`;
 const scratch = scratchDir();
 
-async function fixture({ assigned = false, account = {}, readSignature } = {}) {
+async function fixture({ assigned = false, account = {}, readSignature, canonicalDelivery } = {}) {
   const dir = await mkdtemp(path.join(scratch, 'v2-private-'));
   const db = await createPgliteDb({ dataDir: dir }); await migrate(db);
   const client = privateKeyToAccount(generatePrivateKey());
@@ -27,7 +27,7 @@ async function fixture({ assigned = false, account = {}, readSignature } = {}) {
   const resolver = privateKeyToAccount(generatePrivateKey());
   const job = { id: '1', status: assigned ? '1' : '0', operator: assigned ? operator.address : null };
   await db.query(`INSERT INTO v2_jobs(chain_id,marketplace,job_id,reward,status,state_version,terms_hash,client,operator,resolver,source_block,source_hash,data) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`, [CHAIN_ID, MARKETPLACE, job.id, '100', job.status, '53', HASH, client.address, job.operator, resolver.address, '100', BLOCK, { applyBy: '2000000000' }]);
-  const readerFactory = (options = {}) => { assert.equal(options.toBlockTag, '0x64'); return { async read() { return { chainId: 5042002n, blockTag: '0x64', blockHash: BLOCK, async readJob() { return { status: Number(job.status), stateVersion: 53n, canonicalTermsHash: HASH, client: client.address, operator: job.operator, resolver: resolver.address }; }, async readAccount() { return { registered: true, maxActiveJobs: 4n, activeJobs: 0n, credits: 0n, nonceEpoch: 0n, freeStake: 1n, reservedStake: 0n, applicationNonce: async () => 0n, ...account }; } }; } }; };
+  const readerFactory = (options = {}) => { assert.equal(options.toBlockTag, '0x64'); return { async read() { return { chainId: 5042002n, blockTag: '0x64', blockHash: BLOCK, async readJob() { return { status: Number(job.status), stateVersion: 53n, canonicalTermsHash: HASH, client: client.address, operator: job.operator, resolver: resolver.address, ...(canonicalDelivery ?? {}) }; }, async readAccount() { return { registered: true, maxActiveJobs: 4n, activeJobs: 0n, credits: 0n, nonceEpoch: 0n, freeStake: 1n, reservedStake: 0n, applicationNonce: async () => 0n, ...account }; } }; } }; };
   let now = 1700000000000;
   const auth = createV2AuthApi({ db, origin: ORIGIN, now: () => now, verifyWalletSignature: ({ wallet, message, signature }) => verifyMessage({ address: wallet, message, signature }) });
   const api = createV2PrivateApi({ db, auth, readerFactory, readSignature, origin: ORIGIN, now: () => now, getHealth: async () => ({ status: 'healthy', stale: false, gap: null }) });
@@ -113,6 +113,25 @@ test('delivery idempotency binds the requested version and rejects changed versi
     assert.equal((await f.db.query("SELECT count(*)::int AS n FROM v2_audit_events WHERE event_type='delivery.created'")).rows[0].n, 1);
     assert.equal((await f.db.query('SELECT count(*)::int AS n FROM v2_idempotency_keys')).rows[0].n, 1);
   } finally { await close(f); }
+});
+
+test('delivery GET exposes canonical onchain metadata and review binding without treating drafts as canonical', async () => {
+  const f = await fixture({ assigned: true, canonicalDelivery: { deliveryVersion: 9n, deliveryHash: `0x${'ee'.repeat(32)}` } });
+  try {
+    await f.db.query("INSERT INTO v2_deliveries(id,chain_id,marketplace,job_id,version,content_hash,content,visibility,receipt_refs) VALUES('draft',$1,$2,1,7,$3,$4,'private','[]')", [CHAIN_ID, MARKETPLACE, HASH, { draft: true }]);
+    for (const account of [f.client, f.operator]) {
+      const auth = await login(f, account); const out = await call(f, '/api/v2/jobs/1/deliveries', { headers: { cookie: auth.cookie, 'x-v2-csrf': auth.csrf } });
+      assert.equal(out.response.status, 200); assert.equal(out.body.reviewContext.jobId, '1'); assert.equal(out.body.reviewContext.stateVersion, '53');
+      assert.deepEqual(out.body.canonicalDelivery, { version: '9', contentHash: `0x${'ee'.repeat(32)}` }); assert.equal(out.body.items[0].version, '7'); assert.equal(out.body.items[0].contentHash, HASH);
+    }
+    const outsider = await login(f, f.outsider); const denied = await call(f, '/api/v2/jobs/1/deliveries', { headers: { cookie: outsider.cookie, 'x-v2-csrf': outsider.csrf } }); assert.equal(denied.response.status, 403);
+  } finally { await close(f); }
+});
+
+test('delivery GET returns null canonical metadata when reader delivery metadata is absent or invalid', async () => {
+  for (const canonicalDelivery of [undefined, { deliveryVersion: '0', deliveryHash: `0x${'ee'.repeat(32)}` }, { deliveryVersion: '2', deliveryHash: `0x${'00'.repeat(32)}` }, { deliveryVersion: 'not-decimal', deliveryHash: '0x1234' }]) {
+    const f = await fixture({ canonicalDelivery }); try { const auth = await login(f, f.client); const out = await call(f, '/api/v2/jobs/1/deliveries', { headers: { cookie: auth.cookie, 'x-v2-csrf': auth.csrf } }); assert.equal(out.response.status, 200); assert.equal(out.body.canonicalDelivery, null); assert.deepEqual(out.body.reviewContext, { jobId: '1', stateVersion: '53' }); } finally { await close(f); }
+  }
 });
 
 test('unexpected provider and database errors are redacted to the fixed private error contract', async () => {

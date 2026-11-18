@@ -88,6 +88,33 @@ async function canonicalActionContext(readerFactory, jobId, indexedRow) {
     return actionContext({ ...indexedRow, ...canonical }, mutual, snap.blockTimestamp);
   } catch { return null; }
 }
+async function canonicalAccount(readerFactory, getHealth, profile, address) {
+  if (typeof readerFactory !== 'function' || typeof getHealth !== 'function') throw new Error('reader unavailable');
+  const assertHealthy = async () => {
+    const health = safeHealth(await getHealth());
+    if (health.status !== 'healthy' || health.stale !== false || health.gap !== null) throw new Error('reader unavailable');
+  };
+  await assertHealthy();
+  const snap = await readerFactory().read();
+  if (BigInt(snap?.chainId) !== profile.canonicalChainId || typeof snap?.blockTag !== 'string' || !/^0x(?:0|[1-9a-fA-F][0-9a-fA-F]*)$/.test(snap.blockTag) || !hashString(snap.blockHash) || typeof snap.readAccount !== 'function') throw new Error('invalid account snapshot');
+  // readAccount uses the existing runtime-attested, block-pinned snapshot guard.
+  // Absence from an event projection is never evidence of a zero balance.
+  const raw = await snap.readAccount(address);
+  if (typeof raw?.registered !== 'boolean') throw new Error('unknown registration');
+  const uint = (key) => {
+    const value = uintValue(raw[key]);
+    if (value === null || value > UINT256_MAX) throw new Error('invalid account value');
+    return value.toString();
+  };
+  const value = {
+    address,
+    operator: { stateVersion: null, registered: raw.registered, maxActiveJobs: uint('maxActiveJobs'), activeJobs: uint('activeJobs') },
+    credits: { balance: uint('credits'), free: uint('freeStake'), reserved: uint('reservedStake'), stateVersion: null },
+    source: { block: BigInt(snap.blockTag).toString(), hash: hashString(snap.blockHash) },
+  };
+  await assertHealthy();
+  return value;
+}
 function parseQuery(url) {
   const seen = new Set();
   for (const [key] of url.searchParams) {
@@ -353,10 +380,15 @@ export function createV2ReadApi({ db, getHealth, profile = ARC_TESTNET_PROFILE, 
         const row = result.rows[0];
         return json(envelope(job(row, await publicDocumentFor(db, id, profile), await canonicalActionContext(readerFactory, id, row))));
       }
-      if (parts.length === 4 && parts[2] === 'accounts') {
+      if ((parts.length === 4 || (parts.length === 5 && parts[4] === 'canonical')) && parts[2] === 'accounts') {
         if (typeof parts[3] !== 'string' || parts[3].length !== 42 || !ADDRESS.test(parts[3])) fail('BAD_ADDRESS');
         let address;
         try { address = getAddress(parts[3]); } catch { fail('BAD_ADDRESS'); }
+        if (parts.length === 5) {
+          if (url.search) return error('INVALID_QUERY', 400);
+          try { return json(envelope(await canonicalAccount(readerFactory, getHealth, profile, address))); }
+          catch { return error('READER_UNAVAILABLE', 503); }
+        }
         const [operator, credit] = await Promise.all([
           db.query('SELECT data, state_version FROM v2_operator_projection WHERE chain_id = $1 AND marketplace = $2 AND operator = $3', [...ctx, address]),
           db.query('SELECT balance, data, state_version FROM v2_credit_projection WHERE chain_id = $1 AND marketplace = $2 AND wallet = $3', [...ctx, address]),

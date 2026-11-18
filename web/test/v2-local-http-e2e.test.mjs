@@ -179,7 +179,7 @@ test('offline fixture: WalletSessionControl connects then signs the exact person
   let session = null;
   try {
     globalThis.ethereum = { request: async ({ method, params }) => {
-      if (method === 'eth_requestAccounts') return [client.address];
+      if (method === 'eth_requestAccounts' || method === 'eth_accounts') return [client.address];
       if (method === 'eth_chainId') return ['0x4cef52'];
       if (method === 'personal_sign') {
         const rawMessage = Buffer.from(String(params[0]).slice(2), 'hex').toString('utf8');
