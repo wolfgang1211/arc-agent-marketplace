@@ -8,6 +8,8 @@ import { ARC_TESTNET_PROFILE, resolveV2ChainProfile, toPublicV2Profile, assertV2
 import { createV2ReadApi } from './api-read.mjs';
 import { createV2AuthApi } from './api-auth.mjs';
 import { createV2PrivateApi } from './api-private.mjs';
+import { createV2RevisionNotesApi } from './revision-notes-api.mjs';
+import { createV2DecisionReviewApi } from './decision-review-api.mjs';
 import { createV2ActionsApi } from './api-actions.mjs';
 import { createV2ChainReader } from './chain-reader.mjs';
 import { createV2SignatureVerifier } from './api-signatures.mjs';
@@ -75,6 +77,8 @@ export function createV2Api({ db, origin = V2_LOCAL_ORIGIN, profile = ARC_TESTNE
   const auth = createV2AuthApi({ db, origin, profile, verifyWalletSignature, now });
   const read = createV2ReadApi({ db, auth, getHealth, profile, readerFactory, transport: createReadOnlyV2Transport({ profile }) });
   const privateApi = privateHandler ?? createV2PrivateApi({ db, auth, readerFactory, getHealth, readSignature, origin, now, profile });
+  const revisionNotes = createV2RevisionNotesApi({ db, auth, readerFactory, getHealth, origin, profile });
+  const decisionReview = createV2DecisionReviewApi({ db, auth, readerFactory, getHealth, origin, profile });
   const actions = createV2ActionsApi({ db, auth, readerFactory, getHealth, readSignature, origin, now, profile });
   const handle = async (request) => {
     try {
@@ -83,6 +87,8 @@ export function createV2Api({ db, origin = V2_LOCAL_ORIGIN, profile = ARC_TESTNE
       if (url.pathname === '/api/v2/profile' && request.method === 'GET') return Response.json({ profile: toPublicV2Profile(profile) }, { headers: { 'cache-control': 'no-store', 'content-type': 'application/json; charset=utf-8' } });
       if (url.pathname.startsWith('/api/v2/auth/')) return await auth(request);
       if ((request.method === 'POST' && url.pathname === '/api/v2/jobs') || url.pathname === '/api/v2/draft-context' || /^\/api\/v2\/jobs\/[^/]+\/preflight$/.test(url.pathname) || url.pathname.startsWith('/api/v2/drafts/') || url.pathname === '/api/v2/accounts/preflight') return await actions(request);
+      if (/^\/api\/v2\/jobs\/[^/]+\/revision-notes$/.test(url.pathname)) return await revisionNotes(request);
+      if (/^\/api\/v2\/jobs\/[^/]+\/decision-review$/.test(url.pathname)) return await decisionReview(request);
       if (/^\/api\/v2\/jobs\/[^/]+\/(applications|deliveries|application-context)$/.test(url.pathname) || url.pathname === '/api/v2/resolver') return await privateApi(request);
       return await read(request);
     } catch {

@@ -52,7 +52,8 @@ test('unknown API errors and local validation use a fixed safe fallback', async 
     assert.doesNotMatch(rendered, /secret-token-url|UNKNOWN_ERROR_CODE/);
     renderer.unmount();
 
-    const invalid = TestRenderer.create(React.createElement(ResolverActionPanel, { job, session, health }));
+    const invalid = TestRenderer.create(React.createElement(ResolverActionPanel, { job:{...job, status:'5',resolver:session.wallet,client:'0x4444444444444444444444444444444444444444',operator:'0x5555555555555555555555555555555555555555'}, session, health }));
+    await act(async()=>{});
     await act(async () => invalid.root.findByType('form').props.onSubmit({ preventDefault() {} }));
     const invalidRendered = JSON.stringify(invalid.toJSON());
     assert.match(invalidRendered, /The action could not be prepared\./);
@@ -135,25 +136,15 @@ test('account actions are disabled fail-closed without session or healthy reader
   assert.equal(stale.root.findAllByType('button').every((node) => node.props.disabled), true);
 });
 
-test('resolver serializes explicit false operatorFault and uses unsigned preflight', async () => {
-  const calls = [];
-  const originalFetch = globalThis.fetch;
-  globalThis.fetch = async (_path, options) => { calls.push(JSON.parse(options.body)); return new Response(JSON.stringify({ action: 'resolveDispute', transaction: { data: '0xabc' }, onchainStatus: 'not_submitted' }), { status: 200, headers: { 'content-type': 'application/json' } }); };
-  try {
-    const renderer = TestRenderer.create(React.createElement(ResolverActionPanel, { job, session, health }));
-    const inputs = renderer.root.findAllByType('input');
-    for (const input of inputs) if (input.props.type !== 'checkbox') await act(async () => input.props.onChange({ target: { value: input.props.value || `0x${'b'.repeat(64)}` } }));
-    await act(async () => findButton(renderer, 'Resolve dispute').props.onClick?.());
-    const form = renderer.root.findByType('form');
-    await act(async () => form.props.onSubmit({ preventDefault() {} }));
-    assert.equal(calls.length, 1);
-    assert.equal(calls[0].action, 'resolveDispute');
-    assert.equal(calls[0].params.operatorFault, false);
-    assert.equal(calls[0].params.grossPayout, '1000000');
-    assert.equal(calls[0].params.expected, '3');
-    assert.equal(calls[0].params.reasonHash.length, 66);
-    assert.equal(calls[0].params.evidenceHash.length, 66);
-  } finally { globalThis.fetch = originalFetch; }
+test('resolver serializes explicit false operatorFault only after read-only preview and explicit confirmation', async () => {
+ const calls=[],old=globalThis.fetch,ctx={jobId:'7',stateVersion:'3',block:'100',blockHash:'0x'+'ab'.repeat(32)};
+ globalThis.fetch=async(path,opt)=>{if(!opt||opt.method==='GET')return new Response(JSON.stringify({context:ctx}),{status:200});const body=JSON.parse(opt.body);calls.push(body);return new Response(JSON.stringify(path.endsWith('decision-review')?{context:ctx,previewBinding:ctx,preview:{refund:'0',grossPayout:'1000000',fee:'50000',operatorNet:'950000',clientCredit:'0',treasuryCredit:'50000',stakeReleased:'5000000',stakeSlashed:'0',releaseRecipient:job.operator,slashRecipient:null,conservation:{totalBefore:'6000000',totalAfter:'6000000'}}}:{action:'resolveDispute',transaction:null,onchainStatus:'not_submitted'}),{status:200});};let renderer;
+ try{await act(async()=>{renderer=TestRenderer.create(React.createElement(ResolverActionPanel,{job:{...job,jobId:'7',client:'0x4444444444444444444444444444444444444444',operator:'0x5555555555555555555555555555555555555555',resolver:session.wallet,status:'5'},session,health}));});
+ for(const input of renderer.root.findAllByType('input').filter(i=>i.props.type!=='checkbox'))await act(async()=>input.props.onChange({target:{value:input.props.name==='grossPayout'?'1':'Evidence URL'}}));
+ await act(async()=>renderer.root.findByType('textarea').props.onChange({target:{value:'Accepted the work'}}));
+ await act(async()=>renderer.root.findByType('form').props.onSubmit({preventDefault(){}}));assert.equal(calls.length,1);assert.equal(calls[0].operatorFault,false);assert.equal(calls[0].grossPayout,'1000000');assert(!calls[0].action);
+ await act(async()=>findButton(renderer,'Confirm resolution').props.onClick());assert.equal(calls.length,2);assert.equal(calls[1].action,'resolveDispute');assert.equal(calls[1].params.operatorFault,false);assert.equal(calls[1].params.grossPayout,'1000000');assert.equal(calls[1].params.expected,'3');assert.equal(calls[1].params.reasonHash.length,66);assert.equal(calls[1].params.evidenceHash.length,66);
+ }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=old;}
 });
 
 test('job action panel renders no wallet signing or transaction submission path', () => {
