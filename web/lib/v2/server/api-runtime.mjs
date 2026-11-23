@@ -22,14 +22,42 @@ const RPC_METHODS = new Set(['eth_chainId', 'eth_blockNumber', 'eth_getBlockByNu
 const unavailable = () => ({ status: 'unavailable', stale: true, gap: null, code: 'READER_UNAVAILABLE', reason: 'reader unavailable' });
 let nextRpcId = 0;
 
+// Public RPC endpoints rate-limit bursts (JSON-RPC -32005 / HTTP 429). Several
+// private routes read the same job in parallel, each issuing dozens of reads, so
+// cap in-flight RPC requests per process and retry only explicit rate limits.
+export const V2_RPC_MAX_IN_FLIGHT = 4;
+export const V2_RPC_RETRY_DELAYS_MS = Object.freeze([300, 700, 1500]);
+let rpcInFlight = 0;
+const rpcWaiters = [];
+async function withRpcSlot(fn) {
+  if (rpcInFlight >= V2_RPC_MAX_IN_FLIGHT) await new Promise(resolve => rpcWaiters.push(resolve));
+  rpcInFlight++;
+  try { return await fn(); } finally { rpcInFlight--; const next = rpcWaiters.shift(); if (next) next(); }
+}
+class RpcRateLimited extends Error { constructor() { super('V2_RPC_RATE_LIMITED'); } }
+const isRateLimitPayload = payload => { const e = payload?.error; return Boolean(e) && (e.code === -32005 || e.code === 429 || /rate.?limit|too many requests/i.test(String(e.message || ''))); };
+export async function v2RpcWithRetry(attempt, delays = V2_RPC_RETRY_DELAYS_MS, sleep = ms => new Promise(r => setTimeout(r, ms))) {
+  for (let i = 0; ; i++) {
+    try { return await withRpcSlot(attempt); } catch (error) {
+      if (!(error instanceof RpcRateLimited) || i >= delays.length) throw error instanceof RpcRateLimited ? new Error('V2_RPC_UNAVAILABLE') : error;
+      await sleep(delays[i]);
+    }
+  }
+}
+
 // Server transports are structurally incapable of broadcasting or signing.
 export function createReadOnlyV2Transport({ profile = ARC_TESTNET_PROFILE } = {}) {
   assertV2Profile(profile);
   async function read(method, params) {
-    const id = ++nextRpcId;
-    const response = await fetch(profile.rpcUrl, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id, method, params }), signal: AbortSignal.timeout(5000), cache: 'no-store' });
-    if (!response.ok) throw new Error('V2_RPC_UNAVAILABLE');
-    const payload = await response.json();
+    const { id, payload } = await v2RpcWithRetry(async () => {
+      const id = ++nextRpcId;
+      const response = await fetch(profile.rpcUrl, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id, method, params }), signal: AbortSignal.timeout(5000), cache: 'no-store' });
+      if (response.status === 429) throw new RpcRateLimited();
+      if (!response.ok) throw new Error('V2_RPC_UNAVAILABLE');
+      const payload = await response.json();
+      if (isRateLimitPayload(payload)) throw new RpcRateLimited();
+      return { id, payload };
+    });
     if (payload.jsonrpc !== '2.0' || payload.id !== id || payload.error || !Object.hasOwn(payload, 'result')) throw new Error('V2_RPC_UNAVAILABLE');
     if (payload.result === null && !['eth_getTransactionReceipt', 'eth_getTransactionByHash'].includes(method)) throw new Error('V2_RPC_UNAVAILABLE');
     return payload.result;
