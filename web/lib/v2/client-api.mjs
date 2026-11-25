@@ -5,7 +5,26 @@ function assertPath(path) {
   return path;
 }
 
-export async function v2Request(path, { method = 'GET', body, csrfToken, idempotencyKey } = {}) {
+// Private job reads re-check the chain against the indexed row. Right after a
+// wallet transaction the indexer can lag a few seconds and these GETs answer 503
+// STALE_DATA/READER_UNAVAILABLE. Retry only those idempotent GETs, briefly.
+const PRIVATE_JOB_READ = /^\/api\/v2\/jobs\/[^/]+\/(deliveries|decision-review|revision-notes|applications|application-context)$/;
+const TRANSIENT_READ_ERRORS = new Set(['STALE_DATA', 'READER_UNAVAILABLE', 'INDEXER_UNAVAILABLE']);
+export const V2_READ_RETRY_DELAYS_MS = Object.freeze([1500, 3000, 5000]);
+
+export async function v2Request(path, options = {}) {
+  const { method = 'GET', retryDelays = V2_READ_RETRY_DELAYS_MS, sleep = ms => new Promise(r => setTimeout(r, ms)) } = options;
+  const retryable = method === 'GET' && typeof path === 'string' && PRIVATE_JOB_READ.test(path);
+  for (let attempt = 0; ; attempt++) {
+    try { return await v2RequestOnce(path, options); }
+    catch (error) {
+      if (!retryable || attempt >= retryDelays.length || error?.status !== 503 || !TRANSIENT_READ_ERRORS.has(error?.code)) throw error;
+      await sleep(retryDelays[attempt]);
+    }
+  }
+}
+
+async function v2RequestOnce(path, { method = 'GET', body, csrfToken, idempotencyKey } = {}) {
   assertPath(path);
   if (method !== 'GET' && method !== 'POST') throw new TypeError('v2Request only permits GET and POST');
   const headers = { accept: 'application/json' };

@@ -67,7 +67,8 @@ export function availableActions(job, wallet) {
   if ((role === 'client' || role === 'operator') && [1, 2, 3, 4].includes(status)) actions.push('openDispute');
   if (role === 'resolver' && status === STATUS.disputed) actions.push('resolveDispute');
   const mutual = job?.mutual ?? job?.data?.mutual;
-  if ((role === 'client' || role === 'operator') && mutual?.proposable === true) actions.push('proposeMutual');
+  // A settlement needs a counterparty: only offer it once an operator is assigned.
+  if ((role === 'client' || role === 'operator') && mutual?.proposable === true && status >= 1 && canonicalAddress(job.operator)) actions.push('proposeMutual');
   const mutualVersion = job?.mutualRequestVersion ?? job?.data?.mutualRequestVersion ?? mutual?.version;
   if ((role === 'client' || role === 'operator') && mutualVersion != null) actions.push('acceptMutual', 'rejectMutual', 'revokeMutual');
   pushTimeouts(actions, job, wallet, status);

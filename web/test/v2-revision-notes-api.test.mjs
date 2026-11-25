@@ -115,3 +115,37 @@ test('health is checked before and after the canonical reader snapshot', async (
     const response = await api(req('GET')); assert.equal(response.status, 503); assert.equal((await response.json()).error, 'STALE_DATA'); assert.equal(calls, 2);
   } finally { await close(f); }
 });
+
+async function insertNote(f, id, deliveryVersion) {
+  await f.db.query("INSERT INTO v2_audit_events(id,actor_wallet,event_type,entity_type,entity_id,payload) VALUES($1,$2,$3,$4,$5,$6)", [id, CLIENT, 'revision.note.created', 'job', '1', { id, chain: CHAIN, market: MARKET.toLowerCase(), job: '1', jobId: '1', canonicalTermsHash: '0x' + 'bb'.repeat(32), expectedStateVersion: '7', requestStateVersion: '8', deliveryVersion, criterionReference: CRITERION, note: NOTE, criterionHash: hash(CRITERION), referenceHash: hash(NOTE), sourceHash: SOURCE }]);
+}
+async function insertRequested(f, { criterionHash = hash(CRITERION), referenceHash = hash(NOTE), canonicalFlag = true, emitter = MARKET } = {}) {
+  await f.db.query("INSERT INTO v2_indexer_events_fork(chain_id,stream,emitter,block_number,block_hash,transaction_hash,transaction_index,log_index,topics,data,decoded,event_name,canonical) VALUES($1,'marketplace',$2,90,$3,$4,0,0,'[]'::jsonb,'0x',$5,'RevisionRequested',$6)", [CHAIN, emitter, `0x${'cc'.repeat(32)}`, `0x${'dd'.repeat(32)}`, { args: { jobId: '1', revision: '1', criterionHash, referenceHash, deadline: '1234' } }, canonicalFlag]);
+}
+
+test('a revision note addressed by a later delivery is fulfilled when the canonical RevisionRequested event matches', async () => {
+  // Job moved on: Submitted again (status 2), delivery 5, active revision slot cleared.
+  const f = await fixture({ status: 2, readerJob: { stateVersion: 9n, deliveryVersion: 5n, revisionCriterionHash: `0x${'00'.repeat(32)}`, revisionReferenceHash: `0x${'00'.repeat(32)}` } }); try {
+    await f.db.query("UPDATE v2_jobs SET state_version=9");
+    await insertNote(f, 'old-note', '4'); await insertRequested(f);
+    const out = await call(f, 'GET'); assert.equal(out.response.status, 200); assert.equal(out.body.notes[0].verification, 'fulfilled'); assert.equal(out.body.notes[0].note, NOTE);
+  } finally { await close(f); }
+});
+
+test('a moved-on note without a matching canonical event stays a mismatch', async () => {
+  for (const ev of [null, { referenceHash: hash('different note') }, { canonicalFlag: false }, { emitter: '0x9999999999999999999999999999999999999999' }]) {
+    const f = await fixture({ status: 2, readerJob: { stateVersion: 9n, deliveryVersion: 5n, revisionCriterionHash: `0x${'00'.repeat(32)}`, revisionReferenceHash: `0x${'00'.repeat(32)}` } }); try {
+      await f.db.query("UPDATE v2_jobs SET state_version=9");
+      await insertNote(f, 'old-note', '4'); if (ev) await insertRequested(f, ev);
+      const out = await call(f, 'GET'); assert.equal(out.body.notes[0].verification, 'mismatch');
+    } finally { await close(f); }
+  }
+});
+
+test('a note is not fulfilled unless a later delivery exists', async () => {
+  const f = await fixture({ status: 2, readerJob: { stateVersion: 9n, deliveryVersion: 4n, revisionCriterionHash: `0x${'00'.repeat(32)}`, revisionReferenceHash: `0x${'00'.repeat(32)}` } }); try {
+    await f.db.query("UPDATE v2_jobs SET state_version=9");
+    await insertNote(f, 'old-note', '4'); await insertRequested(f);
+    const out = await call(f, 'GET'); assert.notEqual(out.body.notes[0].verification, 'fulfilled');
+  } finally { await close(f); }
+});

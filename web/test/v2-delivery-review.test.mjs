@@ -24,7 +24,7 @@ test('external links accept only http(s) without credentials and never executabl
 test('client sees confirmed link, version, acceptance criteria and unconfirmed-draft distinction without writes', async () => {
   const calls = []; let tree;
   await act(async () => { tree = TestRenderer.create(React.createElement(DeliveryReview, { job, session: { wallet: client }, request: async (...args) => { calls.push(args); return response(); } })); });
-  assert.match(text(tree), /Submitted delivery/); assert.match(text(tree), /Playable loop/); assert.match(text(tree), /Mobile controls/); assert.match(text(tree), /Setup guide/); assert.match(text(tree), /Version 1/); assert.match(text(tree), /Not the current confirmed delivery/);
+  assert.match(text(tree), /Submitted delivery/); assert.match(text(tree), /Playable loop/); assert.match(text(tree), /Mobile controls/); assert.match(text(tree), /Setup guide/); assert.match(text(tree), /Version 1/); assert.match(text(tree), /saved but not the confirmed delivery/);
   const links = tree.root.findAllByType('a'); assert.equal(links.length, 1); assert.equal(links[0].props.href, content.link); assert.equal(links[0].props.target, '_blank'); assert.match(links[0].props.rel, /noopener/);
   assert.deepEqual(calls, [['/api/v2/jobs/7/deliveries']]);
   await act(async () => tree.unmount());
@@ -49,4 +49,15 @@ test('read error has explicit retry and recovery; unsafe URL is displayed as tex
   await act(async () => { tree = TestRenderer.create(React.createElement(DeliveryReview, { job, session: { wallet: client }, request })); });
   assert.match(text(tree), /Unable to load/); assert.doesNotMatch(text(tree), /private error/);
   await act(async () => tree.root.findByType('button').props.onClick()); assert.equal(calls, 2); assert.equal(tree.root.findAllByType('a').length, 0); assert.match(text(tree), /javascript:alert/); await act(async () => tree.unmount());
+});
+
+test('earlier superseded versions are shown as links, unconfirmed drafts are not', async () => {
+  const v1 = { link: 'https://example.com/logo-v1' }, v2 = { link: 'https://example.com/logo-v2' };
+  const h1 = keccak256(stringToHex(JSON.stringify(v1))), h2 = keccak256(stringToHex(JSON.stringify(v2)));
+  const r = { reviewContext: { jobId: '7', stateVersion: '3' }, canonicalDelivery: { version: '2', contentHash: h2 }, items: [{ jobId: '7', version: '1', contentHash: h1, content: v1 }, { jobId: '7', version: '2', contentHash: h2, content: v2 }, { jobId: '7', version: '3', contentHash: `0x${'34'.repeat(32)}`, content: { link: 'https://draft.invalid/' } }] };
+  let tree; await act(async () => { tree = TestRenderer.create(React.createElement(DeliveryReview, { job, session: { wallet: client }, request: async () => r })); });
+  const hrefs = tree.root.findAllByType('a').map(a => a.props.href);
+  assert.deepEqual(hrefs.sort(), [v1.link, v2.link].sort());
+  assert.match(text(tree), /earlier version, kept unchanged/); assert.match(text(tree), /saved but not the confirmed delivery/);
+  await act(async () => tree.unmount());
 });

@@ -25,3 +25,27 @@ test('v2 client rejects non-v2 paths and exposes API error codes', async () => {
   try { await assert.rejects(v2Request('/api/v2/health'), (error) => error.code === 'READER_UNAVAILABLE' && error.status === 503); }
   finally { globalThis.fetch = originalFetch; }
 });
+
+const ORIGINAL_FETCH = globalThis.fetch;
+test('private job GETs retry transient 503 STALE_DATA after a transaction, then succeed', async () => {
+  let calls = 0; const slept = [];
+  globalThis.fetch = async () => { calls += 1; return calls < 3 ? new Response(JSON.stringify({ error: 'STALE_DATA' }), { status: 503 }) : new Response(JSON.stringify({ items: [] }), { status: 200 }); };
+  try {
+    const result = await v2Request('/api/v2/jobs/8/deliveries', { sleep: async ms => { slept.push(ms); } });
+    assert.deepEqual(result, { items: [] });
+    assert.equal(calls, 3);
+    assert.deepEqual(slept, [1500, 3000]);
+  } finally { globalThis.fetch = ORIGINAL_FETCH; }
+});
+
+test('retries are limited to private job GETs and transient errors', async () => {
+  let calls = 0;
+  globalThis.fetch = async () => { calls += 1; return new Response(JSON.stringify({ error: 'FORBIDDEN' }), { status: 403 }); };
+  try { await assert.rejects(v2Request('/api/v2/jobs/8/deliveries', { sleep: async () => {} }), e => e.status === 403); assert.equal(calls, 1); } finally { globalThis.fetch = ORIGINAL_FETCH; }
+  calls = 0;
+  globalThis.fetch = async () => { calls += 1; return new Response(JSON.stringify({ error: 'STALE_DATA' }), { status: 503 }); };
+  try { await assert.rejects(v2Request('/api/v2/jobs/8/revision-notes', { method: 'POST', body: {}, sleep: async () => {} }), e => e.status === 503); assert.equal(calls, 1); } finally { globalThis.fetch = ORIGINAL_FETCH; }
+  calls = 0;
+  globalThis.fetch = async () => { calls += 1; return new Response(JSON.stringify({ error: 'STALE_DATA' }), { status: 503 }); };
+  try { await assert.rejects(v2Request('/api/v2/jobs/8/decision-review', { sleep: async () => {} }), e => e.code === 'STALE_DATA'); assert.equal(calls, 4); } finally { globalThis.fetch = ORIGINAL_FETCH; }
+});

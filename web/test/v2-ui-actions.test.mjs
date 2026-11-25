@@ -169,7 +169,7 @@ test('zero-address operator is unassigned and award uses the private application
     assert.equal(jobRole(openJob, session.wallet), 'client');
     const renderer = TestRenderer.create(React.createElement(ApplicationPanel, { job: openJob, session, health }));
     await act(async () => findButton(renderer, 'Load applications').props.onClick());
-    await act(async () => renderer.root.findAllByType('button').find((node) => String(node.children.join('')).startsWith('Operator ')).props.onClick());
+    await act(async () => renderer.root.findAllByType('button').find((node) => node.props.className === 'v2-list-item' && String(node.children.join('')).includes('No pitch provided')).props.onClick());
     await act(async () => findButton(renderer, 'Award job').props.onClick());
     assert.equal(calls[0].path, '/api/v2/jobs/7/applications');
     assert.equal(calls[1].path, '/api/v2/jobs/7/preflight');

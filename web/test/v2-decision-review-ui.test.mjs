@@ -29,7 +29,7 @@ test('revision requires note and criterion reference, persists once, then explic
     await act(async () => renderer.root.findAllByType('input').find((x) => x.props.name === 'criterionReference').props.onChange({ target: { value: 'criterion 1' } }));
     await act(async () => button(renderer, 'Review revision request').props.onClick());
     assert.equal(calls.filter((x) => x.body).length, 1);
-    assert.match(text(renderer), /Fix button/); assert.match(text(renderer), /criterion 1/); assert.match(text(renderer), /criterionHash/);
+    assert.match(text(renderer), /Fix button/); assert.match(text(renderer), /criterion 1/); assert.match(text(renderer), /Criterion hash/);
     await act(async () => button(renderer, 'Confirm revision request').props.onClick());
     assert.equal(calls.filter((x) => x.body).length, 2); const posts = calls.filter((x) => x.body); assert.equal(posts[0].path, '/api/v2/jobs/7/revision-notes'); assert.equal(posts[1].body.params.criterionHash, criterionHash);
   } finally { globalThis.fetch = old; }
@@ -67,4 +67,19 @@ test('resolver preview is read-only, explicit, renders zero consequence fields, 
 test('malformed or pending previews never enable confirmation or send', async () => {
   const old = globalThis.fetch; globalThis.fetch = async () => response({ context: { jobId: '7', stateVersion: '3' }, preview: null });
   try { const renderer = TestRenderer.create(React.createElement(ResolverActionPanel, { job: { ...job, client:job.operator, operator:'0x4444444444444444444444444444444444444444', status: '5', resolver: wallet }, session, health })); await act(async () => {}); assert.equal(button(renderer, 'Review resolution')?.props.disabled, true); } finally { globalThis.fetch = old; }
+});
+
+test('decision review is hidden when there is nothing to decide, and on terminal jobs whose optional read fails', async () => {
+  const old = globalThis.fetch;
+  try {
+    globalThis.fetch = async () => response({ context: { jobId: '7', stateVersion: '3', block: '9', blockHash: hash }, mutual: { active: false }, resolved: null });
+    let renderer; await act(async () => { renderer = TestRenderer.create(React.createElement(DecisionReview, { job, session, health })); });
+    assert.equal(renderer.toJSON(), null, 'submitted job with no proposal shows no empty card');
+    globalThis.fetch = async () => response({ error: 'INTERNAL_ERROR' }, 500);
+    const done = { ...job, status: '6' };
+    await act(async () => { renderer = TestRenderer.create(React.createElement(DecisionReview, { job: done, session, health })); });
+    assert.equal(renderer.toJSON(), null, 'completed job hides a failed optional decision read');
+    await act(async () => { renderer = TestRenderer.create(React.createElement(DecisionReview, { job, session, health })); });
+    assert.match(text(renderer), /Unable to load the private review/, 'active job still surfaces the failure before acting');
+  } finally { globalThis.fetch = old; }
 });

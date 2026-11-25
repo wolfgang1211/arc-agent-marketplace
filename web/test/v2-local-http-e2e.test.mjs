@@ -215,7 +215,7 @@ test('offline fixture: ApplicationPanel loads private applications and prepares 
     try {
       const renderer = TestRenderer.create(React.createElement(ApplicationPanel, { job: { jobId: '7', status: '0', stateVersion: '3', client: client.address, operator: ZERO, resolver: ADDR(6), termsHash }, session: { authenticated: true, wallet: client.address, csrf: session.csrf }, health: { data: { status: 'healthy', stale: false, gap: null } } }));
       await act(async () => { await button(renderer, 'Load applications').props.onClick(); await settle(); });
-      await act(async () => renderer.root.findAllByType('button').find((x) => text(x).startsWith('Operator ')).props.onClick());
+      await act(async () => renderer.root.findAllByType('button').find((x) => x.props.className === 'v2-list-item').props.onClick());
       await act(async () => button(renderer, 'Award job').props.onClick());
       const result = JSON.parse(JSON.stringify(renderer.toJSON())); assert.match(JSON.stringify(result), /Action ready for wallet confirmation/);
       const response = await f.raw('/api/v2/jobs/7/preflight', jsonInit({ action: 'awardJob', params: { expected: '3' }, application, signature }, { origin: f.origin, 'x-v2-csrf': session.csrf, 'idempotency-key': 'award-7' }), session.cookie);

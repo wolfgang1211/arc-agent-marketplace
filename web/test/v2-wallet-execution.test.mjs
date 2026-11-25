@@ -440,3 +440,18 @@ for (const kind of ['main', 'approval']) {
     delete globalThis.localStorage;
   });
 }
+
+test('after a successful receipt a lagging readback reports confirmed-sync-pending and does not block the next same action', async () => {
+  globalThis.localStorage = memoryStorage();
+  try {
+    const hash = `0x${'9a'.repeat(32)}`; let sentTx;
+    const { provider, sends } = providerFor({ onSend: tx => { sentTx = tx; return hash; }, allowance: `0x${'ff'.repeat(32)}`, transactionFor: () => sentTx && ({ from: wallet, to: sentTx.to, input: sentTx.data, value: '0', chainId: `0x${BigInt(profile.chainId).toString(16)}` }), receiptFor: () => ({ status: '0x1', transactionHash: hash }) });
+    const lagging = async () => { throw Object.assign(new Error('behind'), { code: 'readback-mismatch' }); };
+    const first = mainAction('mined-1');
+    await assert.rejects(() => executeWalletAction(first, { profile, provider, readback: lagging, receiptTimeoutMs: 0 }), e => e.code === 'confirmed-sync-pending' && e.transaction?.hash === hash);
+    assert.equal(storedIntents().find(x => x.hash === hash)?.status, 'mined');
+    const second = mainAction('mined-2');
+    await assert.rejects(() => executeWalletAction(second, { profile, provider, readback: lagging, receiptTimeoutMs: 0 }), e => e.code === 'confirmed-sync-pending');
+    assert.equal(sends.length, 2, 'the mined record did not block a new, separately prepared action');
+  } finally { delete globalThis.localStorage; }
+});

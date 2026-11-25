@@ -73,6 +73,10 @@ export function createV2RevisionNotesApi({ db, auth, readerFactory, getHealth, o
   }
   async function get(jobId, wallet) {
     const { row, job } = await load(jobId, wallet); const result = await db.query("SELECT payload FROM v2_audit_events WHERE event_type='revision.note.created' AND entity_type='job' AND entity_id=$1 AND payload->>'chain'=$2 AND LOWER(payload->>'market')=LOWER($3) AND payload->>'job'=$4 ORDER BY created_at ASC, id ASC", [jobId, job.chainId, job.marketplace, jobId]);
+    // A fulfilled request no longer sits in the job's active revision slot. Bind it
+    // to the canonical, indexed RevisionRequested event instead of the live slot.
+    let requested = [];
+    try { const ev = await db.query("SELECT decoded FROM v2_indexer_events_fork WHERE chain_id=$1 AND LOWER(emitter)=LOWER($2) AND canonical=true AND event_name='RevisionRequested' AND decoded->'args'->>'jobId'=$3", [Number(profile.canonicalChainId), profile.marketplace, jobId]); requested = ev.rows.map(r => r.decoded?.args ?? {}); } catch { requested = []; }
     const notes = result.rows.map(rowValue => {
       const payload=rowValue.payload;
       const contentMatches=typeof payload?.criterionReference==='string'&&typeof payload?.note==='string'&&payload.criterionHash===contentHash(payload.criterionReference)&&payload.referenceHash===contentHash(payload.note);
@@ -84,8 +88,11 @@ export function createV2RevisionNotesApi({ db, auth, readerFactory, getHealth, o
       const beforeBroadcast=job.status===2&&String(payload?.expectedStateVersion)===job.stateVersion&&deliveryMatches;
       const verified=sourceValid&&identityMatches&&contentMatches&&chainMatches&&job.status===3&&requestMatches&&deliveryMatches;
       const pending=sourceValid&&identityMatches&&contentMatches&&beforeBroadcast;
-      const mismatch=!verified&&!pending;
-      return { ...noteFromPayload(payload), verification: verified ? 'verified' : mismatch ? 'mismatch' : 'pending' };
+      let laterDelivery=false; try { laterDelivery=BigInt(job.deliveryVersion)>BigInt(payload?.deliveryVersion); } catch {}
+      const onChainEvent=requested.some(a=>hash(a.criterionHash)===hash(payload?.criterionHash)&&hash(a.referenceHash)===hash(payload?.referenceHash));
+      const fulfilled=!verified&&!pending&&sourceValid&&identityMatches&&contentMatches&&laterDelivery&&onChainEvent;
+      const mismatch=!verified&&!pending&&!fulfilled;
+      return { ...noteFromPayload(payload), verification: verified ? 'verified' : fulfilled ? 'fulfilled' : mismatch ? 'mismatch' : 'pending' };
     });
     return json({ context: { jobId: job.jobId, stateVersion: job.stateVersion, deliveryVersion: job.deliveryVersion, correctionDeadline: job.correctionDeadline, revisionLimit: job.revisionLimit, revisionsUsed: job.revisionsUsed, unlimitedRevisions: job.unlimitedRevisions, status: job.status, revisionCriterionHash: job.revisionCriterionHash, revisionReferenceHash: job.revisionReferenceHash }, notes });
   }
